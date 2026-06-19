@@ -1,0 +1,456 @@
+=========================================
+📚 BOOKSTORE BACKEND - TEST SCENARIO COMPLET
+=========================================
+
+📖 SECTION 1: GESTION DES LIVRES
+=========================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📤 GET /books - Lister tous les livres
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{
+  "status": "success",
+  "message": "Books retrieved successfully",
+  "data": [
+    {
+      "id": "6664cf1d-c701-4697-b1ed-d8c099bd9f4d",
+      "title": "The Great Gatsby",
+      "author": "F. Scott Fitzgerald",
+      "isbn": "9780743273565",
+      "description": "A story of decadence and excess.",
+      "totalQuantity": 5,
+      "availableQuantity": 5,
+      "isForSale": true,
+      "isForRent": true,
+      "createdAt": "2026-03-21T23:11:55.417Z",
+      "updatedAt": "2026-03-22T08:52:55.755Z"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 10,
+    "total": 1,
+    "totalPages": 1
+  }
+}
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📤 GET /books/6664cf1d-c701-4697-b1ed-d8c099bd9f4d - Voir le détail d'un livre
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{
+  "status": "success",
+  "message": "Book retrieved successfully",
+  "data": {
+    "id": "6664cf1d-c701-4697-b1ed-d8c099bd9f4d",
+    "title": "The Great Gatsby",
+    "author": "F. Scott Fitzgerald",
+    "isbn": "9780743273565",
+    "description": "A story of decadence and excess.",
+    "totalQuantity": 5,
+    "availableQuantity": 5,
+    "isForSale": true,
+    "isForRent": true,
+    "createdAt": "2026-03-21T23:11:55.417Z",
+    "updatedAt": "2026-03-22T08:52:55.755Z"
+  }
+}
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📤 POST /books - Créer un livre (vendable uniquement)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{
+  "status": "success",
+  "message": "Book created successfully",
+  "data": {
+    "id": "27d182d1-7c1d-4b35-8a5d-e873da71527b",
+    "title": "Book for Sale Only",
+    "author": "Test Author",
+    "isbn": "9781234567890",
+    "description": "This book can only be sold, not rented",
+    "totalQuantity": 5,
+    "availableQuantity": 5,
+    "isForSale": true,
+    "isForRent": false,
+    "createdAt": "2026-03-22T09:28:17.360Z",
+    "updatedAt": "2026-03-22T09:28:17.360Z"
+  }
+}
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📤 POST /books - Créer un livre (prêtable uniquement)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{
+  "status": "success",
+  "message": "Book created successfully",
+  "data": {
+    "id": "27d00aa1-3f27-4003-a95a-f83a5d0345e1",
+    "title": "Book for Rent Only",
+    "author": "Test Author",
+    "isbn": "9780987654321",
+    "description": "This book can only be rented, not sold",
+    "totalQuantity": 3,
+    "availableQuantity": 3,
+    "isForSale": false,
+    "isForRent": true,
+    "createdAt": "2026-03-22T09:28:17.386Z",
+    "updatedAt": "2026-03-22T09:28:17.386Z"
+  }
+}
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📤 GET /books?search=1984 - Rechercher des livres par titre
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{
+  "status": "success",
+  "message": "Books retrieved successfully",
+  "data": [],
+  "pagination": {
+    "page": 1,
+    "limit": 10,
+    "total": 0,
+    "totalPages": 0
+  }
+}
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📤 GET /books?availableOnly=true - Filtrer livres disponibles
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{
+  "title": "Book for Rent Only",
+  "availableQuantity": 3
+}
+{
+  "title": "Book for Sale Only",
+  "availableQuantity": 5
+}
+{
+  "title": "The Great Gatsby",
+  "availableQuantity": 5
+}
+
+👥 SECTION 2: GESTION DES UTILISATEURS
+=========================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📤 POST /users - Créer un utilisateur staff
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{
+  "status": "success",
+  "message": "User created successfully",
+  "data": {
+    "id": "fee928e6-4e51-4541-b71a-e19c3f4c17a0",
+    "name": "Test Staff User",
+    "email": "teststaff@bookstore.com",
+    "role": "STAFF",
+    "createdAt": "2026-03-22T09:28:17.571Z",
+    "updatedAt": "2026-03-22T09:28:17.571Z"
+  }
+}
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📤 GET /users - Lister tous les utilisateurs (Admin only)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{
+  "id": "fee928e6-4e51-4541-b71a-e19c3f4c17a0",
+  "name": "Test Staff User",
+  "email": "teststaff@bookstore.com",
+  "role": "STAFF"
+}
+{
+  "id": "3d0efd77-c004-455b-9b52-643fa6ded85f",
+  "name": "Staff User",
+  "email": "staff@bookstore.com",
+  "role": "STAFF"
+}
+{
+  "id": "56aa6cfc-46ed-407b-b115-07965adb5f56",
+  "name": "Admin User",
+  "email": "admin@bookstore.com",
+  "role": "ADMIN"
+}
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📤 GET /users - Staff tente d'accéder (doit échouer - 403)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{
+  "status": "error",
+  "message": "You do not have permission to perform this action.",
+  "statusCode": 403
+}
+
+📚 SECTION 3: GESTION DES EMPRUNTS
+=========================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📤 POST /loans - Emprunter un livre (livre prêtable)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{
+  "status": "success",
+  "message": "Book borrowed successfully",
+  "data": {
+    "id": "d6fe603b-abb6-4b9d-aea4-05ccad5e31b5",
+    "userId": "fee928e6-4e51-4541-b71a-e19c3f4c17a0",
+    "bookId": "27d00aa1-3f27-4003-a95a-f83a5d0345e1",
+    "borrowedAt": "2026-03-22T09:28:17.622Z",
+    "dueDate": "2026-04-05T10:00:00.000Z",
+    "returnedAt": null,
+    "status": "BORROWED",
+    "createdAt": "2026-03-22T09:28:17.622Z",
+    "updatedAt": "2026-03-22T09:28:17.622Z",
+    "user": {
+      "id": "fee928e6-4e51-4541-b71a-e19c3f4c17a0",
+      "name": "Test Staff User",
+      "email": "teststaff@bookstore.com"
+    },
+    "book": {
+      "id": "27d00aa1-3f27-4003-a95a-f83a5d0345e1",
+      "title": "Book for Rent Only",
+      "author": "Test Author",
+      "isbn": "9780987654321"
+    }
+  }
+}
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📤 POST /loans - Tenter d'emprunter livre vendable (doit échouer - 400)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{
+  "status": "error",
+  "message": "This book is for sale only, cannot be borrowed",
+  "statusCode": 400
+}
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📤 GET /books/27d00aa1-3f27-4003-a95a-f83a5d0345e1 - Vérifier stock après emprunt
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{
+  "title": "Book for Rent Only",
+  "availableQuantity": 2,
+  "totalQuantity": 3
+}
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📤 GET /loans - Lister tous les emprunts
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{
+  "id": "d6fe603b-abb6-4b9d-aea4-05ccad5e31b5",
+  "status": "BORROWED",
+  "user": "Test Staff User",
+  "book": "Book for Rent Only"
+}
+{
+  "id": "09850454-a3af-48a7-a2ff-366c55f2dbcd",
+  "status": "RETURNED",
+  "user": "Staff User",
+  "book": "The Great Gatsby"
+}
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📤 PUT /loans/d6fe603b-abb6-4b9d-aea4-05ccad5e31b5/return - Retourner le livre
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{
+  "status": "success",
+  "message": "Book returned successfully",
+  "data": {
+    "id": "d6fe603b-abb6-4b9d-aea4-05ccad5e31b5",
+    "userId": "fee928e6-4e51-4541-b71a-e19c3f4c17a0",
+    "bookId": "27d00aa1-3f27-4003-a95a-f83a5d0345e1",
+    "borrowedAt": "2026-03-22T09:28:17.622Z",
+    "dueDate": "2026-04-05T10:00:00.000Z",
+    "returnedAt": "2026-03-22T09:28:17.686Z",
+    "status": "RETURNED",
+    "createdAt": "2026-03-22T09:28:17.622Z",
+    "updatedAt": "2026-03-22T09:28:17.687Z",
+    "user": {
+      "id": "fee928e6-4e51-4541-b71a-e19c3f4c17a0",
+      "name": "Test Staff User",
+      "email": "teststaff@bookstore.com"
+    },
+    "book": {
+      "id": "27d00aa1-3f27-4003-a95a-f83a5d0345e1",
+      "title": "Book for Rent Only",
+      "author": "Test Author",
+      "isbn": "9780987654321"
+    }
+  }
+}
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📤 GET /books/27d00aa1-3f27-4003-a95a-f83a5d0345e1 - Vérifier stock après retour
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{
+  "title": "Book for Rent Only",
+  "availableQuantity": 3,
+  "totalQuantity": 3
+}
+
+💰 SECTION 4: GESTION DES VENTES
+=========================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📤 POST /sales - Vendre un livre (livre vendable)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{
+  "status": "success",
+  "message": "Sale created successfully",
+  "data": {
+    "id": "2d086ddb-1729-4581-a422-b1a9494ab316",
+    "bookId": "27d182d1-7c1d-4b35-8a5d-e873da71527b",
+    "quantity": 2,
+    "totalPrice": 39.98,
+    "soldAt": "2026-03-22T09:28:17.719Z",
+    "createdAt": "2026-03-22T09:28:17.719Z",
+    "updatedAt": "2026-03-22T09:28:17.719Z",
+    "book": {
+      "id": "27d182d1-7c1d-4b35-8a5d-e873da71527b",
+      "title": "Book for Sale Only",
+      "author": "Test Author",
+      "isbn": "9781234567890",
+      "isForSale": true,
+      "isForRent": false
+    }
+  }
+}
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📤 POST /sales - Tenter de vendre livre prêtable (doit échouer - 400)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{
+  "status": "error",
+  "message": "This book is for rent only, cannot be sold",
+  "statusCode": 400
+}
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📤 GET /books/27d182d1-7c1d-4b35-8a5d-e873da71527b - Vérifier stock après vente
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{
+  "title": "Book for Sale Only",
+  "availableQuantity": 3,
+  "totalQuantity": 5
+}
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📤 GET /sales - Lister toutes les ventes
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{
+  "status": "success",
+  "message": "Sales retrieved successfully",
+  "data": [
+    {
+      "id": "2d086ddb-1729-4581-a422-b1a9494ab316",
+      "bookId": "27d182d1-7c1d-4b35-8a5d-e873da71527b",
+      "quantity": 2,
+      "totalPrice": 39.98,
+      "soldAt": "2026-03-22T09:28:17.719Z",
+      "createdAt": "2026-03-22T09:28:17.719Z",
+      "updatedAt": "2026-03-22T09:28:17.719Z",
+      "book": {
+        "id": "27d182d1-7c1d-4b35-8a5d-e873da71527b",
+        "title": "Book for Sale Only",
+        "author": "Test Author",
+        "isbn": "9781234567890"
+      }
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 10,
+    "total": 1,
+    "totalPages": 1
+  },
+  "summary": {
+    "totalRevenue": 39.98,
+    "totalItems": 2
+  }
+}
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📤 GET /sales/stats - Voir les statistiques des ventes
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{
+  "status": "success",
+  "message": "Statistics retrieved successfully",
+  "data": {
+    "totalSales": 1,
+    "totalRevenue": 39.98,
+    "totalItemsSold": 2,
+    "todayRevenue": 39.98
+  }
+}
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📤 GET /sales/2d086ddb-1729-4581-a422-b1a9494ab316 - Voir le détail d'une vente
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{
+  "status": "success",
+  "message": "Sale retrieved successfully",
+  "data": {
+    "id": "2d086ddb-1729-4581-a422-b1a9494ab316",
+    "bookId": "27d182d1-7c1d-4b35-8a5d-e873da71527b",
+    "quantity": 2,
+    "totalPrice": 39.98,
+    "soldAt": "2026-03-22T09:28:17.719Z",
+    "createdAt": "2026-03-22T09:28:17.719Z",
+    "updatedAt": "2026-03-22T09:28:17.719Z",
+    "book": {
+      "id": "27d182d1-7c1d-4b35-8a5d-e873da71527b",
+      "title": "Book for Sale Only",
+      "author": "Test Author",
+      "isbn": "9781234567890"
+    }
+  }
+}
+
+🧹 SECTION 5: NETTOYAGE
+=========================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📤 DELETE /books/27d182d1-7c1d-4b35-8a5d-e873da71527b - Supprimer le livre vendable
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{
+  "status": "success",
+  "message": "Book deleted successfully",
+  "data": null
+}
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📤 DELETE /books/27d00aa1-3f27-4003-a95a-f83a5d0345e1 - Supprimer le livre prêtable
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{
+  "status": "success",
+  "message": "Book deleted successfully",
+  "data": null
+}
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📤 DELETE /users/fee928e6-4e51-4541-b71a-e19c3f4c17a0 - Supprimer l'utilisateur de test
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{
+  "status": "success",
+  "message": "User deleted successfully",
+  "data": null
+}
+
+=========================================
+✅ TEST SCENARIO COMPLET
+=========================================

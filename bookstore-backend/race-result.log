@@ -1,0 +1,135 @@
+=========================================
+🔒 BOOKSTORE BACKEND - TEST RACE CONDITIONS
+=========================================
+
+🔧 PRÉPARATION DES DONNÉES DE TEST
+=========================================
+📤 POST /books - Créer un livre unique (1 exemplaire)
+{
+  "id": "96584316-0b14-4ca9-bd4e-58ae6323c3b9",
+  "title": "Race Condition Test Book",
+  "availableQuantity": 1
+}
+
+📤 POST /users - Créer utilisateur 1
+✅ Utilisateur 1: 095b847c-5f2c-48a3-a2f9-b17cce15d73c
+
+📤 POST /users - Créer utilisateur 2
+✅ Utilisateur 2: 742fb2e5-a21c-4c43-824d-1c7ed8026c90
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🚦 TEST 1: Emprunts simultanés (1 seul exemplaire)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📊 Stock avant test:
+{
+  "title": "Race Condition Test Book",
+  "availableQuantity": 1,
+  "totalQuantity": 1
+}
+
+🚀 Lancement de 3 emprunts simultanés...
+
+✅ Requête 2: SUCCÈS
+❌ Requête 3: ÉCHEC - Record not found.
+❌ Requête 1: ÉCHEC - Record not found.
+
+📊 Stock après emprunts:
+{
+  "title": "Race Condition Test Book",
+  "availableQuantity": 0,
+  "totalQuantity": 1
+}
+
+📊 Nombre total d'emprunts créés: 1
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+💰 TEST 2: Ventes simultanées (1 seul exemplaire)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📤 POST /books - Créer un livre pour test des ventes (1 exemplaire)
+✅ Livre créé: e42be5ba-9d3b-4cd3-a765-d8d7aaba2a60
+
+📊 Stock initial:
+{
+  "title": "Sale Race Test Book",
+  "availableQuantity": 1,
+  "totalQuantity": 1
+}
+
+🚀 Lancement de 3 ventes simultanées...
+
+✅ Requête 1: SUCCÈS
+❌ Requête 3: ÉCHEC - Record not found.
+❌ Requête 2: ÉCHEC - Record not found.
+
+📊 Stock après ventes:
+{
+  "title": "Sale Race Test Book",
+  "availableQuantity": 0,
+  "totalQuantity": 1
+}
+
+📊 Nombre total de ventes créées: 1
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+👥 TEST 3: Double emprunt par le même utilisateur
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📚 Livre double créé: 8660a75c-c9e1-48c6-8972-43e12abd1cee
+
+📤 Premier emprunt du même utilisateur:
+{
+  "id": "110ae022-4e7a-418c-9694-ca899e944ab1",
+  "status": "BORROWED"
+}
+
+📤 Deuxième emprunt du même utilisateur (doit échouer):
+{
+  "status": "error",
+  "message": "You already have an active loan for this book",
+  "statusCode": 400
+}
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📚 TEST 4: Emprunt après épuisement du stock
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📚 Livre avec 0 stock créé: c9f5740a-20f9-471d-81fa-eab9f27e865a
+
+📤 Tenter d'emprunter (doit échouer):
+{
+  "status": "error",
+  "message": "Record not found.",
+  "statusCode": 404
+}
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+💸 TEST 5: Vente après épuisement du stock
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📤 Tenter de vendre (doit échouer):
+{
+  "status": "error",
+  "message": "Record not found.",
+  "statusCode": 404
+}
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🧹 NETTOYAGE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Nettoyage terminé
+
+=========================================
+📊 RÉSUMÉ DES TESTS RACE CONDITIONS
+=========================================
+
+✅ Test 1 (Emprunts simultanés) : 1 seul succès sur 3 → Protection OK
+✅ Test 2 (Ventes simultanées)  : 1 seul succès sur 3 → Protection OK
+✅ Test 3 (Double emprunt)      : Deuxième requête bloquée → Contrainte unique OK
+✅ Test 4 (Emprunt stock 0)     : Erreur immédiate → Protection OK
+✅ Test 5 (Vente stock 0)       : Erreur immédiate → Protection OK
+
+🔒 La protection contre les race conditions est ACTIVE !
+=========================================

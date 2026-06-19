@@ -1,0 +1,219 @@
+=========================================
+📚 BOOKSTORE BACKEND - TEST SCENARIO
+=========================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📤 GET /books/6664cf1d-c701-4697-b1ed-d8c099bd9f4d
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+curl -X GET http://localhost:3000/api/books/6664cf1d-c701-4697-b1ed-d8c099bd9f4d -H "Authorization: Bearer ADMIN_TOKEN"
+{
+  "title": "The Great Gatsby",
+  "availableQuantity": 5,
+  "totalQuantity": 5
+}
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📤 POST /users - Créer un utilisateur staff
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+curl -X POST http://localhost:3000/api/users \
+  -H "Authorization: Bearer ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Test Staff",
+    "email": "teststaff@bookstore.com",
+    "password": "test123",
+    "role": "STAFF"
+  }'
+{
+  "id": "f340014f-ad85-43fd-9502-9af343ad0bd4",
+  "name": "Test Staff",
+  "email": "teststaff@bookstore.com",
+  "role": "STAFF"
+}
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📤 POST /loans - Emprunter un livre
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+curl -X POST http://localhost:3000/api/loans \
+  -H "Authorization: Bearer ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "userId": "f340014f-ad85-43fd-9502-9af343ad0bd4",
+    "bookId": "6664cf1d-c701-4697-b1ed-d8c099bd9f4d",
+    "dueDate": "2026-04-05T10:00:00.000Z"
+  }'
+{
+  "id": "86d4bc8e-af70-400c-b793-7c43e255cbb3",
+  "status": "BORROWED",
+  "dueDate": "2026-04-05T10:00:00.000Z"
+}
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📤 GET /books/6664cf1d-c701-4697-b1ed-d8c099bd9f4d - Vérifier stock après emprunt
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+curl -X GET http://localhost:3000/api/books/6664cf1d-c701-4697-b1ed-d8c099bd9f4d -H "Authorization: Bearer ADMIN_TOKEN"
+{
+  "title": "The Great Gatsby",
+  "availableQuantity": 4,
+  "totalQuantity": 5
+}
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📤 GET /loans - Lister tous les emprunts
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+curl -X GET http://localhost:3000/api/loans -H "Authorization: Bearer ADMIN_TOKEN"
+{
+  "id": "86d4bc8e-af70-400c-b793-7c43e255cbb3",
+  "status": "BORROWED",
+  "user": "Test Staff",
+  "book": "The Great Gatsby"
+}
+{
+  "id": "09850454-a3af-48a7-a2ff-366c55f2dbcd",
+  "status": "RETURNED",
+  "user": "Staff User",
+  "book": "The Great Gatsby"
+}
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📤 GET /books - Staff accède aux livres (doit réussir)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+curl -X GET http://localhost:3000/api/books -H "Authorization: Bearer STAFF_TOKEN"
+{
+  "page": 1,
+  "limit": 10,
+  "total": 1
+}
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📤 GET /users - Staff accède aux users (doit échouer - 403)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+curl -X GET http://localhost:3000/api/users -H "Authorization: Bearer STAFF_TOKEN"
+"You do not have permission to perform this action."
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📤 PUT /loans/86d4bc8e-af70-400c-b793-7c43e255cbb3/return - Retourner le livre
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+curl -X PUT http://localhost:3000/api/loans/86d4bc8e-af70-400c-b793-7c43e255cbb3/return -H "Authorization: Bearer ADMIN_TOKEN"
+{
+  "id": "86d4bc8e-af70-400c-b793-7c43e255cbb3",
+  "status": "RETURNED",
+  "returnedAt": "2026-03-22T08:52:55.753Z"
+}
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📤 GET /books/6664cf1d-c701-4697-b1ed-d8c099bd9f4d - Vérifier stock après retour
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+curl -X GET http://localhost:3000/api/books/6664cf1d-c701-4697-b1ed-d8c099bd9f4d -H "Authorization: Bearer ADMIN_TOKEN"
+{
+  "title": "The Great Gatsby",
+  "availableQuantity": 5,
+  "totalQuantity": 5
+}
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📤 GET /loans/86d4bc8e-af70-400c-b793-7c43e255cbb3 - Voir l'historique de l'emprunt
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+curl -X GET http://localhost:3000/api/loans/86d4bc8e-af70-400c-b793-7c43e255cbb3 -H "Authorization: Bearer ADMIN_TOKEN"
+{
+  "id": "86d4bc8e-af70-400c-b793-7c43e255cbb3",
+  "status": "RETURNED",
+  "borrowedAt": "2026-03-22T08:52:55.661Z",
+  "returnedAt": "2026-03-22T08:52:55.753Z",
+  "dueDate": "2026-04-05T10:00:00.000Z"
+}
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📤 POST /books - Créer un nouveau livre
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+curl -X POST http://localhost:3000/api/books \
+  -H "Authorization: Bearer ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "1984",
+    "author": "George Orwell",
+    "isbn": "9780451524935",
+    "description": "A dystopian social science fiction novel",
+    "totalQuantity": 3
+  }'
+{
+  "id": "d400fe68-722b-439f-ad89-1ca9596a7dc7",
+  "title": "1984",
+  "availableQuantity": 3
+}
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📤 GET /books?search=gatsby - Rechercher des livres
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+curl -X GET "http://localhost:3000/api/books?search=gatsby" -H "Authorization: Bearer ADMIN_TOKEN"
+{
+  "title": "The Great Gatsby",
+  "author": "F. Scott Fitzgerald"
+}
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📤 GET /books?availableOnly=true - Filtrer livres disponibles
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+curl -X GET "http://localhost:3000/api/books?availableOnly=true&limit=5" -H "Authorization: Bearer ADMIN_TOKEN"
+{
+  "title": "1984",
+  "availableQuantity": 3
+}
+{
+  "title": "The Great Gatsby",
+  "availableQuantity": 5
+}
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📤 GET /books?page=1&limit=2 - Tester pagination
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+curl -X GET "http://localhost:3000/api/books?page=1&limit=2" -H "Authorization: Bearer ADMIN_TOKEN"
+{
+  "pagination": {
+    "page": 1,
+    "limit": 2,
+    "total": 2,
+    "totalPages": 1
+  },
+  "data": [
+    {
+      "title": "1984"
+    },
+    {
+      "title": "The Great Gatsby"
+    }
+  ]
+}
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📤 DELETE /books/d400fe68-722b-439f-ad89-1ca9596a7dc7 - Supprimer le livre de test
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+curl -X DELETE http://localhost:3000/api/books/d400fe68-722b-439f-ad89-1ca9596a7dc7 -H "Authorization: Bearer ADMIN_TOKEN"
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📤 DELETE /users/f340014f-ad85-43fd-9502-9af343ad0bd4 - Supprimer l'utilisateur de test
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+curl -X DELETE http://localhost:3000/api/users/f340014f-ad85-43fd-9502-9af343ad0bd4 -H "Authorization: Bearer ADMIN_TOKEN"
+{
+  "status": "success",
+  "message": "User deleted successfully"
+}
+
+=========================================
+✅ TEST SCENARIO COMPLET
+=========================================
