@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { AppNavigator } from './src/navigation';
+import { RoleBasedNavigator } from './src/navigation';
 import { useAuthStore } from './src/store/auth.store';
 import { authService } from './src/services/auth.service';
 
@@ -30,7 +30,7 @@ export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <AppNavigator />
+      <RoleBasedNavigator />
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

@@ -56,4 +56,36 @@ export class LoanController {
       ApiResponse.success(loan, 'Loan retrieved successfully')
     );
   });
+
+  approveRequest = catchAsync(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const loan = await loanService.approveRequest(id);
+    res.status(200).json(
+      ApiResponse.success(loan, 'Loan request approved')
+    );
+  });
+
+  rejectRequest = catchAsync(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const loan = await loanService.rejectRequest(id);
+    res.status(200).json(
+      ApiResponse.success(loan, 'Loan request rejected')
+    );
+  });
+
+  handOverBook = catchAsync(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const loan = await loanService.handOverBook(id);
+    res.status(200).json(
+      ApiResponse.success(loan, 'Book handed over to user')
+    );
+  });
+
+  deleteLoan = catchAsync(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    await loanService.deleteLoan(id);
+    res.status(200).json(
+      ApiResponse.success(null, 'Loan deleted successfully')
+    );
+  });
 }

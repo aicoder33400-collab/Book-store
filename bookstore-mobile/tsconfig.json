@@ -3,7 +3,7 @@
     "strict": true,
     "jsx": "react-native",
     "target": "esnext",
-    "moduleResolution": "node",
+    "moduleResolution": "node16",
     "esModuleInterop": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,

@@ -4,80 +4,52 @@ import { AppError } from '../utils/appError';
 
 export class LoanService {
   async borrowBook(userId: string, bookId: string, dueDate: Date) {
-    // Start a transaction
     return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      // 1. D'abord, décrémenter le stock avec une condition (opération atomique)
-      const updatedBook = await tx.book.update({
-        where: {
-          id: bookId,
-          availableQuantity: { gt: 0 }, // ← CRUCIAL : ne décrémente que si stock > 0
-        },
-        data: {
-          availableQuantity: { decrement: 1 },
-        },
-      });
+      // 1. Check book exists and is for rent
+      const book = await tx.book.findUnique({ where: { id: bookId } });
 
-      if (!updatedBook) {
-        throw new AppError('Book not available for borrowing (insufficient stock)', 400);
+      if (!book) {
+        throw new AppError('Book not found', 404);
       }
 
-      // 2. Vérifier si le livre est prêtable
-      if (!updatedBook.isForRent) {
-        // Restaurer le stock car on a décrémenté par erreur
-        await tx.book.update({
-          where: { id: bookId },
-          data: { availableQuantity: { increment: 1 } },
-        });
+      if (!book.isForRent) {
         throw new AppError('This book is for sale only, cannot be borrowed', 400);
       }
 
-      // 3. Vérifier si l'utilisateur existe
-      const user = await tx.user.findUnique({
-        where: { id: userId },
-      });
+      if (book.availableQuantity <= 0) {
+        throw new AppError('Book not available (insufficient stock)', 400);
+      }
 
+      // 2. Check user exists
+      const user = await tx.user.findUnique({ where: { id: userId } });
       if (!user) {
-        // Restaurer le stock
-        await tx.book.update({
-          where: { id: bookId },
-          data: { availableQuantity: { increment: 1 } },
-        });
         throw new AppError('User not found', 404);
       }
 
-      // 4. Vérifier si l'utilisateur a déjà un emprunt actif
+      // 3. Check no active request/loan for this book by this user
       const existingLoan = await tx.loan.findFirst({
         where: {
           userId,
           bookId,
-          status: { in: ['BORROWED', 'LATE'] },
+          status: { in: ['REQUESTED', 'APPROVED', 'BORROWED', 'LATE'] },
         },
       });
 
       if (existingLoan) {
-        // Restaurer le stock
-        await tx.book.update({
-          where: { id: bookId },
-          data: { availableQuantity: { increment: 1 } },
-        });
-        throw new AppError('You already have an active loan for this book', 400);
+        throw new AppError('You already have an active request or loan for this book', 400);
       }
 
-      // 5. Créer l'emprunt
+      // 4. Create the request (no stock decrement yet!)
       const loan = await tx.loan.create({
         data: {
           userId,
           bookId,
           dueDate,
-          status: 'BORROWED',
+          status: 'REQUESTED',
         },
         include: {
-          user: {
-            select: { id: true, name: true, email: true },
-          },
-          book: {
-            select: { id: true, title: true, author: true, isbn: true },
-          },
+          user: { select: { id: true, name: true, email: true } },
+          book: { select: { id: true, title: true, author: true, isbn: true } },
         },
       });
 
@@ -151,7 +123,7 @@ export class LoanService {
       where.bookId = params.bookId;
     }
 
-    if (params.status && ['BORROWED', 'RETURNED', 'LATE'].includes(params.status)) {
+    if (params.status && ['REQUESTED', 'APPROVED', 'REJECTED', 'BORROWED', 'RETURNED', 'LATE'].includes(params.status)) {
       where.status = params.status;
     }
 
@@ -216,5 +188,91 @@ export class LoanService {
         status: 'LATE',
       },
     });
+  }
+
+    async approveRequest(loanId: string) {
+    return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const loan = await tx.loan.findUnique({
+        where: { id: loanId },
+        include: { book: true },
+      });
+
+      if (!loan) throw new AppError('Loan not found', 404);
+      if (loan.status !== 'REQUESTED') {
+        throw new AppError('Only REQUESTED loans can be approved', 400);
+      }
+      if (loan.book.availableQuantity <= 0) {
+        throw new AppError('Book no longer available', 400);
+      }
+
+      // Reserve the book (decrement available quantity)
+      await tx.book.update({
+        where: { id: loan.bookId },
+        data: { availableQuantity: { decrement: 1 } },
+      });
+
+      return tx.loan.update({
+        where: { id: loanId },
+        data: { status: 'APPROVED' },
+        include: {
+          user: { select: { id: true, name: true, email: true } },
+          book: { select: { id: true, title: true, author: true, isbn: true } },
+        },
+      });
+    });
+  }
+
+  async rejectRequest(loanId: string) {
+    const loan = await prisma.loan.findUnique({ where: { id: loanId } });
+
+    if (!loan) throw new AppError('Loan not found', 404);
+    if (loan.status !== 'REQUESTED') {
+      throw new AppError('Only REQUESTED loans can be rejected', 400);
+    }
+
+    return prisma.loan.update({
+      where: { id: loanId },
+      data: { status: 'REJECTED' },
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+        book: { select: { id: true, title: true, author: true, isbn: true } },
+      },
+    });
+  }
+
+  async handOverBook(loanId: string) {
+    const loan = await prisma.loan.findUnique({ where: { id: loanId } });
+
+    if (!loan) throw new AppError('Loan not found', 404);
+    if (loan.status !== 'APPROVED') {
+      throw new AppError('Only APPROVED loans can be handed over', 400);
+    }
+
+    return prisma.loan.update({
+      where: { id: loanId },
+      data: {
+        status: 'BORROWED',
+        borrowedAt: new Date(),
+      },
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+        book: { select: { id: true, title: true, author: true, isbn: true } },
+      },
+    });
+  }
+
+  async deleteLoan(loanId: string) {
+    const loan = await prisma.loan.findUnique({ where: { id: loanId } });
+    if (!loan) throw new AppError('Loan not found', 404);
+    
+    // If book was reserved (APPROVED) or borrowed (BORROWED/LATE), restore quantity
+    if (['APPROVED', 'BORROWED', 'LATE'].includes(loan.status)) {
+      await prisma.book.update({
+        where: { id: loan.bookId },
+        data: { availableQuantity: { increment: 1 } },
+      });
+    }
+    
+    await prisma.loan.delete({ where: { id: loanId } });
   }
 }

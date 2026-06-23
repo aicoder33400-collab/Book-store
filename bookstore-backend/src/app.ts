@@ -10,6 +10,8 @@ import userRoutes from './routes/user.routes';
 import loanRoutes from './routes/loan.routes';
 import saleRoutes from './routes/sale.routes';
 
+import adminRoutes from './routes/admin.routes';
+
 import { ErrorMiddleware } from './middlewares/error.middleware';
 
 class App {
@@ -55,6 +57,7 @@ class App {
     this.app.use('/api/users', userRoutes);
     this.app.use('/api/loans', loanRoutes);
     this.app.use('/api/sales', saleRoutes);
+    this.app.use('/api/admin', adminRoutes);
   }
 
   private initializeErrorHandling(): void {

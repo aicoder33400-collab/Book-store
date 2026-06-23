@@ -9,13 +9,15 @@ import {
   TouchableOpacity,
   RefreshControl,
   Keyboard,
+  Modal,
+  Alert,
 } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { useBookStore } from '../../store/book.store';
+import { useAuthStore } from '../../store/auth.store';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
-import { AppHeader } from '../../components/AppHeader';
+import api from '../../services/api';
 
 type RootStackParamList = {
   BookDetail: { book: any };
@@ -37,6 +39,44 @@ export const BooksScreen = () => {
   const [searchText, setSearchText] = useState('');
   const searchInputRef = useRef<TextInput>(null);
   const navigation = useNavigation<Navigation>();
+
+  const { user } = useAuthStore();
+  const isAdmin = user?.role === 'ADMIN';
+
+  // Add Book Modal
+  const [addModalVisible, setAddModalVisible] = useState(false);
+  const [newBook, setNewBook] = useState({ title: '', author: '', isbn: '', description: '', totalQuantity: '1', isForRent: true, isForSale: true });
+  const [addingBook, setAddingBook] = useState(false);
+
+  const handleAddBook = async () => {
+    if (!newBook.title || !newBook.author || !newBook.isbn) {
+      Alert.alert('Erreur', 'Titre, auteur et ISBN sont requis');
+      return;
+    }
+    setAddingBook(true);
+    try {
+      await api.post('/books', {
+        title: newBook.title,
+        author: newBook.author,
+        isbn: newBook.isbn,
+        description: newBook.description,
+        totalQuantity: parseInt(newBook.totalQuantity) || 1,
+        isForRent: newBook.isForRent,
+        isForSale: newBook.isForSale,
+      });
+      Alert.alert('Succès', 'Livre ajouté !');
+      setAddModalVisible(false);
+      setNewBook({ title: '', author: '', isbn: '', description: '', totalQuantity: '1', isForRent: true, isForSale: true });
+      fetchBooks();
+    } catch (error: any) {
+      const msg = error.response?.data?.errors 
+        ? error.response.data.errors.join('\n')
+        : error.response?.data?.message || "Échec de l'ajout";
+      Alert.alert('Erreur', msg);
+    } finally {
+      setAddingBook(false);
+    }
+  };
 
   useEffect(() => {
     fetchBooks();
@@ -157,8 +197,6 @@ export const BooksScreen = () => {
 
   return (
     <View style={styles.container}>
-      <StatusBar style="light" />
-      <AppHeader title="📚 Catalogue" subtitle={getResultCountText()} />
 
       <View style={styles.searchSection}>
         <View style={styles.searchContainer}>
@@ -222,11 +260,54 @@ export const BooksScreen = () => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
       />
+
+      {/* Add Book FAB - Admin Only */}
+      {isAdmin && (
+        <TouchableOpacity
+          style={styles.fab}
+          onPress={() => setAddModalVisible(true)}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.fabText}>+</Text>
+        </TouchableOpacity>
+      )}
+
+      {/* Add Book Modal */}
+      <Modal visible={addModalVisible} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modal}>
+            <Text style={styles.modalTitle}>Ajouter un livre</Text>
+            
+            <TextInput style={styles.modalInput} placeholder="Titre *" value={newBook.title} onChangeText={(t) => setNewBook({...newBook, title: t})} />
+            <TextInput style={styles.modalInput} placeholder="Auteur *" value={newBook.author} onChangeText={(t) => setNewBook({...newBook, author: t})} />
+            <TextInput style={styles.modalInput} placeholder="ISBN * (10-13 chiffres)" value={newBook.isbn} onChangeText={(t) => setNewBook({...newBook, isbn: t})} keyboardType="numeric" />
+            <TextInput style={styles.modalInput} placeholder="Description" value={newBook.description} onChangeText={(t) => setNewBook({...newBook, description: t})} multiline />
+            <TextInput style={styles.modalInput} placeholder="Quantité" value={newBook.totalQuantity} onChangeText={(t) => setNewBook({...newBook, totalQuantity: t})} keyboardType="numeric" />
+            
+            <View style={styles.modalToggles}>
+              <TouchableOpacity style={[styles.toggle, newBook.isForRent && styles.toggleActive]} onPress={() => setNewBook({...newBook, isForRent: !newBook.isForRent})}>
+                <Text style={[styles.toggleText, newBook.isForRent && styles.toggleTextActive]}>📍 Empruntable</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.toggle, newBook.isForSale && styles.toggleActive]} onPress={() => setNewBook({...newBook, isForSale: !newBook.isForSale})}>
+                <Text style={[styles.toggleText, newBook.isForSale && styles.toggleTextActive]}>💰 Vendable</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.modalCancel} onPress={() => setAddModalVisible(false)}>
+                <Text style={styles.modalCancelText}>Annuler</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.modalSave} onPress={handleAddBook} disabled={addingBook}>
+                <Text style={styles.modalSaveText}>{addingBook ? '...' : 'Ajouter'}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
 
-// Styles (gardez ceux que vous aviez, enlevant les parties header/user)
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -291,7 +372,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingHorizontal: 20,
-    paddingBottom: 20,
+    paddingBottom: 80,
   },
   bookCard: {
     backgroundColor: colors.background.secondary,
@@ -443,4 +524,50 @@ const styles = StyleSheet.create({
   footerLoader: {
     paddingVertical: 20,
   },
+  // FAB & Modal
+  fab: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+  },
+  fabText: { color: '#fff', fontSize: 28, fontWeight: '300', marginTop: -2 },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  modal: { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: '90%' },
+  modalTitle: { fontSize: 20, fontWeight: '700', color: colors.text.primary, marginBottom: 16, textAlign: 'center' },
+  modalInput: {
+    backgroundColor: '#f5f5f5',
+    borderRadius: 12,
+    padding: 14,
+    fontSize: 15,
+    color: colors.text.primary,
+    marginBottom: 12,
+  },
+  modalToggles: { flexDirection: 'row', gap: 10, marginBottom: 16 },
+  toggle: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: '#E0E0E0',
+    alignItems: 'center',
+  },
+  toggleActive: { borderColor: colors.primary, backgroundColor: '#F0F4FF' },
+  toggleText: { fontSize: 13, color: '#999' },
+  toggleTextActive: { color: colors.primary, fontWeight: '600' },
+  modalActions: { flexDirection: 'row', gap: 10 },
+  modalCancel: { flex: 1, padding: 14, borderRadius: 10, backgroundColor: '#f0f0f0', alignItems: 'center' },
+  modalCancelText: { color: '#666', fontWeight: '600', fontSize: 15 },
+  modalSave: { flex: 1, padding: 14, borderRadius: 10, backgroundColor: colors.primary, alignItems: 'center' },
+  modalSaveText: { color: '#fff', fontWeight: '600', fontSize: 15 },
 });

@@ -1,18 +1,14 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
 import { useAuthStore } from '../../store/auth.store';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
-import { AppHeader } from '../../components/AppHeader';
 
 export const ProfileScreen = () => {
   const { user, reset } = useAuthStore();
 
   return (
     <View style={styles.container}>
-      <StatusBar style="light" />
-      <AppHeader title="👤 Mon profil" subtitle="Informations personnelles" />
 
       <View style={styles.content}>
         <View style={styles.profileCard}>

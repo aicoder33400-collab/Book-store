@@ -9,12 +9,10 @@ import {
   Alert,
   RefreshControl,
 } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
 import { useAuthStore } from '../../store/auth.store';
 import { loanService, Loan } from '../../services/loan.service';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
-import { AppHeader } from '../../components/AppHeader';
 
 export const MyLoansScreen = () => {
   const { user } = useAuthStore();
@@ -123,11 +121,7 @@ export const MyLoansScreen = () => {
 
   return (
     <View style={styles.container}>
-      <StatusBar style="light" />
-      <AppHeader 
-        title="🔄 Mes emprunts" 
-        subtitle={`${activeLoansCount} emprunt(s) en cours`}
-      />
+      
 
       <FlatList
         data={loans}

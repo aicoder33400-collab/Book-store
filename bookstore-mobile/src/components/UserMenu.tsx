@@ -5,12 +5,13 @@ import {
   StyleSheet,
   TouchableOpacity,
   Modal,
-  Alert,
 } from 'react-native';
-import { useNavigation, CommonActions, TabActions } from '@react-navigation/native';
+import { useNavigation, CommonActions } from '@react-navigation/native';
 import { useAuthStore } from '../store/auth.store';
 import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
+
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface UserMenuProps {
   visible: boolean;
@@ -21,35 +22,18 @@ export const UserMenu = ({ visible, onClose }: UserMenuProps) => {
   const { user, reset } = useAuthStore();
   const navigation = useNavigation();
 
-  const navigateToTab = (tabName: string) => {
+  const handleProfile = () => {
     onClose();
-    // Naviguer vers l'onglet spécifique dans la navigation tabs
     navigation.dispatch(
-      CommonActions.navigate({
-        name: 'Main',
-        params: {
-          screen: tabName,
-        },
-      })
+      CommonActions.navigate({ name: '👤 Mon profil' })
     );
   };
 
-  const handleLogout = () => {
-    Alert.alert(
-      'Déconnexion',
-      'Voulez-vous vraiment vous déconnecter ?',
-      [
-        { text: 'Annuler', style: 'cancel' },
-        {
-          text: 'Déconnexion',
-          style: 'destructive',
-          onPress: () => {
-            reset();
-            onClose();
-          },
-        },
-      ]
-    );
+  const handleLogout = async () => {
+    await AsyncStorage.removeItem('token');
+    await AsyncStorage.removeItem('user');
+    reset();
+    onClose();
   };
 
   return (
@@ -80,34 +64,7 @@ export const UserMenu = ({ visible, onClose }: UserMenuProps) => {
 
           <View style={styles.divider} />
 
-          <TouchableOpacity 
-            style={styles.menuItem} 
-            onPress={() => navigateToTab('Catalogue')}
-          >
-            <Text style={styles.menuIcon}>📚</Text>
-            <Text style={styles.menuText}>Catalogue</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={styles.menuItem} 
-            onPress={() => navigateToTab('Mes emprunts')}
-          >
-            <Text style={styles.menuIcon}>🔄</Text>
-            <Text style={styles.menuText}>Mes emprunts</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={styles.menuItem} 
-            onPress={() => navigateToTab('Ventes')}
-          >
-            <Text style={styles.menuIcon}>💰</Text>
-            <Text style={styles.menuText}>Ventes</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={styles.menuItem} 
-            onPress={() => navigateToTab('Mon profil')}
-          >
+          <TouchableOpacity style={styles.menuItem} onPress={handleProfile}>
             <Text style={styles.menuIcon}>👤</Text>
             <Text style={styles.menuText}>Mon profil</Text>
           </TouchableOpacity>
@@ -133,9 +90,9 @@ const styles = StyleSheet.create({
   },
   menuContainer: {
     backgroundColor: colors.background.secondary,
-    width: 280,
+    width: 260,
     marginTop: 60,
-    marginRight: 16,
+    marginRight: 8,
     borderRadius: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -146,20 +103,20 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    padding: 20,
+    padding: 18,
     backgroundColor: colors.background.primary,
   },
   avatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
+    marginRight: 14,
   },
   avatarText: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: typography.fontWeight.bold,
     color: colors.text.white,
   },
@@ -168,7 +125,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   userName: {
-    fontSize: typography.fontSize.lg,
+    fontSize: typography.fontSize.md,
     fontWeight: typography.fontWeight.bold,
     color: colors.text.primary,
   },
@@ -178,12 +135,12 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   roleBadge: {
-    marginTop: 6,
+    marginTop: 4,
     alignSelf: 'flex-start',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
     backgroundColor: `${colors.primary}15`,
-    borderRadius: 12,
+    borderRadius: 10,
   },
   roleText: {
     fontSize: typography.fontSize.xs,
@@ -192,7 +149,6 @@ const styles = StyleSheet.create({
   divider: {
     height: 1,
     backgroundColor: colors.border,
-    marginVertical: 8,
   },
   menuItem: {
     flexDirection: 'row',
@@ -201,16 +157,15 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
   },
   menuIcon: {
-    fontSize: 20,
+    fontSize: 18,
     marginRight: 12,
-    width: 32,
   },
   menuText: {
     fontSize: typography.fontSize.md,
     color: colors.text.primary,
   },
   logoutItem: {
-    marginBottom: 8,
+    paddingVertical: 16,
   },
   logoutText: {
     fontSize: typography.fontSize.md,

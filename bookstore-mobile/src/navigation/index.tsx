@@ -12,6 +12,7 @@ import { useAuthStore } from '../store/auth.store';
 import { colors } from '../theme/colors';
 import { SalesHistoryScreen } from '../screens/Sales/SalesHistoryScreen';
 
+export { RoleBasedNavigator } from './RoleBasedNavigator';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();

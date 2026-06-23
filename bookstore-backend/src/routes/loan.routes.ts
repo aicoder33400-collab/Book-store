@@ -37,4 +37,30 @@ router.get(
   loanController.getLoanById
 );
 
+
+// Admin: approve/reject requests
+router.put(
+  '/:id/approve',
+  AuthMiddleware.restrictTo('ADMIN'),
+  loanController.approveRequest
+);
+
+router.put(
+  '/:id/reject',
+  AuthMiddleware.restrictTo('ADMIN'),
+  loanController.rejectRequest
+);
+
+router.put(
+  '/:id/hand-over',
+  AuthMiddleware.restrictTo('ADMIN'),
+  loanController.handOverBook
+);
+
+// Admin: delete loan record
+router.delete(
+  '/:id',
+  AuthMiddleware.restrictTo('ADMIN'),
+  loanController.deleteLoan
+);
 export default router;

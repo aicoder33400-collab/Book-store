@@ -7,11 +7,9 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
 import { saleService, Sale } from '../../services/sale.service';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
-import { AppHeader } from '../../components/AppHeader';
 
 export const SalesHistoryScreen = () => {
   const [sales, setSales] = useState<Sale[]>([]);
@@ -78,11 +76,7 @@ export const SalesHistoryScreen = () => {
 
   return (
     <View style={styles.container}>
-      <StatusBar style="light" />
-      <AppHeader 
-        title="💰 Ventes" 
-        subtitle={stats ? `${stats.totalSales} vente(s) au total` : "Historique des ventes"}
-      />
+     
 
       {/* Statistiques */}
       {stats && (
