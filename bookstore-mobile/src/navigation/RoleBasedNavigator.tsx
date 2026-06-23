@@ -15,8 +15,6 @@ import { MyLoansScreen } from '../screens/Loans/MyLoansScreen';
 import { ProfileScreen } from '../screens/Profile/ProfileScreen';
 import { DashboardScreen } from '../screens/Dashboard/DashboardScreen';
 import { UsersScreen } from '../screens/Users/UserScreen';
-import { SalesHistoryScreen } from '../screens/Sales/SalesHistoryScreen';
-import { CreateSaleScreen } from '../screens/Sales/CreateSaleScreen';
 import { AllLoansScreen } from '../screens/Loans/AllLoansScreen';
 import { LoanDetailScreen } from '../screens/Loans/LoanDetailScreen';
 
@@ -59,14 +57,6 @@ const LoansStack = () => (
   </Stack.Navigator>
 );
 
-// Sales stack
-const SalesStack = () => (
-  <Stack.Navigator screenOptions={{ headerShown: false }}>
-    <Stack.Screen name="SalesHistory" component={SalesHistoryScreen} />
-    <Stack.Screen name="CreateSale" component={CreateSaleScreen} />
-  </Stack.Navigator>
-);
-
 // Avatar button for header
 const UserAvatar = () => {
   const { user } = useAuthStore();
@@ -80,12 +70,9 @@ const UserAvatar = () => {
         activeOpacity={0.7}
       >
         <View style={{
-          width: 34,
-          height: 34,
-          borderRadius: 17,
+          width: 34, height: 34, borderRadius: 17,
           backgroundColor: 'rgba(255,255,255,0.25)',
-          justifyContent: 'center',
-          alignItems: 'center',
+          justifyContent: 'center', alignItems: 'center',
         }}>
           <Text style={{ color: '#fff', fontWeight: '700', fontSize: 16 }}>
             {user?.name?.charAt(0).toUpperCase() || '?'}
@@ -101,8 +88,8 @@ const UserAvatar = () => {
 const CommonDrawer = () => {
   const { user, isLoading } = useAuthStore();
   const isAdmin = user?.role === 'ADMIN';
+  const isStaff = user?.role === 'STAFF';
 
-  // Show loading spinner while checking auth
   if (isLoading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
@@ -111,7 +98,6 @@ const CommonDrawer = () => {
     );
   }
 
-  // Not logged in → show login
   if (!user) {
     return (
       <NavigationContainer>
@@ -122,7 +108,6 @@ const CommonDrawer = () => {
     );
   }
 
-  // Logged in → show drawer
   return (
     <NavigationContainer>
       <Drawer.Navigator
@@ -136,20 +121,27 @@ const CommonDrawer = () => {
           headerRight: () => <UserAvatar />,
         }}
       >
-        {/* ── ADMIN SCREENS ── */}
+        {/* ADMIN */}
         {isAdmin && (
           <>
             <Drawer.Screen name="🏠 Dashboard" component={DashboardScreen} />
             <Drawer.Screen name="📚 Catalogue" component={BooksStack} />
             <Drawer.Screen name="📋 Tous les emprunts" component={AllLoansScreen} />
-            <Drawer.Screen name="💰 Ventes" component={SalesStack} />
             <Drawer.Screen name="👥 Utilisateurs" component={UsersScreen} />
             <Drawer.Screen name="👤 Mon profil" component={ProfileScreen} />
           </>
         )}
 
-        {/* ── STAFF SCREENS ── */}
-        {!isAdmin && (
+        {/* STAFF */}
+        {isStaff && (
+          <>
+            <Drawer.Screen name="📚 Catalogue" component={BooksStack} />
+            <Drawer.Screen name="👤 Mon profil" component={ProfileScreen} />
+          </>
+        )}
+
+        {/* USER */}
+        {!isAdmin && !isStaff && (
           <>
             <Drawer.Screen name="📚 Catalogue" component={BooksStack} />
             <Drawer.Screen name="🔄 Mes emprunts" component={LoansStack} />

@@ -13,7 +13,7 @@ router.use(AuthMiddleware.protect);
 // Staff and Admin can borrow/return books
 router.post(
   '/',
-  AuthMiddleware.restrictTo('ADMIN', 'STAFF'),
+  AuthMiddleware.restrictTo('ADMIN', 'STAFF', 'USER'),
   ValidationMiddleware.validate(loanValidation.borrowBook),
   loanController.borrowBook
 );

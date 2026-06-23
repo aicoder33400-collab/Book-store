@@ -14,6 +14,7 @@ export const bookValidation = {
   updateBook: Joi.object({
     title: Joi.string().min(1).max(200).optional(),
     author: Joi.string().min(1).max(100).optional(),
+    isbn: Joi.string().pattern(/^[0-9]{10,13}$/).optional(),
     description: Joi.string().max(1000).optional(),
     totalQuantity: Joi.number().integer().min(0).optional(),
     isForSale: Joi.boolean().optional(),

@@ -31,6 +31,19 @@ async function main() {
     },
   });
 
+  // Create regular user
+  const userPassword = await bcrypt.hash('user111', 10);
+  await prisma.user.upsert({
+    where: { email: 'user@bookstore.com' },
+    update: {},
+    create: {
+      name: 'Jean Dupont',
+      email: 'user@bookstore.com',
+      password: userPassword,
+      role: 'USER',
+    },
+  });
+
   // Create books
   const books = [
     {
@@ -145,6 +158,7 @@ async function main() {
 
   console.log('✅ Admin: admin@bookstore.com / admin111');
   console.log('✅ Staff: staff@bookstore.com / staff111');
+  console.log('✅ User: user@bookstore.com / user111');
   console.log(`✅ ${books.length} books created`);
 }
 

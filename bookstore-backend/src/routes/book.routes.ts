@@ -17,21 +17,21 @@ router.get('/:id', bookController.getBookById);
 // Admin only routes
 router.post(
   '/',
-  AuthMiddleware.restrictTo('ADMIN'),
+  AuthMiddleware.restrictTo('ADMIN', 'STAFF'),
   ValidationMiddleware.validate(bookValidation.createBook),
   bookController.createBook
 );
 
 router.put(
   '/:id',
-  AuthMiddleware.restrictTo('ADMIN'),
+  AuthMiddleware.restrictTo('ADMIN', 'STAFF'),
   ValidationMiddleware.validate(bookValidation.updateBook),
   bookController.updateBook
 );
 
 router.delete(
   '/:id',
-  AuthMiddleware.restrictTo('ADMIN'),
+  AuthMiddleware.restrictTo('ADMIN', 'STAFF'),
   bookController.deleteBook
 );
 
