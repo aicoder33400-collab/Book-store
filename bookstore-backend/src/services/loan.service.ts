@@ -57,7 +57,6 @@ export class LoanService {
     });
   }
 
-  // Le reste du code reste identique
   async returnBook(loanId: string) {
     return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const loan = await tx.loan.findUnique({
@@ -69,8 +68,12 @@ export class LoanService {
         throw new AppError('Loan not found', 404);
       }
 
-      if (loan.status === 'RETURNED') {
-        throw new AppError('Book has already been returned', 400);
+      // Only BORROWED or LATE loans can be returned
+      if (loan.status !== 'BORROWED' && loan.status !== 'LATE') {
+        throw new AppError(
+          `Cannot return a loan with status "${loan.status}". Only BORROWED or LATE loans can be returned.`,
+          400
+        );
       }
 
       const now = new Date();

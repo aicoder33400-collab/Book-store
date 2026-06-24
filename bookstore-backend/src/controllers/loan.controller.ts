@@ -26,6 +26,22 @@ export class LoanController {
     );
   });
 
+
+  getMyLoans = catchAsync(async (req: Request, res: Response) => {
+    const userId = (req as any).user.id;
+    const result = await loanService.getAllLoans({
+      userId,
+      limit: 100,
+    });
+
+    res.status(200).json(
+      ApiResponse.successWithPagination(
+        result.data,
+        result.pagination,
+        'Your loans retrieved successfully'
+      )
+    );
+  });
   getAllLoans = catchAsync(async (req: Request, res: Response) => {
     const { page, limit, userId, bookId, status } = req.query;
     
@@ -88,4 +104,6 @@ export class LoanController {
       ApiResponse.success(null, 'Loan deleted successfully')
     );
   });
+
+
 }

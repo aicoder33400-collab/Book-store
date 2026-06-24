@@ -67,7 +67,6 @@ model Loan {
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
 
-  @@unique([userId, bookId, status])
   @@index([userId])
   @@index([bookId])
   @@index([status])

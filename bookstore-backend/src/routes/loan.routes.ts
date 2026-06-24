@@ -24,6 +24,13 @@ router.put(
   loanController.returnBook
 );
 
+// User's own loans
+router.get(
+  '/mine',
+  AuthMiddleware.protect,
+  loanController.getMyLoans
+);
+
 // View loans (accessible to all authenticated users)
 router.get(
   '/',
