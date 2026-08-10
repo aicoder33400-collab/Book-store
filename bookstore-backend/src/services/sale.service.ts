@@ -1,6 +1,6 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '../config/database';
-import { AppError } from '../utils/appError';
+import { AppError } from '../utils/AppError';
 
 export class SaleService {
   async createSale(bookId: string, quantity: number, totalPrice: number) {

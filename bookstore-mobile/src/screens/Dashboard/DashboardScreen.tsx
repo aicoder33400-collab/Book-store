@@ -1,102 +1,47 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
-  ActivityIndicator,
   RefreshControl,
+  ActivityIndicator,
 } from 'react-native';
-import { useDashboardStore } from '../../store/dashboard.store';
+import api from '../../services/api';
 import { colors } from '../../theme/colors';
-import { typography } from '../../theme/typography';
-import { useAuthStore } from '../../store/auth.store';
 
-const StatCard = ({ icon, label, value, color }: { icon: string; label: string; value: number | string; color: string }) => (
-  <View style={[styles.statCard, { borderTopColor: color }]}>
-    <Text style={styles.statIcon}>{icon}</Text>
-    <Text style={[styles.statValue, { color }]}>{value}</Text>
-    <Text style={styles.statLabel}>{label}</Text>
-  </View>
-);
-
-const RequestCard = ({
-  userName,
-  bookTitle,
-  date,
-  onApprove,
-  onReject,
-  loading,
-}: {
-  userName: string;
-  bookTitle: string;
-  date: string;
-  onApprove: () => void;
-  onReject: () => void;
-  loading?: boolean;
-}) => (
-  <View style={styles.requestCard}>
-    <View style={styles.requestInfo}>
-      <Text style={styles.requestUser}>👤 {userName}</Text>
-      <Text style={styles.requestBook}>📖 {bookTitle}</Text>
-      <Text style={styles.requestDate}>📅 {new Date(date).toLocaleDateString('fr-FR')}</Text>
-    </View>
-    <View style={styles.requestActions}>
-      <TouchableOpacity style={styles.approveBtn} onPress={onApprove} disabled={loading}>
-        <Text style={styles.actionBtnText}>✓ Accepter</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.rejectBtn} onPress={onReject} disabled={loading}>
-        <Text style={styles.actionBtnText}>✗ Refuser</Text>
-      </TouchableOpacity>
-    </View>
-  </View>
-);
-
-const PickupCard = ({
-  userName,
-  bookTitle,
-  date,
-  onHandOver,
-}: {
-  userName: string;
-  bookTitle: string;
-  date: string;
-  onHandOver: () => void;
-}) => (
-  <View style={styles.pickupCard}>
-    <View style={styles.requestInfo}>
-      <Text style={styles.requestUser}>👤 {userName}</Text>
-      <Text style={styles.requestBook}>📖 {bookTitle}</Text>
-      <Text style={styles.requestDate}>✅ Approuvé le {new Date(date).toLocaleDateString('fr-FR')}</Text>
-    </View>
-    <TouchableOpacity style={styles.handOverBtn} onPress={onHandOver}>
-      <Text style={styles.actionBtnText}>📦 Remettre</Text>
-    </TouchableOpacity>
-  </View>
-);
+interface DashboardStats {
+  totalBooks: number;
+  totalUsers: number;
+  totalLoans: number;
+  activeLoans: number;
+  requestedLoans: number;
+  approvedLoans: number;
+  overdueLoans: number;
+}
 
 export const DashboardScreen = () => {
-  const {
-    stats,
-    pendingRequests,
-    approvedLoans,
-    loading,
-    fetchDashboard,
-    approveRequest,
-    rejectRequest,
-    handOverBook,
-  } = useDashboardStore();
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const { user } = useAuthStore();
+  const fetchDashboard = async () => {
+    try {
+      const statsRes = await api.get('/admin/dashboard');
+      setStats(statsRes.data.data);
+    } catch (error) {
+      console.error('Erreur dashboard:', error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
 
   useEffect(() => {
-    if (user) {
-      fetchDashboard();
-    }
-  }, [user]);
+    fetchDashboard();
+  }, []);
 
-  if (loading && !stats) {
+  if (loading) {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color={colors.primary} />
@@ -107,160 +52,123 @@ export const DashboardScreen = () => {
   return (
     <ScrollView
       style={styles.container}
-      refreshControl={<RefreshControl refreshing={loading} onRefresh={fetchDashboard} />}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchDashboard(); }} />
+      }
     >
-      {/* Stats Cards */}
-      <View style={styles.statsRow}>
-        <StatCard icon="📚" label="Livres" value={stats?.totalBooks ?? '-'} color="#4A90D9" />
-        <StatCard icon="🔄" label="En cours" value={stats?.activeLoans ?? '-'} color="#F5A623" />
-        <StatCard icon="💰" label="Revenus" value={`${stats?.totalRevenue ?? 0}€`} color="#7ED321" />
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>📊 Tableau de bord</Text>
+        <Text style={styles.headerSubtitle}>Vue d'ensemble de votre bibliothèque</Text>
       </View>
 
-      {/* Pending Requests */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>
-          🔔 Demandes en attente ({pendingRequests.length})
+      <View style={styles.statsGrid}>
+        <View style={[styles.statCard, styles.statBlue]}>
+          <Text style={styles.statNumber}>{stats?.totalBooks || 0}</Text>
+          <Text style={styles.statLabel}>📚 Livres</Text>
+        </View>
+        <View style={[styles.statCard, styles.statGreen]}>
+          <Text style={styles.statNumber}>{stats?.totalUsers || 0}</Text>
+          <Text style={styles.statLabel}>👥 Utilisateurs</Text>
+        </View>
+        <View style={[styles.statCard, styles.statOrange]}>
+          <Text style={styles.statNumber}>{stats?.activeLoans || 0}</Text>
+          <Text style={styles.statLabel}>📖 Emprunts actifs</Text>
+        </View>
+        <View style={[styles.statCard, styles.statRed]}>
+          <Text style={styles.statNumber}>{stats?.requestedLoans || 0}</Text>
+          <Text style={styles.statLabel}>⏳ Demandes en attente</Text>
+        </View>
+        <View style={[styles.statCard, styles.statPurple]}>
+          <Text style={styles.statNumber}>{stats?.overdueLoans || 0}</Text>
+          <Text style={styles.statLabel}>⚠️ Retards</Text>
+        </View>
+        <View style={[styles.statCard, styles.statTeal]}>
+          <Text style={styles.statNumber}>{stats?.totalLoans || 0}</Text>
+          <Text style={styles.statLabel}>🔄 Total emprunts</Text>
+        </View>
+      </View>
+
+      <View style={styles.footer}>
+        <Text style={styles.footerText}>
+          📋 Les demandes en attente sont disponibles dans l'onglet "Demandes"
         </Text>
-        {pendingRequests.length === 0 ? (
-          <Text style={styles.emptyText}>Aucune demande en attente</Text>
-        ) : (
-          pendingRequests.map((req) => (
-            <RequestCard
-              key={req.id}
-              userName={req.user.name}
-              bookTitle={req.book.title}
-              date={req.borrowedAt}
-              onApprove={() => approveRequest(req.id)}
-              onReject={() => rejectRequest(req.id)}
-            />
-          ))
-        )}
       </View>
-
-      {/* Approved - Awaiting Pickup */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>
-          📦 En attente de retrait ({approvedLoans.length})
-        </Text>
-        {approvedLoans.length === 0 ? (
-          <Text style={styles.emptyText}>Aucun retrait en attente</Text>
-        ) : (
-          approvedLoans.map((loan) => (
-            <PickupCard
-              key={loan.id}
-              userName={loan.user.name}
-              bookTitle={loan.book.title}
-              date={loan.borrowedAt}
-              onHandOver={() => handOverBook(loan.id)}
-            />
-          ))
-        )}
-      </View>
-
-      {/* Recent Sales */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>💰 Dernières ventes</Text>
-        {!stats?.recentSales?.length ? (
-          <Text style={styles.emptyText}>Aucune vente récente</Text>
-        ) : (
-          stats.recentSales.map((sale) => (
-            <View key={sale.id} style={styles.saleRow}>
-              <Text style={styles.saleBook}>📖 {sale.book.title}</Text>
-              <Text style={styles.saleAmount}>{sale.totalPrice}€</Text>
-            </View>
-          ))
-        )}
-      </View>
-
-      <View style={{ height: 40 }} />
     </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background.primary },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  statsRow: {
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  header: {
+    backgroundColor: colors.primary,
+    padding: 24,
+    paddingTop: 20,
+    paddingBottom: 30,
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.7)',
+    marginTop: 4,
+  },
+  statsGrid: {
     flexDirection: 'row',
-    padding: 16,
-    gap: 10,
+    flexWrap: 'wrap',
+    paddingHorizontal: 8,
+    marginTop: -20,
+    gap: 8,
   },
   statCard: {
-    flex: 1,
-    backgroundColor: '#fff',
+    width: '30%',
+    margin: '1.5%',
+    padding: 16,
     borderRadius: 12,
-    padding: 14,
     alignItems: 'center',
-    borderTopWidth: 3,
-    elevation: 2,
+    backgroundColor: '#fff',
     shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
+    elevation: 2,
   },
-  statIcon: { fontSize: 22, marginBottom: 6 },
-  statValue: { fontSize: 20, fontWeight: '700', marginBottom: 2 },
-  statLabel: { fontSize: 11, color: colors.text.secondary },
-  section: { padding: 16 },
-  sectionTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: colors.text.primary,
-    marginBottom: 12,
+  statBlue: { borderTopColor: '#4A90D9', borderTopWidth: 3 },
+  statGreen: { borderTopColor: '#2ecc71', borderTopWidth: 3 },
+  statOrange: { borderTopColor: '#f39c12', borderTopWidth: 3 },
+  statRed: { borderTopColor: '#e94560', borderTopWidth: 3 },
+  statPurple: { borderTopColor: '#9b59b6', borderTopWidth: 3 },
+  statTeal: { borderTopColor: '#1abc9c', borderTopWidth: 3 },
+  statNumber: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#1a1a2e',
   },
-  emptyText: {
-    color: colors.text.secondary,
-    fontStyle: 'italic',
-    textAlign: 'center',
-    padding: 20,
+  statLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 4,
   },
-  requestCard: {
+  footer: {
+    margin: 16,
+    padding: 16,
     backgroundColor: '#fff',
     borderRadius: 12,
-    padding: 14,
-    marginBottom: 10,
-    elevation: 1,
-  },
-  requestInfo: { marginBottom: 10 },
-  requestUser: { fontSize: 15, fontWeight: '600', color: colors.text.primary },
-  requestBook: { fontSize: 14, color: colors.text.secondary, marginTop: 2 },
-  requestDate: { fontSize: 12, color: colors.text.secondary, marginTop: 2 },
-  requestActions: { flexDirection: 'row', gap: 8 },
-  approveBtn: {
-    flex: 1,
-    backgroundColor: '#4CAF50',
-    borderRadius: 8,
-    padding: 10,
     alignItems: 'center',
   },
-  rejectBtn: {
-    flex: 1,
-    backgroundColor: '#f44336',
-    borderRadius: 8,
-    padding: 10,
-    alignItems: 'center',
+  footerText: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
   },
-  actionBtnText: { color: '#fff', fontWeight: '600', fontSize: 13 },
-  pickupCard: {
-    backgroundColor: '#FFF9C4',
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 10,
-    elevation: 1,
-  },
-  handOverBtn: {
-    backgroundColor: '#FF9800',
-    borderRadius: 8,
-    padding: 10,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  saleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  saleBook: { fontSize: 14, color: colors.text.primary },
-  saleAmount: { fontSize: 14, fontWeight: '600', color: '#4CAF50' },
 });

@@ -1,12 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
+import { useIsFocused } from '@react-navigation/native';
 import {
   View,
   Text,
   StyleSheet,
   FlatList,
   ActivityIndicator,
-  TouchableOpacity,
-  Alert,
   RefreshControl,
 } from 'react-native';
 import { useAuthStore } from '../../store/auth.store';
@@ -14,15 +13,60 @@ import { loanService, Loan } from '../../services/loan.service';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 
+const STATUS_LABELS: Record<string, string> = {
+  REQUESTED: '🔔 En attente',
+  APPROVED: '✅ Approuvé',
+  REJECTED: '❌ Refusé',
+  BORROWED: '📖 Emprunté',
+  RETURNED: '↩️ Retourné',
+  LATE: '⚠️ En retard',
+};
+
+const STATUS_COLORS: Record<string, string> = {
+  REQUESTED: '#F5A623',
+  APPROVED: '#4A90D9',
+  REJECTED: '#f44336',
+  BORROWED: '#4CAF50',
+  RETURNED: '#9E9E9E',
+  LATE: '#FF5722',
+};
+
+const STATUS_MESSAGES: Record<string, string> = {
+  REQUESTED: "⏳ En attente d'approbation par l'administrateur",
+  APPROVED: '✅ Approuvé ! Venez récupérer votre livre à la bibliothèque',
+  REJECTED: '❌ Votre demande a été refusée',
+  BORROWED: '📖 Livre en votre possession',
+  RETURNED: '↩️ Livre retourné, merci !',
+  LATE: '⚠️ Livre en retard, veuillez le retourner rapidement',
+};
+
 export const MyLoansScreen = () => {
   const { user } = useAuthStore();
   const [loans, setLoans] = useState<Loan[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [statusChanged, setStatusChanged] = useState<string | null>(null);
+  const previousLoansRef = useRef<Loan[]>([]);
+  const isFocused = useIsFocused();
 
   const fetchLoans = async () => {
     try {
-      const data = await loanService.getUserLoans(user!.id);
+      const data = await loanService.getUserLoans();
+      
+      // Detect status changes for popups
+      if (previousLoansRef.current.length > 0) {
+        for (const newLoan of data) {
+          const oldLoan = previousLoansRef.current.find(l => l.id === newLoan.id);
+          if (oldLoan && oldLoan.status !== newLoan.status) {
+            const bookTitle = newLoan.book?.title || 'Livre';
+            const message = STATUS_MESSAGES[newLoan.status] || `Statut mis à jour : ${newLoan.status}`;
+            setStatusChanged(`📚 ${bookTitle} : ${message}`);
+            setTimeout(() => setStatusChanged(null), 6000);
+          }
+        }
+      }
+      
+      previousLoansRef.current = data;
       setLoans(data);
     } catch (error) {
       console.error('Erreur chargement emprunts:', error);
@@ -33,7 +77,17 @@ export const MyLoansScreen = () => {
   };
 
   useEffect(() => {
-    fetchLoans();
+    if (isFocused) {
+      fetchLoans();
+    }
+  }, [isFocused]);
+
+  // Auto-refresh every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchLoans();
+    }, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const onRefresh = async () => {
@@ -41,74 +95,42 @@ export const MyLoansScreen = () => {
     await fetchLoans();
   };
 
-  const handleReturn = async (loanId: string, bookTitle: string) => {
-    Alert.alert(
-      'Retourner',
-      `Voulez-vous retourner "${bookTitle}" ?`,
-      [
-        { text: 'Annuler', style: 'cancel' },
-        {
-          text: 'Confirmer',
-          onPress: async () => {
-            try {
-              await loanService.returnBook(loanId);
-              Alert.alert('Succès', 'Livre retourné avec succès !');
-              fetchLoans();
-            } catch (error: any) {
-              Alert.alert('Erreur', error.response?.data?.message || 'Erreur lors du retour');
-            }
-          }
-        }
-      ]
-    );
-  };
-
   const renderLoan = ({ item }: { item: Loan }) => {
-    const dueDate = new Date(item.dueDate);
-    const now = new Date();
-    const isLate = dueDate < now && item.status === 'BORROWED';
-    
-    const statusText = item.status === 'BORROWED' 
-      ? (isLate ? '⚠️ En retard' : '📘 En cours') 
-      : '✅ Rendu';
-    
-    const statusColor = isLate 
-      ? colors.danger 
-      : item.status === 'RETURNED' 
-        ? colors.success 
-        : colors.info;
+    const statusText = STATUS_LABELS[item.status] || item.status;
+    const statusColor = STATUS_COLORS[item.status] || '#999';
+    const statusMessage = STATUS_MESSAGES[item.status] || '';
 
     return (
       <View style={styles.loanCard}>
         <Text style={styles.bookTitle}>{item.book.title}</Text>
         <Text style={styles.bookAuthor}>{item.book.author}</Text>
         
-        <View style={styles.loanInfo}>
-          <Text style={styles.loanDate}>
-            📅 Emprunté le: {new Date(item.borrowedAt).toLocaleDateString()}
-          </Text>
-          <Text style={styles.loanDate}>
-            ⏰ À rendre le: {new Date(item.dueDate).toLocaleDateString()}
-          </Text>
-        </View>
+        {item.borrowedAt && (
+          <View style={styles.loanInfo}>
+            <Text style={styles.loanDate}>
+              📅 Emprunté le: {new Date(item.borrowedAt).toLocaleDateString('fr-FR')}
+            </Text>
+            <Text style={styles.loanDate}>
+              ⏰ À rendre le: {new Date(item.dueDate).toLocaleDateString('fr-FR')}
+            </Text>
+          </View>
+        )}
+        {!item.borrowedAt && (
+          <View style={styles.loanInfo}>
+            <Text style={styles.loanDate}>
+              📅 Demandé le: {new Date(item.dueDate).toLocaleDateString('fr-FR')}
+            </Text>
+          </View>
+        )}
 
         <View style={[styles.statusBadge, { backgroundColor: `${statusColor}20` }]}>
           <Text style={[styles.statusText, { color: statusColor }]}>{statusText}</Text>
         </View>
 
-        {item.status === 'BORROWED' && (
-          <TouchableOpacity 
-            style={styles.returnButton} 
-            onPress={() => handleReturn(item.id, item.book.title)}
-          >
-            <Text style={styles.returnButtonText}>🔄 Retourner</Text>
-          </TouchableOpacity>
-        )}
+        <Text style={styles.statusMessage}>{statusMessage}</Text>
       </View>
     );
   };
-
-  const activeLoansCount = loans.filter(l => l.status === 'BORROWED').length;
 
   if (loading) {
     return (
@@ -121,7 +143,12 @@ export const MyLoansScreen = () => {
 
   return (
     <View style={styles.container}>
-      
+      {/* Status change popup */}
+      {statusChanged && (
+        <View style={styles.popup}>
+          <Text style={styles.popupText}>{statusChanged}</Text>
+        </View>
+      )}
 
       <FlatList
         data={loans}
@@ -162,6 +189,20 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.md,
     color: colors.text.secondary,
   },
+  popup: {
+    backgroundColor: colors.primary,
+    padding: 14,
+    marginHorizontal: 16,
+    marginTop: 10,
+    borderRadius: 12,
+    elevation: 4,
+  },
+  popupText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
   listContent: {
     padding: 16,
     paddingBottom: 20,
@@ -201,22 +242,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
-    marginBottom: 12,
+    marginBottom: 8,
   },
   statusText: {
     fontSize: typography.fontSize.xs,
     fontWeight: typography.fontWeight.medium,
   },
-  returnButton: {
-    backgroundColor: colors.primary,
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  returnButtonText: {
-    color: colors.text.white,
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.medium,
+  statusMessage: {
+    fontSize: 12,
+    color: colors.text.secondary,
+    fontStyle: 'italic',
   },
   emptyContainer: {
     alignItems: 'center',

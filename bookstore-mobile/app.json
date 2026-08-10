@@ -12,7 +12,8 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.bookstore.app"
     },
     "android": {
       "adaptiveIcon": {
@@ -21,10 +22,15 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.bookstore.app"
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "scheme": "bookstore",
+    "extra": {
+      "googleClientId": "702646842121-obbkdc95pni8m8akr6lh7rbsbv8dk8p4.apps.googleusercontent.com"
     }
   }
 }

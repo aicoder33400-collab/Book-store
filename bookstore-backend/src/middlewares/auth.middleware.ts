@@ -1,71 +1,63 @@
+// bookstore-backend/src/middlewares/auth.middleware.ts
+
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { prisma } from '../config/database';
-import { AppError } from '../utils/appError';
+import { PrismaClient } from '@prisma/client';
+import { AppError } from '../utils/AppError';
 
-interface JwtPayload {
-  id: string;
-  email: string;
-  role: string;
-}
-
-declare global {
-  namespace Express {
-    interface Request {
-      user?: any;
-    }
-  }
-}
+const prisma = new PrismaClient();
 
 export class AuthMiddleware {
-  static protect = async (req: Request, _res: Response, next: NextFunction) => {
+  static protect = async (req: Request, res: Response, next: NextFunction) => {
     try {
       let token: string | undefined;
 
-      // Get token from header
-      if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+      // 1. Récupérer le token du header
+      if (req.headers.authorization?.startsWith('Bearer')) {
         token = req.headers.authorization.split(' ')[1];
       }
 
       if (!token) {
-        throw new AppError('You are not logged in. Please log in to access this resource.', 401);
+        throw new AppError('Vous devez être connecté pour accéder à cette ressource', 401);
       }
 
-      // Verify token
-      const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as JwtPayload;
+      // 2. Vérifier le token
+      const decoded = jwt.verify(
+        token,
+        process.env.JWT_SECRET || 'secret-key'
+      ) as { id: string };
 
-      // Check if user still exists
+      // 3. Vérifier que l'utilisateur existe
       const user = await prisma.user.findUnique({
         where: { id: decoded.id },
-        select: { id: true, email: true, role: true, name: true },
       });
 
       if (!user) {
-        throw new AppError('The user belonging to this token no longer exists.', 401);
+        throw new AppError('Utilisateur non trouvé', 401);
       }
 
-      // Attach user to request object
+      // 4. Ajouter l'utilisateur à la requête
+      // @ts-ignore - Ignorer l'erreur de typage
       req.user = user;
+
       next();
     } catch (error) {
-      if (error instanceof jwt.JsonWebTokenError) {
-        next(new AppError('Invalid token. Please log in again.', 401));
-      } else if (error instanceof jwt.TokenExpiredError) {
-        next(new AppError('Your token has expired. Please log in again.', 401));
-      } else {
-        next(error);
-      }
+      next(error);
     }
   };
 
   static restrictTo = (...roles: string[]) => {
-    return (req: Request, _res: Response, next: NextFunction) => {
-      if (!req.user) {
-        return next(new AppError('User not authenticated', 401));
+    return (req: Request, res: Response, next: NextFunction) => {
+      // @ts-ignore - req.user est ajouté par le middleware protect
+      const user = req.user;
+      
+      if (!user) {
+        return next(new AppError('Vous devez être connecté', 401));
       }
 
-      if (!roles.includes(req.user.role)) {
-        return next(new AppError('You do not have permission to perform this action.', 403));
+      // @ts-ignore - Accéder à la propriété role
+      if (!roles.includes(user.role)) {
+        return next(new AppError('Vous n\'avez pas les droits pour accéder à cette ressource', 403));
       }
 
       next();

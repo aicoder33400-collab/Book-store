@@ -1,6 +1,6 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '../config/database';
-import { AppError } from '../utils/appError';
+import { AppError } from '../utils/AppError';
 
 export class LoanService {
   async borrowBook(userId: string, bookId: string, dueDate: Date) {

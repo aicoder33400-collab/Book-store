@@ -3,12 +3,16 @@ import { AdminController } from '../controllers/admin.controller';
 import { AuthMiddleware } from '../middlewares/auth.middleware';
 
 const router = Router();
-const adminController = new AdminController();
 
-// All admin routes require authentication + ADMIN role
+// Toutes les routes Admin nécessitent le rôle ADMIN
 router.use(AuthMiddleware.protect);
 router.use(AuthMiddleware.restrictTo('ADMIN'));
 
-router.get('/dashboard', adminController.getDashboard);
+// Dashboard
+router.get('/dashboard', AdminController.getDashboard);
+
+// 🔥 Notifications
+router.get('/notifications', AdminController.getNotifications);
+router.put('/notifications/:id/read', AdminController.markNotificationRead);
 
 export default router;

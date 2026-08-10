@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
-import { AppError } from '../utils/appError';
+import { AppError } from '../utils/AppError';
 import logger from '../utils/logger';
 import { ApiResponse } from '../utils/response';
 

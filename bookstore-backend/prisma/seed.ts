@@ -15,6 +15,7 @@ async function main() {
       email: 'admin@bookstore.com',
       password: hashedPassword,
       role: 'ADMIN',
+      emailVerified: true,
     },
   });
 
@@ -28,6 +29,7 @@ async function main() {
       email: 'staff@bookstore.com',
       password: staffPassword,
       role: 'STAFF',
+      emailVerified: true,
     },
   });
 
@@ -41,6 +43,7 @@ async function main() {
       email: 'user@bookstore.com',
       password: userPassword,
       role: 'USER',
+      emailVerified: true,
     },
   });
 

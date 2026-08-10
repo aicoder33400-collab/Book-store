@@ -7,7 +7,7 @@ export interface Loan {
   borrowedAt: string;
   dueDate: string;
   returnedAt: string | null;
-  status: 'BORROWED' | 'RETURNED' | 'LATE';
+  status: 'REQUESTED' | 'APPROVED' | 'REJECTED' | 'BORROWED' | 'RETURNED' | 'LATE';
   book: {
     id: string;
     title: string;
@@ -27,8 +27,8 @@ export const loanService = {
     return response.data.data;
   },
 
-  getUserLoans: async (userId: string) => {
-    const response = await api.get(`/loans?userId=${userId}`);
+  getUserLoans: async () => {
+    const response = await api.get('/loans/mine');
     return response.data.data;
   },
 };

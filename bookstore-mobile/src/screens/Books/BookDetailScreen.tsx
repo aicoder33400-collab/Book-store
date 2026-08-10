@@ -37,8 +37,6 @@ export const BookDetailScreen = () => {
     isbn: book.isbn,
     description: book.description || '',
     totalQuantity: String(book.totalQuantity),
-    isForRent: book.isForRent,
-    isForSale: book.isForSale,
   });
   const [saving, setSaving] = useState(false);
   const [borrowVisible, setBorrowVisible] = useState(false);
@@ -74,8 +72,6 @@ export const BookDetailScreen = () => {
       isbn: book.isbn,
       description: book.description || '',
       totalQuantity: String(book.totalQuantity),
-      isForRent: book.isForRent,
-      isForSale: book.isForSale,
     });
     setEditVisible(true);
   };
@@ -93,18 +89,13 @@ export const BookDetailScreen = () => {
         isbn: editData.isbn,
         description: editData.description,
         totalQuantity: parseInt(editData.totalQuantity) || 1,
-        isForRent: editData.isForRent,
-        isForSale: editData.isForSale,
       });
       setBook(res.data.data);
       setEditVisible(false);
       fetchBooks();
       Alert.alert('Succès', 'Livre mis à jour');
     } catch (error: any) {
-      const msg = error.response?.data?.errors
-        ? error.response.data.errors.join('\n')
-        : error.response?.data?.message || "Échec de la modification";
-      Alert.alert('Erreur', msg);
+      Alert.alert('Erreur', error.response?.data?.message || "Échec de la modification");
     } finally {
       setSaving(false);
     }
@@ -151,17 +142,10 @@ export const BookDetailScreen = () => {
             {book.availableQuantity} / {book.totalQuantity}
           </Text>
         </View>
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Type :</Text>
-          <Text style={styles.infoValue}>
-            {book.isForRent && '📍 À emprunter '}
-            {book.isForSale && '💰 À vendre'}
-          </Text>
-        </View>
       </View>
 
       <View style={styles.actions}>
-        {book.isForRent && !isAdmin && !isStaff && (
+        {!isAdmin && !isStaff && (
           <TouchableOpacity 
             style={[styles.button, styles.borrowButton]}
             onPress={handleBorrow}
@@ -177,7 +161,6 @@ export const BookDetailScreen = () => {
           </TouchableOpacity>
         )}
 
-        {/* Admin Edit/Delete */}
         {(isAdmin || isStaff) && (
           <>
             <TouchableOpacity style={[styles.button, styles.editButton]} onPress={handleEdit}>
@@ -200,14 +183,6 @@ export const BookDetailScreen = () => {
             <TextInput style={styles.modalInput} placeholder="ISBN *" value={editData.isbn} onChangeText={(t) => setEditData({...editData, isbn: t})} keyboardType="numeric" />
             <TextInput style={styles.modalInput} placeholder="Description" value={editData.description} onChangeText={(t) => setEditData({...editData, description: t})} multiline />
             <TextInput style={styles.modalInput} placeholder="Quantité" value={editData.totalQuantity} onChangeText={(t) => setEditData({...editData, totalQuantity: t})} keyboardType="numeric" />
-            <View style={styles.modalToggles}>
-              <TouchableOpacity style={[styles.toggle, editData.isForRent && styles.toggleActive]} onPress={() => setEditData({...editData, isForRent: !editData.isForRent})}>
-                <Text style={[styles.toggleText, editData.isForRent && styles.toggleTextActive]}>📍 Empruntable</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.toggle, editData.isForSale && styles.toggleActive]} onPress={() => setEditData({...editData, isForSale: !editData.isForSale})}>
-                <Text style={[styles.toggleText, editData.isForSale && styles.toggleTextActive]}>💰 Vendable</Text>
-              </TouchableOpacity>
-            </View>
             <View style={styles.modalActions}>
               <TouchableOpacity style={styles.modalCancel} onPress={() => setEditVisible(false)}>
                 <Text style={styles.modalCancelText}>Annuler</Text>
@@ -286,11 +261,6 @@ const styles = StyleSheet.create({
   modal: { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: '90%' },
   modalTitle: { fontSize: 20, fontWeight: '700', color: colors.text.primary, marginBottom: 16, textAlign: 'center' },
   modalInput: { backgroundColor: '#f5f5f5', borderRadius: 12, padding: 14, fontSize: 15, color: colors.text.primary, marginBottom: 12 },
-  modalToggles: { flexDirection: 'row', gap: 10, marginBottom: 16 },
-  toggle: { flex: 1, padding: 12, borderRadius: 10, borderWidth: 2, borderColor: '#E0E0E0', alignItems: 'center' },
-  toggleActive: { borderColor: colors.primary, backgroundColor: '#F0F4FF' },
-  toggleText: { fontSize: 13, color: '#999' },
-  toggleTextActive: { color: colors.primary, fontWeight: '600' },
   modalActions: { flexDirection: 'row', gap: 10 },
   modalCancel: { flex: 1, padding: 14, borderRadius: 10, backgroundColor: '#f0f0f0', alignItems: 'center' },
   modalCancelText: { color: '#666', fontWeight: '600', fontSize: 15 },

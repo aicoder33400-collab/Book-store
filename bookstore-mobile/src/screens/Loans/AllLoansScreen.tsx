@@ -7,11 +7,8 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
-  Alert,
 } from 'react-native';
 import api from '../../services/api';
-import { useDashboardStore } from '../../store/dashboard.store';
-import { LoanRequest } from '../../services/admin.service';
 import { colors } from '../../theme/colors';
 
 const STATUS_LABELS: Record<string, string> = {
@@ -33,20 +30,16 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export const AllLoansScreen = () => {
-  const [loans, setLoans] = useState<LoanRequest[]>([]);
+  const [loans, setLoans] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const { approveRequest, rejectRequest, handOverBook } = useDashboardStore();
-
-  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
-  const [confirmReturn, setConfirmReturn] = useState<string | null>(null);
 
   const fetchLoans = async () => {
     try {
       const response = await api.get('/loans', { params: { limit: 100 } });
       setLoans(response.data.data);
-    } catch (error) {
-      console.error('Failed to fetch loans:', error);
+    } catch (error: any) {
+      console.error('Erreur:', error.response?.data || error.message);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -57,83 +50,47 @@ export const AllLoansScreen = () => {
     fetchLoans();
   }, []);
 
-  const handleApprove = (loanId: string) => {
-    Alert.alert('Approuver', "Confirmer l'approbation ?", [
-      { text: 'Annuler', style: 'cancel' },
-      {
-        text: 'Approuver',
-        onPress: async () => {
-          await approveRequest(loanId);
-          fetchLoans();
-        },
-      },
-    ]);
-  };
-
-  const handleReject = (loanId: string) => {
-    Alert.alert('Refuser', 'Confirmer le refus ?', [
-      { text: 'Annuler', style: 'cancel' },
-      {
-        text: 'Refuser',
-        style: 'destructive',
-        onPress: async () => {
-          await rejectRequest(loanId);
-          fetchLoans();
-        },
-      },
-    ]);
-  };
-
-  const handleHandOver = (loanId: string) => {
-    Alert.alert('Remettre', 'Confirmer la remise du livre ?', [
-      { text: 'Annuler', style: 'cancel' },
-      {
-        text: 'Remettre',
-        onPress: async () => {
-          await handOverBook(loanId);
-          fetchLoans();
-        },
-      },
-    ]);
-  };
-
-  const handleReturn = (loanId: string) => {
-    setConfirmReturn(loanId);
-  };
-
-  const doReturn = async () => {
-    if (!confirmReturn) return;
+  // ✅ APPROUVER
+  const handleApprove = async (loanId: string) => {
     try {
-      await api.put(`/loans/${confirmReturn}/return`);
-      setConfirmReturn(null);
+      await api.put(`/loans/${loanId}/approve`);
       fetchLoans();
     } catch (error: any) {
-      Alert.alert('Erreur', error.response?.data?.message || 'Échec du retour');
-      setConfirmReturn(null);
+      console.error('Erreur approve:', error.response?.data || error.message);
     }
   };
 
-  const handleDelete = (loanId: string) => {
-    console.log('DELETE pressed for loan:', loanId);
-    setConfirmDelete(loanId);
-  };
-
-  const doDelete = async () => {
-    if (!confirmDelete) return;
-    console.log('Confirmed delete for:', confirmDelete);
+  // ❌ REFUSER
+  const handleReject = async (loanId: string) => {
     try {
-      await api.delete(`/loans/${confirmDelete}`);
-      console.log('Delete successful');
-      setConfirmDelete(null);
+      await api.put(`/loans/${loanId}/reject`);
       fetchLoans();
     } catch (error: any) {
-      console.log('Delete error:', error.response?.data || error.message);
-      Alert.alert('Erreur', error.response?.data?.message || 'Échec de la suppression');
-      setConfirmDelete(null);
+      console.error('Erreur reject:', error.response?.data || error.message);
     }
   };
 
-  const renderLoan = ({ item }: { item: LoanRequest }) => (
+  // 📦 REMETTRE LE LIVRE
+  const handleHandOver = async (loanId: string) => {
+    try {
+      await api.put(`/loans/${loanId}/hand-over`);
+      fetchLoans();
+    } catch (error: any) {
+      console.error('Erreur hand-over:', error.response?.data || error.message);
+    }
+  };
+
+  // ↩️ RETOURNER
+  const handleReturn = async (loanId: string) => {
+    try {
+      await api.put(`/loans/${loanId}/return`);
+      fetchLoans();
+    } catch (error: any) {
+      console.error('Erreur return:', error.response?.data || error.message);
+    }
+  };
+
+  const renderLoan = ({ item }: { item: any }) => (
     <View style={styles.card}>
       <View style={styles.cardHeader}>
         <Text style={styles.userName}>👤 {item.user?.name || 'Utilisateur'}</Text>
@@ -144,22 +101,9 @@ export const AllLoansScreen = () => {
 
       <Text style={styles.bookTitle}>📖 {item.book?.title || 'Livre'}</Text>
       <Text style={styles.bookAuthor}>✍️ {item.book?.author || ''}</Text>
-
       <Text style={styles.date}>
-        📅 Échéance: {new Date(item.dueDate).toLocaleDateString('fr-FR')}
+        📅 Demandé le: {new Date(item.createdAt).toLocaleDateString('fr-FR')}
       </Text>
-      {item.borrowedAt && (
-        <Text style={styles.date}>
-          📆 Emprunté le: {new Date(item.borrowedAt).toLocaleDateString('fr-FR')} à{' '}
-          {new Date(item.borrowedAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-        </Text>
-      )}
-      {!item.borrowedAt && item.status === 'REQUESTED' && (
-        <Text style={styles.date}>
-          📆 Demandé le: {new Date(item.createdAt).toLocaleDateString('fr-FR')} à{' '}
-          {new Date(item.createdAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-        </Text>
-      )}
 
       {item.status === 'REQUESTED' && (
         <View style={styles.actions}>
@@ -183,12 +127,6 @@ export const AllLoansScreen = () => {
           <Text style={styles.btnText}>↩️ Retourner</Text>
         </TouchableOpacity>
       )}
-
-      {(item.status === 'REJECTED' || item.status === 'RETURNED') && (
-        <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDelete(item.id)}>
-          <Text style={styles.btnText}>🗑️ Supprimer</Text>
-        </TouchableOpacity>
-      )}
     </View>
   );
 
@@ -201,54 +139,14 @@ export const AllLoansScreen = () => {
   }
 
   return (
-    <View style={{ flex: 1 }}>
     <FlatList
       data={loans}
       keyExtractor={(item) => item.id}
       renderItem={renderLoan}
       contentContainerStyle={styles.list}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchLoans(); }} />}
-      ListEmptyComponent={
-        <Text style={styles.empty}>Aucun emprunt trouvé</Text>
-      }
+      ListEmptyComponent={<Text style={styles.empty}>Aucun emprunt trouvé</Text>}
     />
-    
-      {/* Delete Confirmation Modal */}
-      {confirmDelete && (
-        <View style={styles.confirmOverlay}>
-          <View style={styles.confirmBox}>
-            <Text style={styles.confirmTitle}>Supprimer</Text>
-            <Text style={styles.confirmText}>Supprimer définitivement cet emprunt ?</Text>
-            <View style={styles.confirmActions}>
-              <TouchableOpacity style={styles.confirmCancel} onPress={() => setConfirmDelete(null)}>
-                <Text style={styles.confirmCancelText}>Annuler</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.confirmDanger} onPress={doDelete}>
-                <Text style={styles.confirmDangerText}>Supprimer</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      )}
-
-      {/* Return Confirmation Modal */}
-      {confirmReturn && (
-        <View style={styles.confirmOverlay}>
-          <View style={styles.confirmBox}>
-            <Text style={styles.confirmTitle}>Retourner</Text>
-            <Text style={styles.confirmText}>Confirmer le retour du livre ?</Text>
-            <View style={styles.confirmActions}>
-              <TouchableOpacity style={styles.confirmCancel} onPress={() => setConfirmReturn(null)}>
-                <Text style={styles.confirmCancelText}>Annuler</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.confirmSave} onPress={doReturn}>
-                <Text style={styles.confirmSaveText}>Retourner</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      )}
-    </View>
   );
 };
 
@@ -262,9 +160,6 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 12,
     elevation: 2,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -311,35 +206,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 4,
   },
-  deleteBtn: {
-    backgroundColor: '#999',
-    borderRadius: 8,
-    padding: 10,
-    alignItems: 'center',
-    marginTop: 4,
-  },
   btnText: { color: '#fff', fontWeight: '600', fontSize: 14 },
-
-    confirmOverlay: {
-    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center',
-  },
-  confirmBox: {
-    backgroundColor: '#fff', borderRadius: 16, padding: 24, width: '85%',
-  },
-  confirmTitle: { fontSize: 18, fontWeight: '700', color: colors.text.primary, marginBottom: 8 },
-  confirmText: { fontSize: 14, color: colors.text.secondary, marginBottom: 20 },
-  confirmActions: { flexDirection: 'row', gap: 10 },
-  confirmCancel: {
-    flex: 1, padding: 12, borderRadius: 8, backgroundColor: '#f0f0f0', alignItems: 'center',
-  },
-  confirmCancelText: { color: '#666', fontWeight: '600' },
-  confirmDanger: {
-    flex: 1, padding: 12, borderRadius: 8, backgroundColor: '#f44336', alignItems: 'center',
-  },
-  confirmDangerText: { color: '#fff', fontWeight: '600' },
-  confirmSave: {
-    flex: 1, padding: 12, borderRadius: 8, backgroundColor: '#2196F3', alignItems: 'center',
-  },
-  confirmSaveText: { color: '#fff', fontWeight: '600' },
 });

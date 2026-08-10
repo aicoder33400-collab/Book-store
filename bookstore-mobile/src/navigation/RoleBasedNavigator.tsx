@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, ActivityIndicator, TouchableOpacity } from 'react-native';
-import { NavigationContainer, useNavigation } from '@react-navigation/native';
+import { NavigationContainer } from '@react-navigation/native';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import { createStackNavigator } from '@react-navigation/stack';
 import { useAuthStore } from '../store/auth.store';
@@ -16,7 +16,6 @@ import { ProfileScreen } from '../screens/Profile/ProfileScreen';
 import { DashboardScreen } from '../screens/Dashboard/DashboardScreen';
 import { UsersScreen } from '../screens/Users/UserScreen';
 import { AllLoansScreen } from '../screens/Loans/AllLoansScreen';
-import { LoanDetailScreen } from '../screens/Loans/LoanDetailScreen';
 
 const Stack = createStackNavigator();
 const Drawer = createDrawerNavigator();
@@ -39,25 +38,14 @@ const BooksStack = () => (
   </Stack.Navigator>
 );
 
-// Loans stack
+// Loans stack (pour USER)
 const LoansStack = () => (
   <Stack.Navigator screenOptions={{ headerShown: false }}>
     <Stack.Screen name="MyLoans" component={MyLoansScreen} />
-    <Stack.Screen 
-      name="LoanDetail" 
-      component={LoanDetailScreen} 
-      options={{ 
-        headerShown: true,
-        title: 'Détail emprunt',
-        headerStyle: { backgroundColor: colors.primary },
-        headerTintColor: colors.text.white,
-        headerBackTitle: 'Retour',
-      }} 
-    />
   </Stack.Navigator>
 );
 
-// Avatar button for header
+// Avatar
 const UserAvatar = () => {
   const { user } = useAuthStore();
   const [menuVisible, setMenuVisible] = useState(false);
@@ -84,15 +72,59 @@ const UserAvatar = () => {
   );
 };
 
-// Main drawer
-const CommonDrawer = () => {
-  const { user, isLoading } = useAuthStore();
+const DrawerNavigator = () => {
+  const { user } = useAuthStore();
   const isAdmin = user?.role === 'ADMIN';
   const isStaff = user?.role === 'STAFF';
 
+  return (
+    <Drawer.Navigator
+      key={user?.id || 'default'}
+      screenOptions={{
+        headerShown: true,
+        drawerActiveTintColor: colors.primary,
+        drawerInactiveTintColor: colors.text.secondary,
+        drawerStyle: { width: 280 },
+        headerStyle: { backgroundColor: colors.primary },
+        headerTintColor: colors.text.white,
+        headerRight: () => <UserAvatar />,
+      }}
+    >
+      {isAdmin && (
+        <>
+          <Drawer.Screen name="📋 Demandes" component={AllLoansScreen} />
+          <Drawer.Screen name="📊 Dashboard" component={DashboardScreen} />
+          <Drawer.Screen name="📚 Catalogue" component={BooksStack} />
+          <Drawer.Screen name="👥 Utilisateurs" component={UsersScreen} />
+          <Drawer.Screen name="👤 Mon profil" component={ProfileScreen} />
+        </>
+      )}
+
+      {isStaff && (
+        <>
+          <Drawer.Screen name="📋 Demandes" component={AllLoansScreen} />
+          <Drawer.Screen name="📚 Catalogue" component={BooksStack} />
+          <Drawer.Screen name="👤 Mon profil" component={ProfileScreen} />
+        </>
+      )}
+
+      {!isAdmin && !isStaff && (
+        <>
+          <Drawer.Screen name="📚 Catalogue" component={BooksStack} />
+          <Drawer.Screen name="🔄 Mes emprunts" component={LoansStack} />
+          <Drawer.Screen name="👤 Mon profil" component={ProfileScreen} />
+        </>
+      )}
+    </Drawer.Navigator>
+  );
+};
+
+const CommonDrawer = () => {
+  const { user, isLoading } = useAuthStore();
+
   if (isLoading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
@@ -110,49 +142,9 @@ const CommonDrawer = () => {
 
   return (
     <NavigationContainer>
-      <Drawer.Navigator
-        screenOptions={{
-          headerShown: true,
-          drawerActiveTintColor: colors.primary,
-          drawerInactiveTintColor: colors.text.secondary,
-          drawerStyle: { width: 280 },
-          headerStyle: { backgroundColor: colors.primary },
-          headerTintColor: colors.text.white,
-          headerRight: () => <UserAvatar />,
-        }}
-      >
-        {/* ADMIN */}
-        {isAdmin && (
-          <>
-            <Drawer.Screen name="🏠 Dashboard" component={DashboardScreen} />
-            <Drawer.Screen name="📚 Catalogue" component={BooksStack} />
-            <Drawer.Screen name="📋 Tous les emprunts" component={AllLoansScreen} />
-            <Drawer.Screen name="👥 Utilisateurs" component={UsersScreen} />
-            <Drawer.Screen name="👤 Mon profil" component={ProfileScreen} />
-          </>
-        )}
-
-        {/* STAFF */}
-        {isStaff && (
-          <>
-            <Drawer.Screen name="📚 Catalogue" component={BooksStack} />
-            <Drawer.Screen name="👤 Mon profil" component={ProfileScreen} />
-          </>
-        )}
-
-        {/* USER */}
-        {!isAdmin && !isStaff && (
-          <>
-            <Drawer.Screen name="📚 Catalogue" component={BooksStack} />
-            <Drawer.Screen name="🔄 Mes emprunts" component={LoansStack} />
-            <Drawer.Screen name="👤 Mon profil" component={ProfileScreen} />
-          </>
-        )}
-      </Drawer.Navigator>
+      <DrawerNavigator />
     </NavigationContainer>
   );
 };
 
-export const RoleBasedNavigator = () => {
-  return <CommonDrawer />;
-};
+export const RoleBasedNavigator = () => <CommonDrawer />;

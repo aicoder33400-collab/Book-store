@@ -1,261 +1,346 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   StyleSheet,
-  Alert,
   ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  Keyboard,
-  TouchableWithoutFeedback,
+  Image,
+  SafeAreaView,
+  Dimensions,
+  StatusBar,
+  Platform,  // 🔥 AJOUTÉ
 } from 'react-native';
 import { useNavigation, CommonActions } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { LinearGradient } from 'expo-linear-gradient';
-import { StatusBar } from 'expo-status-bar';
-import { authService } from '../../services/auth.service';
 import { useAuthStore } from '../../store/auth.store';
+import { authService } from '../../services/auth.service';
+import { GoogleAuthService } from '../../services/google-auth.service';
 import { colors } from '../../theme/colors';
-import { typography } from '../../theme/typography';
+import { RootStackParamList } from '../../types/navigation';
+
+const { width, height } = Dimensions.get('window');
+
+type LoginScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Login'>;
 
 export const LoginScreen = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const navigation = useNavigation();
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [processingToken, setProcessingToken] = useState(false);
+  const navigation = useNavigation<LoginScreenNavigationProp>();
   const { setUser, setToken } = useAuthStore();
-  const passwordInputRef = useRef<TextInput>(null);
 
-  const handleLogin = async () => {
-    Keyboard.dismiss(); // Ferme le clavier avant de soumettre
-    if (!email || !password) {
-      Alert.alert('Erreur', 'Veuillez remplir tous les champs');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const { user, token } = await authService.login({ email, password });
-      setUser(user);
-      setToken(token);
+  // 🔥 Traiter le token de Google
+  useEffect(() => {
+    if (processingToken) return;
+    
+    const hash = window.location.hash;
+    if (hash && hash.includes('id_token')) {
+      setProcessingToken(true);
+      const params = new URLSearchParams(hash.substring(1));
+      const idToken = params.get('id_token');
       
-      navigation.dispatch(
-        CommonActions.reset({
-          index: 0,
-          routes: [{ name: 'Main' }],
-        })
-      );
+      if (idToken) {
+        console.log('✅ Token Google trouvé');
+        window.history.pushState('', document.title, window.location.pathname);
+        
+        authService.checkGoogleUser(idToken)
+          .then((result) => {
+            if (!result.exists || result.needsProfile) {
+              navigation.navigate('CompleteProfile', {
+                googleToken: idToken,
+                email: result.email,
+                name: result.name,
+                avatar: result.avatar,
+              });
+              setProcessingToken(false);
+              return;
+            }
+            return authService.loginWithGoogle(idToken);
+          })
+          .then((result) => {
+            if (result?.user) {
+              const user = {
+                id: result.user.id,
+                name: result.user.name,
+                email: result.user.email,
+                phone: result.user.phone || null,
+                role: result.user.role || 'USER',
+                authProvider: 'google' as const,
+                avatar: result.user.avatar || null,
+                emailVerified: true,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                lastLoginAt: null,
+                googleId: null,
+                firstName: result.user.firstName || null,
+                lastName: result.user.lastName || null,
+                age: result.user.age || null,
+                commune: result.user.commune || null,
+                isProfileComplete: true,
+              };
+              setUser(user);
+              setToken(result.token);
+              navigation.dispatch(
+                CommonActions.reset({
+                  index: 0,
+                  routes: [{ name: 'Main' }],
+                })
+              );
+            }
+            setProcessingToken(false);
+          })
+          .catch((error) => {
+            console.error('❌ Erreur:', error);
+            setProcessingToken(false);
+          });
+      }
+    }
+  }, []);
+
+  const handleGoogleLogin = async () => {
+    try {
+      setGoogleLoading(true);
+      await GoogleAuthService.login();
+      setGoogleLoading(false);
     } catch (error: any) {
-      Alert.alert(
-        'Erreur de connexion',
-        error.response?.data?.message || 'Email ou mot de passe incorrect'
-      );
-    } finally {
-      setLoading(false);
+      console.error('❌ Erreur Google:', error);
+      setGoogleLoading(false);
     }
   };
 
   return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
+      
       <LinearGradient
-        colors={[colors.gradient.start, colors.gradient.end]}
+        colors={['#1a1a2e', '#16213e', '#0f3460']}
         style={styles.container}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
       >
-        <StatusBar style="light" />
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.keyboardView}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
-        >
-          <ScrollView 
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-          >
-            <View style={styles.content}>
-              {/* Illustration */}
-              <View style={styles.illustrationContainer}>
-                <View style={styles.logoCircle}>
-                  <Text style={styles.logoEmoji}>📚</Text>
-                </View>
-                <Text style={styles.welcomeText}>Bienvenue</Text>
-                <Text style={styles.subtitle}>Connectez-vous à votre compte</Text>
-              </View>
+        {/* Décoration - Cercles flous */}
+        <View style={styles.circle1} />
+        <View style={styles.circle2} />
+        <View style={styles.circle3} />
 
-              {/* Form */}
-              <View style={styles.formContainer}>
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Email</Text>
-                  <View style={styles.inputWrapper}>
-                    <Text style={styles.inputIcon}>✉️</Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="admin@bookstore.com"
-                      placeholderTextColor={colors.text.light}
-                      value={email}
-                      onChangeText={setEmail}
-                      autoCapitalize="none"
-                      keyboardType="email-address"
-                      returnKeyType="next"
-                      onSubmitEditing={() => passwordInputRef.current?.focus()}
-                    />
-                  </View>
-                </View>
-
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Mot de passe</Text>
-                  <View style={styles.inputWrapper}>
-                    <Text style={styles.inputIcon}>🔒</Text>
-                    <TextInput
-                      ref={passwordInputRef}
-                      style={styles.input}
-                      placeholder="••••••••"
-                      placeholderTextColor={colors.text.light}
-                      value={password}
-                      onChangeText={setPassword}
-                      secureTextEntry
-                      returnKeyType="done"
-                      onSubmitEditing={handleLogin}
-                    />
-                  </View>
-                </View>
-
-                <TouchableOpacity
-                  style={styles.loginButton}
-                  onPress={handleLogin}
-                  disabled={loading}
-                  activeOpacity={0.9}
-                >
-                  {loading ? (
-                    <ActivityIndicator color="#fff" />
-                  ) : (
-                    <Text style={styles.loginButtonText}>Se connecter</Text>
-                  )}
-                </TouchableOpacity>
-              </View>
-
-              {/* Footer */}
-              <View style={styles.footer}>
-                <Text style={styles.footerText}>
-                  Bookstore Manager • Gestion simplifiée
-                </Text>
-              </View>
+        <View style={styles.content}>
+          {/* Logo / Icône */}
+          <View style={styles.logoContainer}>
+            <View style={styles.logoWrapper}>
+              <LinearGradient
+                colors={['#e94560', '#ff6b6b']}
+                style={styles.logoGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+              >
+                <Text style={styles.logoIcon}>📚</Text>
+              </LinearGradient>
             </View>
-          </ScrollView>
-        </KeyboardAvoidingView>
+            
+            <Text style={styles.appName}>BookStore</Text>
+            <Text style={styles.appSubtitle}>Votre bibliothèque numérique</Text>
+          </View>
+
+          {/* Slogan */}
+          <View style={styles.sloganContainer}>
+            <Text style={styles.sloganText}>Gérez vos livres</Text>
+            <Text style={styles.sloganText}>en toute simplicité</Text>
+            <View style={styles.sloganLine} />
+            <Text style={styles.sloganSubtext}>
+              Accédez à votre bibliothèque en un clic
+            </Text>
+          </View>
+
+          {/* Bouton Google */}
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity
+              style={styles.googleButton}
+              onPress={handleGoogleLogin}
+              disabled={googleLoading}
+              activeOpacity={0.85}
+            >
+              {googleLoading ? (
+                <ActivityIndicator color="#4285F4" size="small" />
+              ) : (
+                <View style={styles.googleButtonContent}>
+                  <View style={styles.googleIconWrapper}>
+                    <Text style={styles.googleIcon}>G</Text>
+                  </View>
+                  <Text style={styles.googleButtonText}>
+                    Continuer avec Google
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+
+            <Text style={styles.footerText}>
+              En continuant, vous acceptez nos conditions d'utilisation
+            </Text>
+          </View>
+        </View>
       </LinearGradient>
-    </TouchableWithoutFeedback>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#1a1a2e',
+  },
   container: {
     flex: 1,
-  },
-  keyboardView: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
+    paddingHorizontal: 24,
   },
   content: {
     flex: 1,
     justifyContent: 'space-between',
-    paddingHorizontal: 24,
-    paddingTop: 60,
+    paddingTop: height * 0.08,
     paddingBottom: 40,
   },
-  illustrationContainer: {
-    alignItems: 'center',
-    marginBottom: 40,
+  
+  // 🔥 Cercles décoratifs
+  circle1: {
+    position: 'absolute',
+    width: 300,
+    height: 300,
+    borderRadius: 150,
+    backgroundColor: 'rgba(233, 69, 96, 0.1)',
+    top: -100,
+    right: -100,
   },
-  logoCircle: {
+  circle2: {
+    position: 'absolute',
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: 'rgba(15, 52, 96, 0.3)',
+    bottom: 100,
+    left: -80,
+  },
+  circle3: {
+    position: 'absolute',
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    backgroundColor: 'rgba(233, 69, 96, 0.05)',
+    bottom: 200,
+    right: -50,
+  },
+
+  // 🔥 Logo
+  logoContainer: {
+    alignItems: 'center',
+  },
+  logoWrapper: {
     width: 100,
     height: 100,
-    borderRadius: 50,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  logoEmoji: {
-    fontSize: 48,
-  },
-  welcomeText: {
-    fontSize: typography.fontSize.xxxl,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.text.white,
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: typography.fontSize.md,
-    color: 'rgba(255,255,255,0.8)',
-  },
-  formContainer: {
-    backgroundColor: colors.background.secondary,
-    borderRadius: 32,
-    padding: 24,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.1,
+    borderRadius: 28,
+    shadowColor: '#e94560',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
     shadowRadius: 20,
     elevation: 10,
   },
-  inputGroup: {
+  logoGradient: {
+    width: 100,
+    height: 100,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logoIcon: {
+    fontSize: 48,
+  },
+  appName: {
+    fontSize: 36,
+    fontWeight: 'bold',
+    color: '#ffffff',
+    marginTop: 20,
+    letterSpacing: 1,
+  },
+  appSubtitle: {
+    fontSize: 16,
+    color: 'rgba(255,255,255,0.6)',
+    marginTop: 8,
+    letterSpacing: 0.5,
+  },
+
+  // 🔥 Slogan
+  sloganContainer: {
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  sloganText: {
+    fontSize: 28,
+    fontWeight: '600',
+    color: '#ffffff',
+    textAlign: 'center',
+    lineHeight: 38,
+  },
+  sloganLine: {
+    width: 60,
+    height: 3,
+    backgroundColor: '#e94560',
+    borderRadius: 2,
+    marginTop: 20,
     marginBottom: 20,
   },
-  label: {
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.medium,
-    color: colors.text.secondary,
-    marginBottom: 8,
-    marginLeft: 4,
+  sloganSubtext: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.5)',
+    textAlign: 'center',
+    letterSpacing: 0.3,
   },
-  inputWrapper: {
+
+  // 🔥 Bouton Google
+  buttonContainer: {
+    alignItems: 'center',
+  },
+  googleButton: {
+    width: '100%',
+    maxWidth: 360,
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    shadowColor: '#ffffff',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  googleButtonContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.background.primary,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: 16,
+    justifyContent: 'center',
   },
-  inputIcon: {
-    fontSize: 18,
+  googleIconWrapper: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
     marginRight: 12,
   },
-  input: {
-    flex: 1,
-    paddingVertical: 16,
-    fontSize: typography.fontSize.md,
-    color: colors.text.primary,
+  googleIcon: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#4285F4',
   },
-  loginButton: {
-    backgroundColor: colors.primary,
-    borderRadius: 16,
-    paddingVertical: 16,
-    alignItems: 'center',
-    marginTop: 12,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  loginButtonText: {
-    color: colors.text.white,
-    fontSize: typography.fontSize.lg,
-    fontWeight: typography.fontWeight.semibold,
-  },
-  footer: {
-    alignItems: 'center',
-    marginTop: 24,
+  googleButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1a1a2e',
+    letterSpacing: 0.3,
   },
   footerText: {
-    fontSize: typography.fontSize.xs,
-    color: 'rgba(255,255,255,0.7)',
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.3)',
+    textAlign: 'center',
+    marginTop: 16,
+    letterSpacing: 0.2,
   },
 });
