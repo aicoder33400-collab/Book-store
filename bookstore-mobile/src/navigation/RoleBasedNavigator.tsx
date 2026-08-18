@@ -38,7 +38,7 @@ const BooksStack = () => (
   </Stack.Navigator>
 );
 
-// Loans stack (pour USER)
+// 🔥 RENOMMÉ : Mes emprunts → Mes demandes
 const LoansStack = () => (
   <Stack.Navigator screenOptions={{ headerShown: false }}>
     <Stack.Screen name="MyLoans" component={MyLoansScreen} />
@@ -58,9 +58,12 @@ const UserAvatar = () => {
         activeOpacity={0.7}
       >
         <View style={{
-          width: 34, height: 34, borderRadius: 17,
+          width: 34,
+          height: 34,
+          borderRadius: 17,
           backgroundColor: 'rgba(255,255,255,0.25)',
-          justifyContent: 'center', alignItems: 'center',
+          justifyContent: 'center',
+          alignItems: 'center',
         }}>
           <Text style={{ color: '#fff', fontWeight: '700', fontSize: 16 }}>
             {user?.name?.charAt(0).toUpperCase() || '?'}
@@ -82,37 +85,130 @@ const DrawerNavigator = () => {
       key={user?.id || 'default'}
       screenOptions={{
         headerShown: true,
-        drawerActiveTintColor: colors.primary,
-        drawerInactiveTintColor: colors.text.secondary,
-        drawerStyle: { width: 280 },
+        headerTitleAlign: 'center',
+        drawerActiveTintColor: '#6C63FF',
+        drawerInactiveTintColor: '#1a1a2e',
+        drawerActiveBackgroundColor: '#6C63FF15',
+        drawerStyle: { 
+          width: 280,
+          backgroundColor: '#ffffff',
+        },
         headerStyle: { backgroundColor: colors.primary },
         headerTintColor: colors.text.white,
         headerRight: () => <UserAvatar />,
+        headerLeftContainerStyle: { paddingLeft: 8 },
+        drawerLabelStyle: {
+          fontSize: 15,
+          fontWeight: '500',
+          color: '#1a1a2e',
+        },
+        drawerItemStyle: {
+          borderRadius: 8,
+          marginHorizontal: 8,
+        },
       }}
     >
       {isAdmin && (
         <>
-          <Drawer.Screen name="📋 Demandes" component={AllLoansScreen} />
-          <Drawer.Screen name="📊 Dashboard" component={DashboardScreen} />
-          <Drawer.Screen name="📚 Catalogue" component={BooksStack} />
-          <Drawer.Screen name="👥 Utilisateurs" component={UsersScreen} />
-          <Drawer.Screen name="👤 Mon profil" component={ProfileScreen} />
+          <Drawer.Screen 
+            name="Dashboard" 
+            component={DashboardScreen}
+            options={{ 
+              title: '📊 Dashboard',
+              headerTitle: '📊 Dashboard',
+            }}
+          />
+          <Drawer.Screen 
+            name="Historique des demandes" 
+            component={AllLoansScreen}
+            options={{ 
+              title: '📋 Historique des demandes',
+              headerTitle: '📋 Historique des demandes',
+            }}
+          />
+          <Drawer.Screen 
+            name="Catalogue" 
+            component={BooksStack}
+            options={{ 
+              title: '📚 Catalogue',
+              headerTitle: '📚 Catalogue',
+            }}
+          />
+          <Drawer.Screen 
+            name="Utilisateurs" 
+            component={UsersScreen}
+            options={{ 
+              title: '👥 Utilisateurs',
+              headerTitle: '👥 Utilisateurs',
+            }}
+          />
+          <Drawer.Screen 
+            name="Mon profil" 
+            component={ProfileScreen}
+            options={{ 
+              title: '👤 Mon profil',
+              headerTitle: '👤 Mon profil',
+            }}
+          />
         </>
       )}
 
       {isStaff && (
         <>
-          <Drawer.Screen name="📋 Demandes" component={AllLoansScreen} />
-          <Drawer.Screen name="📚 Catalogue" component={BooksStack} />
-          <Drawer.Screen name="👤 Mon profil" component={ProfileScreen} />
+          <Drawer.Screen 
+            name="Demandes" 
+            component={AllLoansScreen}
+            options={{ 
+              title: '📋 Demandes',
+              headerTitle: '📋 Demandes',
+            }}
+          />
+          <Drawer.Screen 
+            name="Catalogue" 
+            component={BooksStack}
+            options={{ 
+              title: '📚 Catalogue',
+              headerTitle: '📚 Catalogue',
+            }}
+          />
+          <Drawer.Screen 
+            name="Mon profil" 
+            component={ProfileScreen}
+            options={{ 
+              title: '👤 Mon profil',
+              headerTitle: '👤 Mon profil',
+            }}
+          />
         </>
       )}
 
       {!isAdmin && !isStaff && (
         <>
-          <Drawer.Screen name="📚 Catalogue" component={BooksStack} />
-          <Drawer.Screen name="🔄 Mes emprunts" component={LoansStack} />
-          <Drawer.Screen name="👤 Mon profil" component={ProfileScreen} />
+          <Drawer.Screen 
+            name="Catalogue" 
+            component={BooksStack}
+            options={{ 
+              title: '📚 Catalogue',
+              headerTitle: '📚 Catalogue',
+            }}
+          />
+          {/* 🔥 RENOMMÉ */}
+          <Drawer.Screen 
+            name="Mes demandes" 
+            component={LoansStack}
+            options={{ 
+              title: '📩 Mes demandes',
+              headerTitle: '📩 Mes demandes',
+            }}
+          />
+          <Drawer.Screen 
+            name="Mon profil" 
+            component={ProfileScreen}
+            options={{ 
+              title: '👤 Mon profil',
+              headerTitle: '👤 Mon profil',
+            }}
+          />
         </>
       )}
     </Drawer.Navigator>

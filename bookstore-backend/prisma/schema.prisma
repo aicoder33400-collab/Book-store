@@ -18,31 +18,27 @@ enum LoanStatus {
   APPROVED
   REJECTED
   BORROWED
+  RETURN_REQUESTED
   RETURNED
   LATE
 }
 
 model User {
   id                String    @id @default(uuid())
-  name              String    // Nom complet (affichage)
+  name              String
   email             String    @unique
   phone             String?
   emailVerified     Boolean   @default(false)
   password          String?
   role              UserRole  @default(USER)
-  
-  // 🔥 Champs Google
   googleId          String?   @unique
   avatar            String?
   authProvider      String    @default("local")
-  
-  // 🔥 NOUVEAUX CHAMPS POUR L'INSCRIPTION
-  firstName         String?   // Prénom (saisi par l'utilisateur)
-  lastName          String?   // Nom (saisi par l'utilisateur)
-  age               Int?      // Âge déclaratif
-  commune           String?   // Commune/Ville
-  isProfileComplete Boolean   @default(false) // Profil complété ?
-  
+  firstName         String?
+  lastName          String?
+  age               Int?
+  commune           String?
+  isProfileComplete Boolean   @default(false)
   lastLoginAt       DateTime?
   verificationCode  String?
   resetCode         String?
@@ -62,10 +58,9 @@ model Book {
   description       String?
   totalQuantity     Int      @default(0)
   availableQuantity Int      @default(0)
-  isForSale         Boolean  @default(true)   
-  isForRent         Boolean  @default(true)    
+  isForRent         Boolean  @default(true)
+  imageUrl          String?  // 🔥 NOUVEAU : URL de la photo
   loans             Loan[]
-  sales             Sale[]
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
@@ -89,19 +84,4 @@ model Loan {
   @@index([bookId])
   @@index([status])
   @@map("loans")
-}
-
-model Sale {
-  id         String   @id @default(uuid())
-  bookId     String
-  quantity   Int
-  totalPrice Float
-  soldAt     DateTime @default(now())
-  book       Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  @@index([bookId])
-  @@index([soldAt])
-  @@map("sales")
 }

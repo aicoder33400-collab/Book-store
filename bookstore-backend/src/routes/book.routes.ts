@@ -7,14 +7,13 @@ import { bookValidation } from '../validations/book.validation';
 const router = Router();
 const bookController = new BookController();
 
-// All routes require authentication
-router.use(AuthMiddleware.protect);
-
-// Public routes (authenticated users)
+// Routes publiques
 router.get('/', bookController.getAllBooks);
 router.get('/:id', bookController.getBookById);
 
-// Admin only routes
+// Routes protégées
+router.use(AuthMiddleware.protect);
+
 router.post(
   '/',
   AuthMiddleware.restrictTo('ADMIN', 'STAFF'),
@@ -33,6 +32,13 @@ router.delete(
   '/:id',
   AuthMiddleware.restrictTo('ADMIN', 'STAFF'),
   bookController.deleteBook
+);
+
+// 🔥 Upload d'image en base64 (pas besoin de multer)
+router.post(
+  '/upload-image',
+  AuthMiddleware.restrictTo('ADMIN', 'STAFF'),
+  bookController.uploadImage
 );
 
 export default router;

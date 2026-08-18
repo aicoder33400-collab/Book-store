@@ -5,13 +5,12 @@ import {
   StyleSheet,
   TouchableOpacity,
   Modal,
+  Alert,
 } from 'react-native';
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import { useAuthStore } from '../store/auth.store';
 import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
-
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface UserMenuProps {
   visible: boolean;
@@ -19,20 +18,40 @@ interface UserMenuProps {
 }
 
 export const UserMenu = ({ visible, onClose }: UserMenuProps) => {
-  const { user, reset } = useAuthStore();
+  const { user, logout } = useAuthStore();
   const navigation = useNavigation();
 
-  const handleProfile = () => {
-    onClose();
-    navigation.dispatch(
-      CommonActions.navigate({ name: '👤 Mon profil' })
+  const handleLogout = () => {
+    Alert.alert(
+      'Déconnexion',
+      'Êtes-vous sûr de vouloir vous déconnecter ?',
+      [
+        { text: 'Annuler', style: 'cancel', onPress: onClose },
+        {
+          text: 'Se déconnecter',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              console.log('🔓 Déconnexion en cours...');
+              await logout();
+              onClose();
+              navigation.dispatch(
+                CommonActions.reset({
+                  index: 0,
+                  routes: [{ name: 'Login' }],
+                })
+              );
+            } catch (error) {
+              console.error('Erreur déconnexion:', error);
+              Alert.alert('Erreur', 'Impossible de se déconnecter');
+            }
+          }
+        }
+      ]
     );
   };
 
-  const handleLogout = async () => {
-    await AsyncStorage.removeItem('token');
-    await AsyncStorage.removeItem('user');
-    reset();
+  const handleClose = () => {
     onClose();
   };
 
@@ -41,39 +60,39 @@ export const UserMenu = ({ visible, onClose }: UserMenuProps) => {
       visible={visible}
       transparent
       animationType="fade"
-      onRequestClose={onClose}
+      onRequestClose={handleClose}
     >
-      <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={onClose}>
-        <View style={styles.menuContainer}>
+      <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={handleClose}>
+        <View style={styles.menu}>
           <View style={styles.header}>
             <View style={styles.avatar}>
               <Text style={styles.avatarText}>
-                {user?.name?.charAt(0).toUpperCase()}
+                {user?.name?.charAt(0).toUpperCase() || '?'}
               </Text>
             </View>
             <View style={styles.userInfo}>
-              <Text style={styles.userName}>{user?.name}</Text>
-              <Text style={styles.userEmail}>{user?.email}</Text>
-              <View style={styles.roleBadge}>
-                <Text style={styles.roleText}>
-                  {user?.role === 'ADMIN' ? '👑 Administrateur' : '👤 Staff'}
-                </Text>
-              </View>
+              <Text style={styles.userName}>{user?.name || 'Utilisateur'}</Text>
+              <Text style={styles.userEmail}>{user?.email || ''}</Text>
             </View>
           </View>
 
           <View style={styles.divider} />
 
-          <TouchableOpacity style={styles.menuItem} onPress={handleProfile}>
-            <Text style={styles.menuIcon}>👤</Text>
-            <Text style={styles.menuText}>Mon profil</Text>
+          <TouchableOpacity 
+            style={styles.menuItem} 
+            onPress={() => {
+              onClose(); 
+              navigation.navigate('Mon profil' as never);
+            }}
+          >
+            <Text style={styles.menuItemText}>👤 Mon profil</Text>
           </TouchableOpacity>
 
-          <View style={styles.divider} />
-
-          <TouchableOpacity style={[styles.menuItem, styles.logoutItem]} onPress={handleLogout}>
-            <Text style={styles.menuIcon}>🚪</Text>
-            <Text style={styles.logoutText}>Se déconnecter</Text>
+          <TouchableOpacity 
+            style={styles.menuItem} 
+            onPress={handleLogout}
+          >
+            <Text style={[styles.menuItemText, styles.logoutText]}>🚪 Se déconnecter</Text>
           </TouchableOpacity>
         </View>
       </TouchableOpacity>
@@ -84,92 +103,70 @@ export const UserMenu = ({ visible, onClose }: UserMenuProps) => {
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'flex-start',
     alignItems: 'flex-end',
   },
-  menuContainer: {
-    backgroundColor: colors.background.secondary,
-    width: 260,
+  menu: {
+    backgroundColor: '#fff',
+    width: 280,
     marginTop: 60,
-    marginRight: 8,
-    borderRadius: 20,
+    marginRight: 12,
+    borderRadius: 16,
+    paddingVertical: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.15,
     shadowRadius: 12,
     elevation: 8,
-    overflow: 'hidden',
   },
   header: {
     flexDirection: 'row',
-    padding: 18,
-    backgroundColor: colors.background.primary,
+    alignItems: 'center',
+    padding: 16,
+    paddingBottom: 12,
   },
   avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 14,
+    marginRight: 12,
   },
   avatarText: {
-    fontSize: 20,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.text.white,
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
   userInfo: {
     flex: 1,
-    justifyContent: 'center',
   },
   userName: {
-    fontSize: typography.fontSize.md,
-    fontWeight: typography.fontWeight.bold,
+    fontSize: 15,
+    fontWeight: '600',
     color: colors.text.primary,
   },
   userEmail: {
-    fontSize: typography.fontSize.sm,
+    fontSize: 12,
     color: colors.text.secondary,
     marginTop: 2,
-  },
-  roleBadge: {
-    marginTop: 4,
-    alignSelf: 'flex-start',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    backgroundColor: `${colors.primary}15`,
-    borderRadius: 10,
-  },
-  roleText: {
-    fontSize: typography.fontSize.xs,
-    color: colors.primary,
   },
   divider: {
     height: 1,
     backgroundColor: colors.border,
+    marginHorizontal: 16,
   },
   menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
   },
-  menuIcon: {
-    fontSize: 18,
-    marginRight: 12,
-  },
-  menuText: {
-    fontSize: typography.fontSize.md,
+  menuItemText: {
+    fontSize: 15,
     color: colors.text.primary,
   },
-  logoutItem: {
-    paddingVertical: 16,
-  },
   logoutText: {
-    fontSize: typography.fontSize.md,
     color: colors.danger,
-    fontWeight: typography.fontWeight.medium,
   },
 });

@@ -5,106 +5,102 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
-  Image,
   SafeAreaView,
   Dimensions,
   StatusBar,
-  Platform,  // 🔥 AJOUTÉ
+  Alert,
 } from 'react-native';
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuthStore } from '../../store/auth.store';
 import { authService } from '../../services/auth.service';
-import { GoogleAuthService } from '../../services/google-auth.service';
-import { colors } from '../../theme/colors';
 import { RootStackParamList } from '../../types/navigation';
+import * as WebBrowser from 'expo-web-browser';
+import * as Linking from 'expo-linking';
+import Constants from 'expo-constants';
 
 const { width, height } = Dimensions.get('window');
 
 type LoginScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Login'>;
 
+const GOOGLE_CLIENT_ID = Constants.expoConfig?.extra?.googleClientId || '';
+
+WebBrowser.maybeCompleteAuthSession();
+
 export const LoginScreen = () => {
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [processingToken, setProcessingToken] = useState(false);
   const navigation = useNavigation<LoginScreenNavigationProp>();
   const { setUser, setToken } = useAuthStore();
 
-  // 🔥 Traiter le token de Google
+  // 🔥 Écouter le deep link retour
   useEffect(() => {
-    if (processingToken) return;
-    
-    const hash = window.location.hash;
-    if (hash && hash.includes('id_token')) {
-      setProcessingToken(true);
-      const params = new URLSearchParams(hash.substring(1));
-      const idToken = params.get('id_token');
-      
-      if (idToken) {
-        console.log('✅ Token Google trouvé');
-        window.history.pushState('', document.title, window.location.pathname);
-        
-        authService.checkGoogleUser(idToken)
-          .then((result) => {
-            if (!result.exists || result.needsProfile) {
-              navigation.navigate('CompleteProfile', {
-                googleToken: idToken,
-                email: result.email,
-                name: result.name,
-                avatar: result.avatar,
-              });
-              setProcessingToken(false);
-              return;
-            }
-            return authService.loginWithGoogle(idToken);
-          })
-          .then((result) => {
-            if (result?.user) {
-              const user = {
-                id: result.user.id,
-                name: result.user.name,
-                email: result.user.email,
-                phone: result.user.phone || null,
-                role: result.user.role || 'USER',
-                authProvider: 'google' as const,
-                avatar: result.user.avatar || null,
-                emailVerified: true,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-                lastLoginAt: null,
-                googleId: null,
-                firstName: result.user.firstName || null,
-                lastName: result.user.lastName || null,
-                age: result.user.age || null,
-                commune: result.user.commune || null,
-                isProfileComplete: true,
-              };
-              setUser(user);
-              setToken(result.token);
-              navigation.dispatch(
-                CommonActions.reset({
-                  index: 0,
-                  routes: [{ name: 'Main' }],
-                })
-              );
-            }
-            setProcessingToken(false);
-          })
-          .catch((error) => {
-            console.error('❌ Erreur:', error);
-            setProcessingToken(false);
-          });
+    const handleDeepLink = async () => {
+      const url = await Linking.getInitialURL();
+      if (url) {
+        handleUrl(url);
+      }
+    };
+
+    const subscription = Linking.addEventListener('url', ({ url }) => {
+      handleUrl(url);
+    });
+
+    handleDeepLink();
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
+
+  const handleUrl = async (url: string) => {
+    console.log('🔗 Deep link reçu:', url);
+
+    if (url && url.includes('token=')) {
+      // Extraire le token
+      const token = url.split('token=')[1];
+      if (token) {
+        console.log('✅ Token reçu via deep link');
+        // Ici tu peux stocker le token et connecter l'utilisateur
+        Alert.alert('Connecté !', 'Vous êtes connecté avec succès');
       }
     }
-  }, []);
+  };
 
   const handleGoogleLogin = async () => {
     try {
       setGoogleLoading(true);
-      await GoogleAuthService.login();
+
+      // 🔥 URL de retour vers l'app
+      const returnUrl = Linking.createURL('auth-callback');
+      console.log('📱 Return URL:', returnUrl);
+
+      // 🔥 URL du backend (ngrok)
+      const BACKEND_URL = 'https://lettuce-unlawful-disliking.ngrok-free.dev';
+      const authUrl =
+        `https://accounts.google.com/o/oauth2/v2/auth?` +
+        `client_id=${GOOGLE_CLIENT_ID}&` +
+        `redirect_uri=${BACKEND_URL}/api/auth/google/callback&` +
+        `response_type=code&` +
+        `scope=openid%20profile%20email&` +
+        `state=${encodeURIComponent(returnUrl)}&` +
+        `prompt=select_account`;
+
+      console.log('🔗 URL:', authUrl);
+
+      const result = await WebBrowser.openAuthSessionAsync(authUrl, returnUrl);
+
+      console.log('📱 Résultat:', result.type);
+
+      if (result.type === 'success' && result.url) {
+        console.log('✅ URL retour:', result.url);
+        // Le token sera reçu via le deep link
+      }
+
       setGoogleLoading(false);
     } catch (error: any) {
       console.error('❌ Erreur Google:', error);
+      Alert.alert('Erreur', error.message || 'Impossible de se connecter');
       setGoogleLoading(false);
     }
   };
@@ -112,20 +108,18 @@ export const LoginScreen = () => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
-      
+
       <LinearGradient
         colors={['#1a1a2e', '#16213e', '#0f3460']}
         style={styles.container}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       >
-        {/* Décoration - Cercles flous */}
         <View style={styles.circle1} />
         <View style={styles.circle2} />
         <View style={styles.circle3} />
 
         <View style={styles.content}>
-          {/* Logo / Icône */}
           <View style={styles.logoContainer}>
             <View style={styles.logoWrapper}>
               <LinearGradient
@@ -137,12 +131,11 @@ export const LoginScreen = () => {
                 <Text style={styles.logoIcon}>📚</Text>
               </LinearGradient>
             </View>
-            
+
             <Text style={styles.appName}>BookStore</Text>
             <Text style={styles.appSubtitle}>Votre bibliothèque numérique</Text>
           </View>
 
-          {/* Slogan */}
           <View style={styles.sloganContainer}>
             <Text style={styles.sloganText}>Gérez vos livres</Text>
             <Text style={styles.sloganText}>en toute simplicité</Text>
@@ -152,7 +145,6 @@ export const LoginScreen = () => {
             </Text>
           </View>
 
-          {/* Bouton Google */}
           <View style={styles.buttonContainer}>
             <TouchableOpacity
               style={styles.googleButton}
@@ -199,8 +191,6 @@ const styles = StyleSheet.create({
     paddingTop: height * 0.08,
     paddingBottom: 40,
   },
-  
-  // 🔥 Cercles décoratifs
   circle1: {
     position: 'absolute',
     width: 300,
@@ -228,8 +218,6 @@ const styles = StyleSheet.create({
     bottom: 200,
     right: -50,
   },
-
-  // 🔥 Logo
   logoContainer: {
     alignItems: 'center',
   },
@@ -266,8 +254,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
     letterSpacing: 0.5,
   },
-
-  // 🔥 Slogan
   sloganContainer: {
     alignItems: 'center',
     paddingHorizontal: 20,
@@ -293,8 +279,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     letterSpacing: 0.3,
   },
-
-  // 🔥 Bouton Google
   buttonContainer: {
     alignItems: 'center',
   },

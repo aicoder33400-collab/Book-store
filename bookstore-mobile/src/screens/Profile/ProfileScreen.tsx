@@ -31,10 +31,8 @@ export const ProfileScreen = () => {
   }, []);
 
   const handleLogout = () => {
-    console.log('🔓 Déconnexion directe sans confirmation...');
     logout()
       .then(() => {
-        console.log('✅ Déconnecté');
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
@@ -45,17 +43,6 @@ export const ProfileScreen = () => {
       .catch((error) => {
         console.error('❌ Erreur déconnexion:', error);
       });
-  };
-
-  const formatDate = (dateString?: string | null) => {
-    if (!dateString) return 'Jamais';
-    return new Date(dateString).toLocaleDateString('fr-FR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
   };
 
   return (
@@ -111,13 +98,6 @@ export const ProfileScreen = () => {
           </View>
         )}
         
-        {user?.age && (
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>🎂 Âge</Text>
-            <Text style={styles.infoValue}>{user.age} ans</Text>
-          </View>
-        )}
-        
         {user?.commune && (
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>📍 Commune</Text>
@@ -126,43 +106,11 @@ export const ProfileScreen = () => {
         )}
       </View>
 
-      <View style={styles.infoSection}>
-        <Text style={styles.sectionTitle}>📋 Compte</Text>
-        
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>📅 Créé le</Text>
-          <Text style={styles.infoValue}>{formatDate(user?.createdAt)}</Text>
-        </View>
-        
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>🔄 Dernière connexion</Text>
-          <Text style={styles.infoValue}>{formatDate(user?.lastLoginAt)}</Text>
-        </View>
-        
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>✅ Email vérifié</Text>
-          <Text style={[styles.infoValue, { color: user?.emailVerified ? colors.success : colors.danger }]}>
-            {user?.emailVerified ? 'Oui' : 'Non'}
-          </Text>
-        </View>
-        
-        <View style={[styles.infoRow, styles.infoRowLast]}>
-          <Text style={styles.infoLabel}>🆔 ID</Text>
-          <Text style={styles.infoValueSmall}>{user?.id}</Text>
-        </View>
-      </View>
-
       <View style={styles.statsContainer}>
         <View style={styles.statCard}>
           <Text style={styles.statEmoji}>📚</Text>
           <Text style={styles.statValue}>{totalLoans !== null ? totalLoans : '—'}</Text>
           <Text style={styles.statLabel}>Emprunts</Text>
-        </View>
-        
-        <View style={styles.statCard}>
-          <Text style={styles.statEmoji}>📧</Text>
-          <Text style={styles.statValueSmall}>{user?.email}</Text>
-          <Text style={styles.statLabel}>Email</Text>
         </View>
       </View>
 
@@ -268,9 +216,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  infoRowLast: {
-    borderBottomWidth: 0,
-  },
   infoLabel: {
     fontSize: typography.fontSize.sm,
     color: colors.text.secondary,
@@ -279,12 +224,6 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.sm,
     color: colors.text.primary,
     fontWeight: '500',
-  },
-  infoValueSmall: {
-    fontSize: typography.fontSize.xs,
-    color: colors.text.light,
-    maxWidth: '60%',
-    textAlign: 'right',
   },
   
   statsContainer: {
@@ -309,12 +248,6 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.xxl,
     fontWeight: typography.fontWeight.bold,
     color: colors.primary,
-  },
-  statValueSmall: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: colors.primary,
-    textAlign: 'center',
   },
   statLabel: {
     fontSize: typography.fontSize.xs,

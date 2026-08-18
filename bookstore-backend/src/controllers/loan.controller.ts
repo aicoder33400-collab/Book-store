@@ -16,6 +16,31 @@ export class LoanController {
     );
   });
 
+  // 🔥 Utilisateur demande le retour
+  requestReturn = catchAsync(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    // 🔥 Utiliser (req as any) pour accéder à user.id
+    const userId = (req as any).user.id;
+
+    const loan = await loanService.requestReturn(id, userId);
+
+    res.status(200).json(
+      ApiResponse.success(loan, 'Return requested successfully')
+    );
+  });
+
+  // 🔥 Admin confirme le retour
+  confirmReturn = catchAsync(async (req: Request, res: Response) => {
+    const { id } = req.params;
+
+    const loan = await loanService.confirmReturn(id);
+
+    res.status(200).json(
+      ApiResponse.success(loan, 'Return confirmed successfully')
+    );
+  });
+
+  // ⚠️ Ancienne méthode returnBook (gardée pour compatibilité, mais plus utilisée)
   returnBook = catchAsync(async (req: Request, res: Response) => {
     const { id } = req.params;
     
@@ -25,7 +50,6 @@ export class LoanController {
       ApiResponse.success(loan, 'Book returned successfully')
     );
   });
-
 
   getMyLoans = catchAsync(async (req: Request, res: Response) => {
     const userId = (req as any).user.id;
@@ -42,6 +66,7 @@ export class LoanController {
       )
     );
   });
+
   getAllLoans = catchAsync(async (req: Request, res: Response) => {
     const { page, limit, userId, bookId, status } = req.query;
     
@@ -53,7 +78,6 @@ export class LoanController {
       status: status as string,
     });
 
-    // Utiliser ApiResponse.successWithPagination
     res.status(200).json(
       ApiResponse.successWithPagination(
         result.data,
@@ -104,6 +128,4 @@ export class LoanController {
       ApiResponse.success(null, 'Loan deleted successfully')
     );
   });
-
-
 }

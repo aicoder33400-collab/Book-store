@@ -5,7 +5,6 @@ import bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 export class UserService {
-  // 🔥 Récupérer tous les utilisateurs avec les nouvelles infos
   async getAllUsers(page: number = 1, limit: number = 10) {
     const skip = (page - 1) * limit;
 
@@ -17,19 +16,20 @@ export class UserService {
           id: true,
           name: true,
           email: true,
-          phone: true,           // 🔥 AJOUTÉ
+          phone: true,
           role: true,
-          authProvider: true,    // 🔥 AJOUTÉ
-          avatar: true,          // 🔥 AJOUTÉ
-          emailVerified: true,   // 🔥 AJOUTÉ
+          authProvider: true,
+          avatar: true,
+          emailVerified: true,
           createdAt: true,
-          updatedAt: true,
-          lastLoginAt: true,     // 🔥 NOUVEAU
-          // On exclut les champs sensibles
-          password: false,
-          verificationCode: false,
-          resetCode: false,
-          resetCodeExpires: false,
+          firstName: true,
+          lastName: true,
+          age: true,        // ✅ Gardé pour l'Admin
+          commune: true,
+          isProfileComplete: true,
+          // ❌ lastLoginAt SUPPRIMÉ
+          // ❌ verificationCode SUPPRIMÉ
+          // ❌ resetCode SUPPRIMÉ
         },
         orderBy: {
           createdAt: 'desc',
@@ -49,7 +49,6 @@ export class UserService {
     };
   }
 
-  // 🔥 Récupérer un utilisateur par ID avec toutes les infos
   async getUserById(id: string) {
     const user = await prisma.user.findUnique({
       where: { id },
@@ -63,12 +62,12 @@ export class UserService {
         avatar: true,
         emailVerified: true,
         createdAt: true,
-        updatedAt: true,
-        lastLoginAt: true,      // 🔥 NOUVEAU
-        password: false,
-        verificationCode: false,
-        resetCode: false,
-        resetCodeExpires: false,
+        firstName: true,
+        lastName: true,
+        age: true,
+        commune: true,
+        isProfileComplete: true,
+        // ❌ lastLoginAt SUPPRIMÉ
       },
     });
 
@@ -79,9 +78,7 @@ export class UserService {
     return user;
   }
 
-  // 🔥 Créer un utilisateur (admin)
   async createUser(data: any) {
-    // Vérifier si l'utilisateur existe déjà
     const existingUser = await prisma.user.findUnique({
       where: { email: data.email },
     });
@@ -90,7 +87,6 @@ export class UserService {
       throw new AppError('Cet email est déjà utilisé', 400);
     }
 
-    // Hasher le mot de passe si fourni
     let password = undefined;
     if (data.password) {
       password = await bcrypt.hash(data.password, 10);
@@ -105,6 +101,11 @@ export class UserService {
         role: data.role || 'USER',
         authProvider: 'local',
         emailVerified: data.emailVerified || false,
+        firstName: data.firstName || null,
+        lastName: data.lastName || null,
+        age: data.age || null,
+        commune: data.commune || null,
+        isProfileComplete: data.isProfileComplete || false,
       },
       select: {
         id: true,
@@ -116,17 +117,18 @@ export class UserService {
         avatar: true,
         emailVerified: true,
         createdAt: true,
-        updatedAt: true,
-        lastLoginAt: true,
+        firstName: true,
+        lastName: true,
+        age: true,
+        commune: true,
+        isProfileComplete: true,
       },
     });
 
     return user;
   }
 
-  // 🔥 Mettre à jour un utilisateur
   async updateUser(id: string, data: any) {
-    // Vérifier que l'utilisateur existe
     const existingUser = await prisma.user.findUnique({
       where: { id },
     });
@@ -135,15 +137,17 @@ export class UserService {
       throw new AppError('Utilisateur non trouvé', 404);
     }
 
-    // Préparer les données de mise à jour
     const updateData: any = {
       name: data.name,
       email: data.email,
       phone: data.phone,
       role: data.role,
+      firstName: data.firstName,
+      lastName: data.lastName,
+      age: data.age,
+      commune: data.commune,
     };
 
-    // Si un mot de passe est fourni, le hasher
     if (data.password) {
       updateData.password = await bcrypt.hash(data.password, 10);
     }
@@ -161,15 +165,17 @@ export class UserService {
         avatar: true,
         emailVerified: true,
         createdAt: true,
-        updatedAt: true,
-        lastLoginAt: true,
+        firstName: true,
+        lastName: true,
+        age: true,
+        commune: true,
+        isProfileComplete: true,
       },
     });
 
     return user;
   }
 
-  // 🔥 Supprimer un utilisateur
   async deleteUser(id: string) {
     const user = await prisma.user.findUnique({
       where: { id },
@@ -184,13 +190,5 @@ export class UserService {
     });
 
     return { message: 'Utilisateur supprimé avec succès' };
-  }
-
-  // 🔥 Mettre à jour la date de dernière connexion
-  async updateLastLogin(id: string) {
-    await prisma.user.update({
-      where: { id },
-      data: { lastLoginAt: new Date() },
-    });
   }
 }

@@ -1,23 +1,25 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { useIsFocused } from '@react-navigation/native';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   FlatList,
+  TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
+  Alert,
+  Platform,
 } from 'react-native';
-import { useAuthStore } from '../../store/auth.store';
 import { loanService, Loan } from '../../services/loan.service';
 import { colors } from '../../theme/colors';
-import { typography } from '../../theme/typography';
+import api from '../../services/api';
 
 const STATUS_LABELS: Record<string, string> = {
   REQUESTED: '🔔 En attente',
   APPROVED: '✅ Approuvé',
   REJECTED: '❌ Refusé',
   BORROWED: '📖 Emprunté',
+  RETURN_REQUESTED: '📩 Retour demandé',
   RETURNED: '↩️ Retourné',
   LATE: '⚠️ En retard',
 };
@@ -27,49 +29,22 @@ const STATUS_COLORS: Record<string, string> = {
   APPROVED: '#4A90D9',
   REJECTED: '#f44336',
   BORROWED: '#4CAF50',
+  RETURN_REQUESTED: '#FF9800',
   RETURNED: '#9E9E9E',
   LATE: '#FF5722',
 };
 
-const STATUS_MESSAGES: Record<string, string> = {
-  REQUESTED: "⏳ En attente d'approbation par l'administrateur",
-  APPROVED: '✅ Approuvé ! Venez récupérer votre livre à la bibliothèque',
-  REJECTED: '❌ Votre demande a été refusée',
-  BORROWED: '📖 Livre en votre possession',
-  RETURNED: '↩️ Livre retourné, merci !',
-  LATE: '⚠️ Livre en retard, veuillez le retourner rapidement',
-};
-
 export const MyLoansScreen = () => {
-  const { user } = useAuthStore();
   const [loans, setLoans] = useState<Loan[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [statusChanged, setStatusChanged] = useState<string | null>(null);
-  const previousLoansRef = useRef<Loan[]>([]);
-  const isFocused = useIsFocused();
 
   const fetchLoans = async () => {
     try {
       const data = await loanService.getUserLoans();
-      
-      // Detect status changes for popups
-      if (previousLoansRef.current.length > 0) {
-        for (const newLoan of data) {
-          const oldLoan = previousLoansRef.current.find(l => l.id === newLoan.id);
-          if (oldLoan && oldLoan.status !== newLoan.status) {
-            const bookTitle = newLoan.book?.title || 'Livre';
-            const message = STATUS_MESSAGES[newLoan.status] || `Statut mis à jour : ${newLoan.status}`;
-            setStatusChanged(`📚 ${bookTitle} : ${message}`);
-            setTimeout(() => setStatusChanged(null), 6000);
-          }
-        }
-      }
-      
-      previousLoansRef.current = data;
       setLoans(data);
     } catch (error) {
-      console.error('Erreur chargement emprunts:', error);
+      console.error('Erreur chargement:', error);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -77,199 +52,195 @@ export const MyLoansScreen = () => {
   };
 
   useEffect(() => {
-    if (isFocused) {
-      fetchLoans();
-    }
-  }, [isFocused]);
-
-  // Auto-refresh every 30 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      fetchLoans();
-    }, 30000);
-    return () => clearInterval(interval);
+    fetchLoans();
   }, []);
 
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await fetchLoans();
+  // 🔥 Demande de retour avec confirmation
+  const handleRequestReturn = async (loanId: string, bookTitle: string) => {
+    console.log('🟢 DEMANDE DE RETOUR - ID:', loanId);
+    
+    // 🔥 Fonction pour exécuter la requête
+    const executeRequest = async () => {
+      try {
+        console.log('📤 PUT /loans/' + loanId + '/request-return');
+        const response = await api.put(`/loans/${loanId}/request-return`);
+        console.log('✅ Réponse:', response.data);
+        
+        Alert.alert('Succès', '📩 Demande de retour envoyée !');
+        fetchLoans();
+      } catch (error: any) {
+        console.error('❌ Erreur:', error);
+        console.error('❌ Status:', error.response?.status);
+        console.error('❌ Data:', error.response?.data);
+        Alert.alert('Erreur', error.response?.data?.message || 'Impossible de demander le retour');
+      }
+    };
+
+    // 🔥 Pour le web : utiliser window.confirm
+    if (Platform.OS === 'web') {
+      const confirmed = window.confirm(`Voulez-vous signaler que vous souhaitez retourner "${bookTitle}" ?`);
+      if (confirmed) {
+        await executeRequest();
+      }
+      return;
+    }
+
+    // 🔥 Pour mobile : utiliser Alert.alert
+    Alert.alert(
+      'Demander le retour',
+      `Voulez-vous signaler que vous souhaitez retourner "${bookTitle}" ?`,
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Demander le retour',
+          onPress: executeRequest,
+        }
+      ]
+    );
+  };
+
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return '—';
+    return new Date(dateString).toLocaleDateString('fr-FR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   };
 
   const renderLoan = ({ item }: { item: Loan }) => {
-    const statusText = STATUS_LABELS[item.status] || item.status;
-    const statusColor = STATUS_COLORS[item.status] || '#999';
-    const statusMessage = STATUS_MESSAGES[item.status] || '';
-
+    const isBorrowedOrLate = item.status === 'BORROWED' || item.status === 'LATE';
+    const isReturnRequested = item.status === 'RETURN_REQUESTED';
+    const canRequestReturn = isBorrowedOrLate && !isReturnRequested;
+    
     return (
-      <View style={styles.loanCard}>
-        <Text style={styles.bookTitle}>{item.book.title}</Text>
-        <Text style={styles.bookAuthor}>{item.book.author}</Text>
-        
-        {item.borrowedAt && (
-          <View style={styles.loanInfo}>
-            <Text style={styles.loanDate}>
-              📅 Emprunté le: {new Date(item.borrowedAt).toLocaleDateString('fr-FR')}
-            </Text>
-            <Text style={styles.loanDate}>
-              ⏰ À rendre le: {new Date(item.dueDate).toLocaleDateString('fr-FR')}
-            </Text>
+      <View style={styles.card}>
+        <View style={styles.cardHeader}>
+          <Text style={styles.bookTitle}>📖 {item.book?.title || 'Livre'}</Text>
+          <View style={[styles.statusBadge, { backgroundColor: STATUS_COLORS[item.status] || '#999' }]}>
+            <Text style={styles.statusText}>{STATUS_LABELS[item.status] || item.status}</Text>
           </View>
-        )}
-        {!item.borrowedAt && (
-          <View style={styles.loanInfo}>
-            <Text style={styles.loanDate}>
-              📅 Demandé le: {new Date(item.dueDate).toLocaleDateString('fr-FR')}
-            </Text>
-          </View>
-        )}
-
-        <View style={[styles.statusBadge, { backgroundColor: `${statusColor}20` }]}>
-          <Text style={[styles.statusText, { color: statusColor }]}>{statusText}</Text>
         </View>
 
-        <Text style={styles.statusMessage}>{statusMessage}</Text>
+        <Text style={styles.bookAuthor}>✍️ {item.book?.author || ''}</Text>
+        
+        <View style={styles.dates}>
+          <View style={styles.dateRow}>
+            <Text style={styles.dateLabel}>📅 Emprunté le</Text>
+            <Text style={styles.dateValue}>{formatDate(item.borrowedAt)}</Text>
+          </View>
+          
+          <View style={styles.dateRow}>
+            <Text style={styles.dateLabel}>⏳ À rendre avant</Text>
+            <Text style={[styles.dateValue, styles.dueDate]}>
+              {formatDate(item.dueDate)}
+            </Text>
+          </View>
+          
+          {item.returnedAt && (
+            <View style={styles.dateRow}>
+              <Text style={styles.dateLabel}>↩️ Retourné le</Text>
+              <Text style={[styles.dateValue, styles.returnedDate]}>
+                {formatDate(item.returnedAt)}
+              </Text>
+            </View>
+          )}
+        </View>
+
+        {canRequestReturn && (
+          <TouchableOpacity 
+            style={styles.requestReturnBtn} 
+            onPress={() => handleRequestReturn(item.id, item.book?.title || 'ce livre')}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.btnText}>📩 Demander le retour</Text>
+          </TouchableOpacity>
+        )}
+
+        {isReturnRequested && (
+          <View style={styles.waitingBadge}>
+            <Text style={styles.waitingText}>⏳ En attente de validation</Text>
+          </View>
+        )}
       </View>
     );
   };
 
   if (loading) {
     return (
-      <View style={styles.centerContainer}>
+      <View style={styles.centered}>
         <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.loadingText}>Chargement de vos emprunts...</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      {/* Status change popup */}
-      {statusChanged && (
-        <View style={styles.popup}>
-          <Text style={styles.popupText}>{statusChanged}</Text>
-        </View>
-      )}
-
-      <FlatList
-        data={loans}
-        keyExtractor={(item) => item.id}
-        renderItem={renderLoan}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />
-        }
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyIcon}>📭</Text>
-            <Text style={styles.emptyText}>Aucun emprunt</Text>
-            <Text style={styles.emptySubtext}>
-              Empruntez un livre pour le voir apparaître ici
-            </Text>
-          </View>
-        }
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-      />
-    </View>
+    <FlatList
+      data={loans}
+      keyExtractor={(item) => item.id}
+      renderItem={renderLoan}
+      contentContainerStyle={styles.list}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchLoans(); }} />}
+      ListEmptyComponent={<Text style={styles.empty}>Aucun emprunt</Text>}
+    />
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background.primary,
-  },
-  centerContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: colors.background.primary,
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: typography.fontSize.md,
-    color: colors.text.secondary,
-  },
-  popup: {
-    backgroundColor: colors.primary,
-    padding: 14,
-    marginHorizontal: 16,
-    marginTop: 10,
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  list: { padding: 16 },
+  empty: { textAlign: 'center', color: '#999', marginTop: 40, fontSize: 16 },
+  card: {
+    backgroundColor: '#fff',
     borderRadius: 12,
-    elevation: 4,
-  },
-  popupText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  listContent: {
-    padding: 16,
-    paddingBottom: 20,
-  },
-  loanCard: {
-    backgroundColor: colors.background.secondary,
-    borderRadius: 16,
     padding: 16,
     marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
     elevation: 2,
   },
-  bookTitle: {
-    fontSize: typography.fontSize.lg,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.text.primary,
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 4,
   },
-  bookAuthor: {
-    fontSize: typography.fontSize.sm,
-    color: colors.text.secondary,
-    marginBottom: 12,
+  bookTitle: { fontSize: 16, fontWeight: '700', color: colors.text.primary, flex: 1 },
+  bookAuthor: { fontSize: 13, color: colors.text.secondary, marginBottom: 8 },
+  dates: { marginTop: 4, gap: 2 },
+  dateRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 2,
   },
-  loanInfo: {
-    marginBottom: 12,
-  },
-  loanDate: {
-    fontSize: typography.fontSize.xs,
-    color: colors.text.light,
-    marginBottom: 2,
-  },
+  dateLabel: { fontSize: 12, color: '#888' },
+  dateValue: { fontSize: 12, color: '#333' },
+  dueDate: { color: colors.danger, fontWeight: '600' },
+  returnedDate: { color: colors.success, fontWeight: '600' },
   statusBadge: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    marginBottom: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
   },
-  statusText: {
-    fontSize: typography.fontSize.xs,
-    fontWeight: typography.fontWeight.medium,
-  },
-  statusMessage: {
-    fontSize: 12,
-    color: colors.text.secondary,
-    fontStyle: 'italic',
-  },
-  emptyContainer: {
+  statusText: { color: '#fff', fontSize: 12, fontWeight: '600' },
+  requestReturnBtn: {
+    backgroundColor: '#FF9800',
+    borderRadius: 8,
+    padding: 12,
     alignItems: 'center',
-    paddingVertical: 60,
+    marginTop: 10,
   },
-  emptyIcon: {
-    fontSize: 64,
-    marginBottom: 16,
+  waitingBadge: {
+    backgroundColor: '#FFF3E0',
+    borderRadius: 8,
+    padding: 10,
+    alignItems: 'center',
+    marginTop: 10,
   },
-  emptyText: {
-    fontSize: typography.fontSize.lg,
-    fontWeight: typography.fontWeight.medium,
-    color: colors.text.primary,
-    marginBottom: 8,
+  waitingText: {
+    color: '#E65100',
+    fontWeight: '600',
+    fontSize: 14,
   },
-  emptySubtext: {
-    fontSize: typography.fontSize.sm,
-    color: colors.text.light,
-    textAlign: 'center',
-  },
+  btnText: { color: '#fff', fontWeight: '600', fontSize: 14 },
 });

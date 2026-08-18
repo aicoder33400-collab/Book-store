@@ -30,7 +30,10 @@
     },
     "scheme": "bookstore",
     "extra": {
-      "googleClientId": "702646842121-obbkdc95pni8m8akr6lh7rbsbv8dk8p4.apps.googleusercontent.com"
+      "googleClientId": "702646842121-obbkdc95pni8m8akr6lh7rbsbv8dk8p4.apps.googleusercontent.com",
+      "eas": {
+        "projectId": "1ad9784c-cdd7-4599-b25c-e6319529d826"
+      }
     }
   }
 }

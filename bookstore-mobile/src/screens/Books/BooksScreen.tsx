@@ -8,11 +8,18 @@ import {
   ActivityIndicator,
   RefreshControl,
   TextInput,
+  Image,
+  Dimensions,
+  SafeAreaView,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import api from '../../services/api';
-import { colors } from '../../theme/colors';
+import { useAuthStore } from '../../store/auth.store';
+import { Ionicons } from '@expo/vector-icons';
+
+const { width } = Dimensions.get('window');
+const CARD_WIDTH = (width - 32) / 2;
 
 type RootStackParamList = {
   BookDetail: { book: any };
@@ -27,6 +34,8 @@ export const BooksScreen = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
   const navigation = useNavigation<BooksScreenNavigationProp>();
+  const { user } = useAuthStore();
+  const isAdmin = user?.role === 'ADMIN' || user?.role === 'STAFF';
 
   const fetchBooks = async () => {
     try {
@@ -53,21 +62,35 @@ export const BooksScreen = () => {
     <TouchableOpacity
       style={styles.card}
       onPress={() => navigation.navigate('BookDetail', { book: item })}
+      activeOpacity={0.85}
     >
-      <View style={styles.cardContent}>
-        <View style={styles.bookInfo}>
-          <Text style={styles.title}>{item.title}</Text>
-          <Text style={styles.author}>✍️ {item.author}</Text>
-          <Text style={styles.isbn}>ISBN: {item.isbn}</Text>
-        </View>
-        <View style={styles.rightInfo}>
-          <View style={[styles.statusBadge, item.availableQuantity > 0 ? styles.available : styles.unavailable]}>
-            <Text style={styles.statusText}>
-              {item.availableQuantity > 0 ? '📖 Disponible' : '❌ Indisponible'}
-            </Text>
+      <View style={styles.imageContainer}>
+        {item.imageUrl ? (
+          <Image source={{ uri: `http://localhost:3000${item.imageUrl}` }} style={styles.bookImage} />
+        ) : (
+          <View style={styles.placeholderImage}>
+            <Ionicons name="book-outline" size={36} color="#ccc" />
           </View>
-          <Text style={styles.stock}>📦 {item.availableQuantity}/{item.totalQuantity}</Text>
+        )}
+        {item.availableQuantity === 0 && (
+          <View style={styles.unavailableBadge}>
+            <Text style={styles.unavailableBadgeText}>Indisponible</Text>
+          </View>
+        )}
+      </View>
+      <View style={styles.cardContent}>
+        <Text style={styles.bookTitle} numberOfLines={1}>{item.title}</Text>
+        <Text style={styles.bookAuthor} numberOfLines={1}>{item.author}</Text>
+        <View style={styles.availabilityRow}>
+          <View style={[styles.availabilityDot, item.availableQuantity > 0 ? styles.availableDot : styles.unavailableDot]} />
+          <Text style={[styles.availabilityText, item.availableQuantity > 0 ? styles.availableText : styles.unavailableText]}>
+            {item.availableQuantity > 0 ? 'Disponible' : 'Indisponible'}
+          </Text>
         </View>
+        {/* 🔥 STOCK VISIBLE UNIQUEMENT POUR ADMIN/STAFF */}
+        {isAdmin && (
+          <Text style={styles.stockText}>📦 {item.availableQuantity}/{item.totalQuantity}</Text>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -75,78 +98,181 @@ export const BooksScreen = () => {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <ActivityIndicator size="large" color="#6C63FF" />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.searchContainer}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="🔍 Rechercher un livre..."
-          placeholderTextColor="#999"
-          value={search}
-          onChangeText={setSearch}
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        <View style={styles.searchWrapper}>
+          <Ionicons name="search-outline" size={20} color="#999" style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Rechercher un livre..."
+            placeholderTextColor="#999"
+            value={search}
+            onChangeText={setSearch}
+          />
+        </View>
+
+        <FlatList
+          data={filteredBooks}
+          keyExtractor={(item) => item.id}
+          renderItem={renderBook}
+          numColumns={2}
+          contentContainerStyle={styles.list}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchBooks(); }} />}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Ionicons name="book-outline" size={48} color="#ddd" />
+              <Text style={styles.emptyText}>Aucun livre trouvé</Text>
+            </View>
+          }
         />
       </View>
-
-      <FlatList
-        data={filteredBooks}
-        keyExtractor={(item) => item.id}
-        renderItem={renderBook}
-        contentContainerStyle={styles.list}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchBooks(); }} />}
-        ListEmptyComponent={<Text style={styles.empty}>Aucun livre trouvé</Text>}
-      />
-    </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f5f5f5' },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  searchContainer: {
-    padding: 16,
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#f8f9fc',
+  },
+  container: {
+    flex: 1,
+    backgroundColor: '#f8f9fc',
+  },
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fc',
+  },
+  searchWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    marginHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
+  },
+  searchIcon: {
+    marginRight: 8,
   },
   searchInput: {
-    backgroundColor: '#f5f5f5',
-    borderRadius: 10,
-    padding: 12,
-    fontSize: 16,
+    flex: 1,
+    paddingVertical: 12,
+    fontSize: 15,
     color: '#1a1a2e',
   },
-  list: { padding: 16 },
-  empty: { textAlign: 'center', color: '#999', marginTop: 40, fontSize: 16 },
+  list: {
+    padding: 8,
+    paddingBottom: 80,
+  },
   card: {
+    flex: 1,
+    maxWidth: CARD_WIDTH,
+    margin: 8,
     backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    elevation: 2,
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
   },
-  cardContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  imageContainer: {
+    width: '100%',
+    height: CARD_WIDTH * 1.3,
+    backgroundColor: '#f5f6fa',
+    position: 'relative',
+  },
+  bookImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  placeholderImage: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#f5f6fa',
   },
-  bookInfo: { flex: 1 },
-  title: { fontSize: 16, fontWeight: '700', color: '#1a1a2e', marginBottom: 2 },
-  author: { fontSize: 14, color: '#666', marginBottom: 2 },
-  isbn: { fontSize: 12, color: '#999' },
-  rightInfo: { alignItems: 'flex-end', marginLeft: 8 },
-  statusBadge: {
+  unavailableBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: 'rgba(244,67,54,0.9)',
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 12,
-    marginBottom: 4,
+    borderRadius: 8,
   },
-  available: { backgroundColor: '#4CAF50' },
-  unavailable: { backgroundColor: '#f44336' },
-  statusText: { color: '#fff', fontSize: 12, fontWeight: '600' },
-  stock: { fontSize: 12, color: '#666' },
+  unavailableBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  cardContent: {
+    padding: 12,
+  },
+  bookTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1a1a2e',
+    marginBottom: 2,
+  },
+  bookAuthor: {
+    fontSize: 12,
+    color: '#888',
+    marginBottom: 6,
+  },
+  availabilityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  availabilityDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginRight: 6,
+  },
+  availableDot: {
+    backgroundColor: '#4CAF50',
+  },
+  unavailableDot: {
+    backgroundColor: '#f44336',
+  },
+  availabilityText: {
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  availableText: {
+    color: '#4CAF50',
+  },
+  unavailableText: {
+    color: '#f44336',
+  },
+  stockText: {
+    fontSize: 10,
+    color: '#999',
+    marginTop: 2,
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#999',
+    marginTop: 12,
+  },
 });

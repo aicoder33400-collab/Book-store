@@ -1,24 +1,22 @@
-// bookstore-backend/src/app.ts
-
 import express, { Application } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import morgan from 'morgan';
-import session from 'express-session'; // 🔥 AJOUTÉ
-import passport from 'passport'; // 🔥 AJOUTÉ
+import session from 'express-session';
+import passport from 'passport';
+import path from 'path';
 
 import authRoutes from './routes/auth.routes';
 import bookRoutes from './routes/book.routes';
 import userRoutes from './routes/user.routes';
 import loanRoutes from './routes/loan.routes';
-import saleRoutes from './routes/sale.routes';
 import adminRoutes from './routes/admin.routes';
 
 import { ErrorMiddleware } from './middlewares/error.middleware';
 
-// 🔥 IMPORTER LA CONFIGURATION PASSPORT
-import './config/passport'; 
+// Importer la configuration Passport
+import './config/passport';
 
 class App {
   public app: Application;
@@ -31,53 +29,55 @@ class App {
   }
 
   private initializeMiddlewares(): void {
-    // Security middlewares
-    this.app.use(helmet());
-    this.app.use(cors({
-      origin: process.env.CORS_ORIGIN || '*',
-      credentials: true,
+    this.app.use(helmet({
+      crossOriginResourcePolicy: { policy: "cross-origin" }
     }));
     
-    // Compression
+    this.app.use(cors({
+      origin: '*',
+      credentials: true,
+      exposedHeaders: ['Content-Disposition'],
+    }));
+    
     this.app.use(compression());
+    this.app.use(express.json({ limit: '50mb' }));
+    this.app.use(express.urlencoded({ extended: true, limit: '50mb' }));
     
-    // Body parsing
-    this.app.use(express.json({ limit: '10mb' }));
-    this.app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-    
-    // Logging
     if (process.env.NODE_ENV !== 'test') {
       this.app.use(morgan('combined'));
     }
 
-    // 🔥 SESSION MIDDLEWARE (Nécessaire pour Passport)
     this.app.use(session({
       secret: process.env.SESSION_SECRET || 'mon-session-secret-temp-12345',
       resave: false,
       saveUninitialized: false,
       cookie: {
         secure: process.env.NODE_ENV === 'production',
-        maxAge: 24 * 60 * 60 * 1000 // 24 heures
+        maxAge: 24 * 60 * 60 * 1000
       }
     }));
 
-    // 🔥 INITIALISER PASSPORT
     this.app.use(passport.initialize());
     this.app.use(passport.session());
+
+    // 🔥 Servir les images statiques avec CORS
+    this.app.use('/uploads', express.static(path.join(__dirname, '../uploads'), {
+      setHeaders: (res) => {
+        res.set('Cross-Origin-Resource-Policy', 'cross-origin');
+        res.set('Access-Control-Allow-Origin', '*');
+      }
+    }));
   }
 
   private initializeRoutes(): void {
-    // Health check
     this.app.get('/health', (_req, res) => {
       res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
     });
 
-    // API routes
     this.app.use('/api/auth', authRoutes);
     this.app.use('/api/books', bookRoutes);
     this.app.use('/api/users', userRoutes);
     this.app.use('/api/loans', loanRoutes);
-    this.app.use('/api/sales', saleRoutes);
     this.app.use('/api/admin', adminRoutes);
   }
 

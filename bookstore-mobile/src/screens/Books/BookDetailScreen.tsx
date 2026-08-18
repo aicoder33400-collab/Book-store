@@ -9,14 +9,18 @@ import {
   ActivityIndicator,
   Modal,
   TextInput,
+  Image,
+  Dimensions,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useAuthStore } from '../../store/auth.store';
 import { useBookStore } from '../../store/book.store';
 import { loanService } from '../../services/loan.service';
-import { colors } from '../../theme/colors';
-import { typography } from '../../theme/typography';
 import api from '../../services/api';
+import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
+
+const { width } = Dimensions.get('window');
 
 export const BookDetailScreen = () => {
   const navigation = useNavigation();
@@ -26,10 +30,9 @@ export const BookDetailScreen = () => {
   const { book: initialBook } = route.params as any;
   const [book, setBook] = useState(initialBook);
   const [loading, setLoading] = useState(false);
-  const isAdmin = user?.role === 'ADMIN';
-  const isStaff = user?.role === 'STAFF';
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const isAdmin = user?.role === 'ADMIN' || user?.role === 'STAFF';
 
-  // Edit modal
   const [editVisible, setEditVisible] = useState(false);
   const [editData, setEditData] = useState({
     title: book.title,
@@ -40,10 +43,59 @@ export const BookDetailScreen = () => {
   });
   const [saving, setSaving] = useState(false);
   const [borrowVisible, setBorrowVisible] = useState(false);
-
-  // Delete confirmation
   const [deleteVisible, setDeleteVisible] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  const pickImage = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission refusée', 'Vous devez autoriser l\'accès à la galerie');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [2, 3],
+        quality: 0.8,
+        base64: true,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        const asset = result.assets[0];
+        if (asset.base64) {
+          uploadImage(asset.base64, asset.fileName || 'book-cover.jpg');
+        }
+      }
+    } catch (error) {
+      console.error('Erreur pickImage:', error);
+      Alert.alert('Erreur', 'Impossible d\'ouvrir la galerie');
+    }
+  };
+
+  const uploadImage = async (base64: string, filename: string) => {
+    setUploadingImage(true);
+    try {
+      const payload = {
+        bookId: book.id,
+        imageBase64: `data:image/jpeg;base64,${base64}`,
+        filename: filename,
+      };
+
+      const response = await api.post('/books/upload-image', payload);
+
+      if (response.data.success) {
+        setBook({ ...book, imageUrl: response.data.data.imageUrl });
+        Alert.alert('Succès', 'Image ajoutée avec succès !');
+        fetchBooks();
+      }
+    } catch (error: any) {
+      Alert.alert('Erreur', error.response?.data?.message || 'Erreur lors de l\'upload');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
 
   const handleBorrow = () => {
     setBorrowVisible(true);
@@ -52,16 +104,37 @@ export const BookDetailScreen = () => {
   const doBorrow = async () => {
     setLoading(true);
     setBorrowVisible(false);
+    
     try {
       const dueDate = new Date();
       dueDate.setDate(dueDate.getDate() + 14);
       await loanService.borrowBook(user!.id, book.id, dueDate);
-      Alert.alert('Succès', 'Demande envoyée !');
-      navigation.goBack();
-    } catch (error: any) {
-      Alert.alert('Erreur', error.response?.data?.message || "Erreur lors de l'emprunt");
-    } finally {
+      
       setLoading(false);
+      
+      // 🔥 SUCCÈS - Utiliser Alert.alert (fonctionne sur toutes les plateformes)
+      Alert.alert(
+        '📚 Demande envoyée !',
+        'Votre demande d\'emprunt a bien été prise en compte.\nUn administrateur va la traiter.',
+        [
+          { 
+            text: 'OK', 
+            onPress: () => navigation.goBack()
+          }
+        ]
+      );
+    } catch (error: any) {
+      setLoading(false);
+      
+      // 🔥 AFFICHER LE MESSAGE D'ERREUR
+      const errorMessage = error.response?.data?.message || "Erreur lors de l'emprunt";
+      console.log('❌ Erreur:', errorMessage);
+      
+      Alert.alert(
+        'Erreur',
+        errorMessage,
+        [{ text: 'OK' }]
+      );
     }
   };
 
@@ -119,8 +192,39 @@ export const BookDetailScreen = () => {
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
-        <Text style={styles.title}>{book.title}</Text>
-        <Text style={styles.author}>par {book.author}</Text>
+        <View style={styles.imageContainer}>
+          {book.imageUrl ? (
+            <Image 
+              source={{ uri: `http://localhost:3000${book.imageUrl}` }} 
+              style={styles.bookImage}
+              resizeMode="cover"
+            />
+          ) : (
+            <View style={styles.placeholderImage}>
+              <Ionicons name="book-outline" size={40} color="#ccc" />
+            </View>
+          )}
+          {isAdmin && (
+            <TouchableOpacity style={styles.uploadBtn} onPress={pickImage} disabled={uploadingImage}>
+              {uploadingImage ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Ionicons name="camera-outline" size={16} color="#fff" />
+              )}
+            </TouchableOpacity>
+          )}
+        </View>
+        
+        <View style={styles.infoContainer}>
+          <Text style={styles.title} numberOfLines={2}>{book.title}</Text>
+          <Text style={styles.author}>✍️ {book.author}</Text>
+          <View style={styles.availabilityRow}>
+            <View style={[styles.availabilityDot, book.availableQuantity > 0 ? styles.availableDot : styles.unavailableDot]} />
+            <Text style={[styles.availabilityText, book.availableQuantity > 0 ? styles.availableText : styles.unavailableText]}>
+              {book.availableQuantity > 0 ? '✅ Disponible' : '❌ Indisponible'}
+            </Text>
+          </View>
+        </View>
       </View>
 
       <View style={styles.section}>
@@ -130,22 +234,22 @@ export const BookDetailScreen = () => {
         </Text>
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>📊 Informations</Text>
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>ISBN :</Text>
-          <Text style={styles.infoValue}>{book.isbn}</Text>
+      {isAdmin && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>📋 Détails</Text>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>ISBN</Text>
+            <Text style={styles.detailValue}>{book.isbn}</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Stock</Text>
+            <Text style={styles.detailValue}>{book.availableQuantity} / {book.totalQuantity}</Text>
+          </View>
         </View>
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Stock :</Text>
-          <Text style={[styles.infoValue, book.availableQuantity === 0 && styles.outOfStock]}>
-            {book.availableQuantity} / {book.totalQuantity}
-          </Text>
-        </View>
-      </View>
+      )}
 
       <View style={styles.actions}>
-        {!isAdmin && !isStaff && (
+        {!isAdmin && (
           <TouchableOpacity 
             style={[styles.button, styles.borrowButton]}
             onPress={handleBorrow}
@@ -161,19 +265,18 @@ export const BookDetailScreen = () => {
           </TouchableOpacity>
         )}
 
-        {(isAdmin || isStaff) && (
-          <>
+        {isAdmin && (
+          <View style={styles.adminActions}>
             <TouchableOpacity style={[styles.button, styles.editButton]} onPress={handleEdit}>
               <Text style={styles.buttonText}>✏️ Modifier</Text>
             </TouchableOpacity>
             <TouchableOpacity style={[styles.button, styles.deleteButton]} onPress={() => setDeleteVisible(true)}>
               <Text style={styles.buttonText}>🗑️ Supprimer</Text>
             </TouchableOpacity>
-          </>
+          </View>
         )}
       </View>
 
-      {/* Edit Modal */}
       <Modal visible={editVisible} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modal}>
@@ -195,7 +298,6 @@ export const BookDetailScreen = () => {
         </View>
       </Modal>
 
-      {/* Delete Confirmation */}
       <Modal visible={deleteVisible} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.confirmBox}>
@@ -213,7 +315,6 @@ export const BookDetailScreen = () => {
         </View>
       </Modal>
 
-      {/* Borrow Confirmation */}
       <Modal visible={borrowVisible} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.confirmBox}>
@@ -237,38 +338,242 @@ export const BookDetailScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background.primary },
+  container: { flex: 1, backgroundColor: '#f8f9fc' },
+
   header: {
-    padding: 20, backgroundColor: colors.background.secondary, marginBottom: 16,
-    borderBottomWidth: 1, borderBottomColor: colors.border,
+    flexDirection: 'row',
+    padding: 16,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
   },
-  title: { fontSize: typography.fontSize.xxl, fontWeight: typography.fontWeight.bold, color: colors.text.primary },
-  author: { fontSize: typography.fontSize.md, color: colors.text.secondary, marginTop: 4 },
-  section: { paddingHorizontal: 20, marginBottom: 24 },
-  sectionTitle: { fontSize: typography.fontSize.lg, fontWeight: typography.fontWeight.bold, color: colors.text.primary, marginBottom: 12 },
-  description: { fontSize: typography.fontSize.md, color: colors.text.secondary, lineHeight: 22 },
-  infoRow: { flexDirection: 'row', marginBottom: 8 },
-  infoLabel: { width: 80, fontSize: typography.fontSize.md, color: colors.text.secondary },
-  infoValue: { flex: 1, fontSize: typography.fontSize.md, color: colors.text.primary },
-  outOfStock: { color: colors.danger, fontWeight: typography.fontWeight.bold },
-  actions: { padding: 20, gap: 12, marginBottom: 30 },
-  button: { padding: 16, borderRadius: 12, alignItems: 'center' },
-  borrowButton: { backgroundColor: colors.info },
-  editButton: { backgroundColor: '#FF9800' },
-  deleteButton: { backgroundColor: '#f44336' },
-  buttonText: { color: colors.text.white, fontSize: typography.fontSize.lg, fontWeight: typography.fontWeight.bold },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  modal: { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: '90%' },
-  modalTitle: { fontSize: 20, fontWeight: '700', color: colors.text.primary, marginBottom: 16, textAlign: 'center' },
-  modalInput: { backgroundColor: '#f5f5f5', borderRadius: 12, padding: 14, fontSize: 15, color: colors.text.primary, marginBottom: 12 },
-  modalActions: { flexDirection: 'row', gap: 10 },
-  modalCancel: { flex: 1, padding: 14, borderRadius: 10, backgroundColor: '#f0f0f0', alignItems: 'center' },
-  modalCancelText: { color: '#666', fontWeight: '600', fontSize: 15 },
-  modalSave: { flex: 1, padding: 14, borderRadius: 10, backgroundColor: colors.primary, alignItems: 'center' },
-  modalSaveText: { color: '#fff', fontWeight: '600', fontSize: 15 },
-  confirmBox: { backgroundColor: '#fff', borderRadius: 16, padding: 24, marginHorizontal: 30, alignSelf: 'center', width: '85%' },
-  confirmTitle: { fontSize: 18, fontWeight: '700', color: colors.text.primary, marginBottom: 8 },
-  confirmText: { fontSize: 14, color: colors.text.secondary, marginBottom: 20 },
-  confirmDanger: { flex: 1, padding: 14, borderRadius: 10, backgroundColor: '#f44336', alignItems: 'center' },
-  confirmDangerText: { color: '#fff', fontWeight: '600', fontSize: 15 },
+  imageContainer: {
+    width: 120,
+    height: 160,
+    borderRadius: 8,
+    backgroundColor: '#f5f6fa',
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  bookImage: {
+    width: '100%',
+    height: '100%',
+  },
+  placeholderImage: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f5f6fa',
+  },
+  uploadBtn: {
+    position: 'absolute',
+    bottom: 4,
+    right: 4,
+    backgroundColor: 'rgba(108,99,255,0.85)',
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  infoContainer: {
+    flex: 1,
+    marginLeft: 16,
+    justifyContent: 'center',
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1a1a2e',
+    marginBottom: 4,
+  },
+  author: {
+    fontSize: 14,
+    color: '#888',
+    marginBottom: 8,
+  },
+  availabilityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  availabilityDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 6,
+  },
+  availableDot: {
+    backgroundColor: '#4CAF50',
+  },
+  unavailableDot: {
+    backgroundColor: '#f44336',
+  },
+  availabilityText: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  availableText: {
+    color: '#4CAF50',
+  },
+  unavailableText: {
+    color: '#f44336',
+  },
+
+  section: {
+    padding: 16,
+    backgroundColor: '#fff',
+    marginTop: 12,
+    marginHorizontal: 16,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1a1a2e',
+    marginBottom: 8,
+  },
+  description: {
+    fontSize: 14,
+    color: '#555',
+    lineHeight: 22,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  detailLabel: {
+    fontSize: 13,
+    color: '#888',
+  },
+  detailValue: {
+    fontSize: 13,
+    color: '#1a1a2e',
+    fontWeight: '500',
+  },
+
+  actions: {
+    padding: 16,
+    paddingBottom: 30,
+  },
+  button: {
+    padding: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  borrowButton: {
+    backgroundColor: '#6C63FF',
+  },
+  editButton: {
+    backgroundColor: '#FF9800',
+    flex: 1,
+  },
+  deleteButton: {
+    backgroundColor: '#f44336',
+    flex: 1,
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  adminActions: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modal: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    maxHeight: '90%',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1a1a2e',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  modalInput: {
+    backgroundColor: '#f5f5f5',
+    borderRadius: 12,
+    padding: 14,
+    fontSize: 15,
+    color: '#1a1a2e',
+    marginBottom: 12,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  modalCancel: {
+    flex: 1,
+    padding: 14,
+    borderRadius: 10,
+    backgroundColor: '#f0f0f0',
+    alignItems: 'center',
+  },
+  modalCancelText: {
+    color: '#666',
+    fontWeight: '600',
+    fontSize: 15,
+  },
+  modalSave: {
+    flex: 1,
+    padding: 14,
+    borderRadius: 10,
+    backgroundColor: '#6C63FF',
+    alignItems: 'center',
+  },
+  modalSaveText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 15,
+  },
+  confirmBox: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 24,
+    marginHorizontal: 30,
+    alignSelf: 'center',
+    width: '85%',
+  },
+  confirmTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1a1a2e',
+    marginBottom: 8,
+  },
+  confirmText: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 20,
+  },
+  confirmDanger: {
+    flex: 1,
+    padding: 14,
+    borderRadius: 10,
+    backgroundColor: '#f44336',
+    alignItems: 'center',
+  },
+  confirmDangerText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 15,
+  },
 });

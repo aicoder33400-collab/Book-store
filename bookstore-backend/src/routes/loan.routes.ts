@@ -10,7 +10,7 @@ const loanController = new LoanController();
 // All routes require authentication
 router.use(AuthMiddleware.protect);
 
-// Staff and Admin can borrow/return books
+// USER peut emprunter
 router.post(
   '/',
   AuthMiddleware.restrictTo('ADMIN', 'STAFF', 'USER'),
@@ -18,10 +18,18 @@ router.post(
   loanController.borrowBook
 );
 
+// 🔥 USER peut demander le retour
 router.put(
-  '/:id/return',
+  '/:id/request-return',
+  AuthMiddleware.restrictTo('ADMIN', 'STAFF', 'USER'),
+  loanController.requestReturn
+);
+
+// 🔥 ADMIN/STAFF confirme le retour
+router.put(
+  '/:id/confirm-return',
   AuthMiddleware.restrictTo('ADMIN', 'STAFF'),
-  loanController.returnBook
+  loanController.confirmReturn
 );
 
 // User's own loans
@@ -43,7 +51,6 @@ router.get(
   AuthMiddleware.restrictTo('ADMIN', 'STAFF'),
   loanController.getLoanById
 );
-
 
 // Admin: approve/reject requests
 router.put(
@@ -70,4 +77,5 @@ router.delete(
   AuthMiddleware.restrictTo('ADMIN'),
   loanController.deleteLoan
 );
+
 export default router;

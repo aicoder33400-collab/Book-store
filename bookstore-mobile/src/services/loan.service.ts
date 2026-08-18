@@ -7,7 +7,7 @@ export interface Loan {
   borrowedAt: string;
   dueDate: string;
   returnedAt: string | null;
-  status: 'REQUESTED' | 'APPROVED' | 'REJECTED' | 'BORROWED' | 'RETURNED' | 'LATE';
+  status: 'REQUESTED' | 'APPROVED' | 'REJECTED' | 'BORROWED' | 'RETURN_REQUESTED' | 'RETURNED' | 'LATE';
   book: {
     id: string;
     title: string;

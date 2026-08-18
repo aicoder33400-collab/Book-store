@@ -2,8 +2,15 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
-// 🔥 URL de l'API depuis .env
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000/api';
+const getBaseURL = () => {
+  // 🔥 Sur l'iPhone, utiliser l'URL ngrok
+  if (Platform.OS === 'ios' || Platform.OS === 'android') {
+    return 'https://lettuce-unlawful-disliking.ngrok-free.dev/api';
+  }
+  return 'http://localhost:3000/api';
+};
+
+const API_URL = getBaseURL();
 
 console.log('🔗 API URL:', API_URL);
 
@@ -15,19 +22,24 @@ const api = axios.create({
   timeout: 30000,
 });
 
-// Intercepteur pour ajouter le token
 api.interceptors.request.use(
   async (config) => {
-    const token = await AsyncStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    } catch (error) {
+      console.error('❌ Erreur intercepteur token:', error);
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => {
+    console.error('❌ Erreur requête:', error);
+    return Promise.reject(error);
+  }
 );
 
-// Intercepteur pour gérer les erreurs 401
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -36,9 +48,6 @@ api.interceptors.response.use(
       if (!isLoginRequest) {
         await AsyncStorage.removeItem('token');
         await AsyncStorage.removeItem('user');
-        if (typeof window !== 'undefined') {
-          window.location.reload();
-        }
       }
     }
     return Promise.reject(error);
