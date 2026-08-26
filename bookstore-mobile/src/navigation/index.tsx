@@ -12,7 +12,6 @@ import { MyLoansScreen } from '../screens/Loans/MyLoansScreen';
 import { ProfileScreen } from '../screens/Profile/ProfileScreen';
 import { useAuthStore } from '../store/auth.store';
 import { colors } from '../theme/colors';
-import { SalesHistoryScreen } from '../screens/Sales/SalesHistoryScreen';
 import { RootStackParamList } from '../types/navigation';
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -73,16 +72,7 @@ const MainTabs = () => {
         }}
       />
       
-      <Tab.Screen 
-        name="Ventes" 
-        component={SalesHistoryScreen}
-        options={{ 
-          title: '💰 Ventes',
-          tabBarIcon: ({ color, size }) => (
-            <Text style={{ fontSize: size, color }}>💰</Text>
-          )
-        }}
-      />
+      
       
       <Tab.Screen 
         name="Mon profil" 

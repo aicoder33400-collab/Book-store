@@ -3,6 +3,7 @@ import { AuthController } from '../controllers/auth.controller';
 import { AuthMiddleware } from '../middlewares/auth.middleware';
 import { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
 
 const router = Router();
 const authController = new AuthController();
@@ -18,6 +19,71 @@ router.post('/verify-email', authController.verifyEmail);
 router.post('/forgot-password', authController.forgotPassword);
 router.post('/reset-password', authController.resetPassword);
 router.post('/change-password', AuthMiddleware.protect, authController.changePassword);
+
+// ============================================
+// 🔥 ROUTE DE DÉVELOPPEMENT - Login sans Google
+// ============================================
+router.post('/dev-login', async (req, res) => {
+  try {
+    const { email, name, role } = req.body;
+    
+    const roleValue = role || 'USER';
+    const emailValue = email || `dev-${roleValue.toLowerCase()}@bookstore.local`;
+    const nameValue = name || `Dev ${roleValue.charAt(0) + roleValue.slice(1).toLowerCase()}`;
+    
+    console.log('🔧 Dev login:', { email: emailValue, name: nameValue, role: roleValue });
+    
+    // 🔥 Chercher ou créer l'utilisateur dans la base de données
+    let user = await prisma.user.findUnique({
+      where: { email: emailValue }
+    });
+
+    if (!user) {
+      // Créer l'utilisateur en base
+      const hashedPassword = await bcrypt.hash('devpassword123', 10);
+      
+      user = await prisma.user.create({
+        data: {
+          email: emailValue,
+          name: nameValue,
+          firstName: 'Dev',
+          lastName: roleValue,
+          password: hashedPassword,
+          role: roleValue as any,
+          authProvider: 'local',
+          emailVerified: true,
+          isProfileComplete: true,
+          phone: '0612345678',
+          commune: 'Paris',
+          age: 30,
+        }
+      });
+      console.log('✅ Utilisateur dev créé en base:', user.email);
+    }
+
+    // 🔥 Générer un vrai token JWT signé
+    const token = jwt.sign(
+      { 
+        id: user.id, 
+        email: user.email, 
+        role: user.role 
+      },
+      process.env.JWT_SECRET || 'secret',
+      { expiresIn: '7d' }
+    );
+
+    const { password, ...userWithoutPassword } = user;
+
+    res.json({ 
+      success: true, 
+      token, 
+      user: userWithoutPassword 
+    });
+  } catch (error) {
+    console.error('❌ Erreur dev-login:', error);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
 
 // ============================================
 // ROUTES GOOGLE AUTH
@@ -45,7 +111,6 @@ interface GoogleTokenResponse {
   id_token: string;
 }
 
-// 🔥 ROUTE 1 : Vérifier si l'utilisateur existe et si son profil est complet
 router.post('/google/check', async (req, res) => {
   try {
     const { token } = req.body;
@@ -66,13 +131,11 @@ router.post('/google/check', async (req, res) => {
 
     const googleUser = await response.json() as GoogleTokenInfo;
     
-    // Vérifier si l'utilisateur existe
     const user = await prisma.user.findUnique({
       where: { email: googleUser.email }
     });
 
     if (!user) {
-      // L'utilisateur n'existe pas → doit s'inscrire
       return res.json({
         exists: false,
         needsProfile: true,
@@ -83,7 +146,6 @@ router.post('/google/check', async (req, res) => {
       });
     }
 
-    // L'utilisateur existe → vérifier si le profil est complet
     return res.json({
       exists: true,
       needsProfile: !user.isProfileComplete,
@@ -98,7 +160,6 @@ router.post('/google/check', async (req, res) => {
   }
 });
 
-// 🔥 ROUTE 2 : Compléter le profil (inscription)
 router.post('/google/complete-profile', async (req, res) => {
   try {
     const { token, firstName, lastName, phone, age, commune } = req.body;
@@ -113,7 +174,6 @@ router.post('/google/complete-profile', async (req, res) => {
       });
     }
 
-    // Vérifier le token Google
     const response = await fetch('https://oauth2.googleapis.com/tokeninfo', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -126,7 +186,6 @@ router.post('/google/complete-profile', async (req, res) => {
 
     const googleUser = await response.json() as GoogleTokenInfo;
 
-    // Vérifier si l'utilisateur existe déjà
     const existingUser = await prisma.user.findUnique({
       where: { email: googleUser.email }
     });
@@ -135,7 +194,6 @@ router.post('/google/complete-profile', async (req, res) => {
       return res.status(400).json({ error: 'Cet email est déjà utilisé' });
     }
 
-    // Créer l'utilisateur avec toutes les informations
     const now = new Date();
     const fullName = `${firstName} ${lastName}`;
     
@@ -160,7 +218,6 @@ router.post('/google/complete-profile', async (req, res) => {
 
     console.log('✅ Nouvel utilisateur inscrit:', user.email);
 
-    // Générer le JWT
     const jwtToken = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
       process.env.JWT_SECRET || 'secret',
@@ -181,7 +238,6 @@ router.post('/google/complete-profile', async (req, res) => {
   }
 });
 
-// 🔥 ROUTE 3 : Connexion Google (utilisateur existant avec profil complet)
 router.post('/google/login', async (req, res) => {
   try {
     const { token } = req.body;
@@ -217,7 +273,6 @@ router.post('/google/login', async (req, res) => {
       });
     }
 
-    // Mettre à jour la date de dernière connexion
     const updatedUser = await prisma.user.update({
       where: { id: user.id },
       data: { 
@@ -247,7 +302,6 @@ router.post('/google/login', async (req, res) => {
   }
 });
 
-// 🔥 ROUTE : Démarrer l'authentification Google (web)
 router.get('/google', (req, res) => {
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const redirectUri = process.env.GOOGLE_CALLBACK_URL || 'http://localhost:3000/api/auth/google/callback';
@@ -263,7 +317,6 @@ router.get('/google', (req, res) => {
   res.redirect(authUrl);
 });
 
-// 🔥 ROUTE : Callback Google (web)
 router.get('/google/callback', async (req, res) => {
   try {
     const { code } = req.query;
@@ -295,12 +348,10 @@ router.get('/google/callback', async (req, res) => {
   }
 });
 
-// 🔥 ROUTE : Échec de la connexion
 router.get('/login-failed', (req, res) => {
   return res.redirect('bookstore://auth/failed');
 });
 
-// 🔥 ROUTE : Obtenir les infos de l'utilisateur connecté
 router.get('/me', async (req, res) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
@@ -336,10 +387,7 @@ router.get('/me', async (req, res) => {
       return res.status(401).json({ error: 'Utilisateur non trouvé' });
     }
 
-    return res.json({ 
-      success: true, 
-      user 
-    });
+    return res.json({ success: true, user });
   } catch (error) {
     return res.status(401).json({ error: 'Token invalide' });
   }

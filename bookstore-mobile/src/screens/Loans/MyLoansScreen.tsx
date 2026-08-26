@@ -8,7 +8,6 @@ import {
   ActivityIndicator,
   RefreshControl,
   Alert,
-  Platform,
 } from 'react-native';
 import { loanService, Loan } from '../../services/loan.service';
 import { colors } from '../../theme/colors';
@@ -55,45 +54,25 @@ export const MyLoansScreen = () => {
     fetchLoans();
   }, []);
 
-  // 🔥 Demande de retour avec confirmation
-  const handleRequestReturn = async (loanId: string, bookTitle: string) => {
-    console.log('🟢 DEMANDE DE RETOUR - ID:', loanId);
-    
-    // 🔥 Fonction pour exécuter la requête
-    const executeRequest = async () => {
-      try {
-        console.log('📤 PUT /loans/' + loanId + '/request-return');
-        const response = await api.put(`/loans/${loanId}/request-return`);
-        console.log('✅ Réponse:', response.data);
-        
-        Alert.alert('Succès', '📩 Demande de retour envoyée !');
-        fetchLoans();
-      } catch (error: any) {
-        console.error('❌ Erreur:', error);
-        console.error('❌ Status:', error.response?.status);
-        console.error('❌ Data:', error.response?.data);
-        Alert.alert('Erreur', error.response?.data?.message || 'Impossible de demander le retour');
-      }
-    };
-
-    // 🔥 Pour le web : utiliser window.confirm
-    if (Platform.OS === 'web') {
-      const confirmed = window.confirm(`Voulez-vous signaler que vous souhaitez retourner "${bookTitle}" ?`);
-      if (confirmed) {
-        await executeRequest();
-      }
-      return;
-    }
-
-    // 🔥 Pour mobile : utiliser Alert.alert
+  // 🔥 L'utilisateur demande le retour
+  const handleRequestReturn = async (loanId: string) => {
     Alert.alert(
       'Demander le retour',
-      `Voulez-vous signaler que vous souhaitez retourner "${bookTitle}" ?`,
+      'Voulez-vous signaler que vous souhaitez retourner ce livre ?',
       [
         { text: 'Annuler', style: 'cancel' },
         {
           text: 'Demander le retour',
-          onPress: executeRequest,
+          onPress: async () => {
+            try {
+              await api.put(`/loans/${loanId}/request-return`);
+              Alert.alert('Succès', '📩 Demande de retour envoyée !');
+              fetchLoans();
+            } catch (error: any) {
+              console.error('Erreur:', error.response?.data);
+              Alert.alert('Erreur', error.response?.data?.message || 'Impossible de demander le retour');
+            }
+          }
         }
       ]
     );
@@ -115,6 +94,9 @@ export const MyLoansScreen = () => {
     const isReturnRequested = item.status === 'RETURN_REQUESTED';
     const canRequestReturn = isBorrowedOrLate && !isReturnRequested;
     
+    // 🔥 Afficher les dates seulement si le prêt est confirmé (BORROWED, LATE, RETURNED)
+    const showDates = item.status === 'BORROWED' || item.status === 'LATE' || item.status === 'RETURNED';
+    
     return (
       <View style={styles.card}>
         <View style={styles.cardHeader}>
@@ -127,17 +109,22 @@ export const MyLoansScreen = () => {
         <Text style={styles.bookAuthor}>✍️ {item.book?.author || ''}</Text>
         
         <View style={styles.dates}>
-          <View style={styles.dateRow}>
-            <Text style={styles.dateLabel}>📅 Emprunté le</Text>
-            <Text style={styles.dateValue}>{formatDate(item.borrowedAt)}</Text>
-          </View>
-          
-          <View style={styles.dateRow}>
-            <Text style={styles.dateLabel}>⏳ À rendre avant</Text>
-            <Text style={[styles.dateValue, styles.dueDate]}>
-              {formatDate(item.dueDate)}
-            </Text>
-          </View>
+          {/* 🔥 Seulement si le prêt est confirmé */}
+          {showDates && (
+            <>
+              <View style={styles.dateRow}>
+                <Text style={styles.dateLabel}>📅 Emprunté le</Text>
+                <Text style={styles.dateValue}>{formatDate(item.borrowedAt)}</Text>
+              </View>
+              
+              <View style={styles.dateRow}>
+                <Text style={styles.dateLabel}>⏳ À rendre avant</Text>
+                <Text style={[styles.dateValue, styles.dueDate]}>
+                  {formatDate(item.dueDate)}
+                </Text>
+              </View>
+            </>
+          )}
           
           {item.returnedAt && (
             <View style={styles.dateRow}>
@@ -150,11 +137,7 @@ export const MyLoansScreen = () => {
         </View>
 
         {canRequestReturn && (
-          <TouchableOpacity 
-            style={styles.requestReturnBtn} 
-            onPress={() => handleRequestReturn(item.id, item.book?.title || 'ce livre')}
-            activeOpacity={0.8}
-          >
+          <TouchableOpacity style={styles.requestReturnBtn} onPress={() => handleRequestReturn(item.id)}>
             <Text style={styles.btnText}>📩 Demander le retour</Text>
           </TouchableOpacity>
         )}

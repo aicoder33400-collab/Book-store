@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { View, Text, ActivityIndicator, TouchableOpacity, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import { createStackNavigator } from '@react-navigation/stack';
 import { useAuthStore } from '../store/auth.store';
 import { colors } from '../theme/colors';
 import { UserMenu } from '../components/UserMenu';
+import { UserNotificationBadge } from '../components/UserNotificationBadge';
 
 // Screens
 import { LoginScreen } from '../screens/Auth/LoginScreen';
@@ -38,14 +39,14 @@ const BooksStack = () => (
   </Stack.Navigator>
 );
 
-// 🔥 RENOMMÉ : Mes emprunts → Mes demandes
+// Mes demandes
 const LoansStack = () => (
   <Stack.Navigator screenOptions={{ headerShown: false }}>
     <Stack.Screen name="MyLoans" component={MyLoansScreen} />
   </Stack.Navigator>
 );
 
-// Avatar
+// Avatar avec menu
 const UserAvatar = () => {
   const { user } = useAuthStore();
   const [menuVisible, setMenuVisible] = useState(false);
@@ -57,15 +58,8 @@ const UserAvatar = () => {
         onPress={() => setMenuVisible(true)}
         activeOpacity={0.7}
       >
-        <View style={{
-          width: 34,
-          height: 34,
-          borderRadius: 17,
-          backgroundColor: 'rgba(255,255,255,0.25)',
-          justifyContent: 'center',
-          alignItems: 'center',
-        }}>
-          <Text style={{ color: '#fff', fontWeight: '700', fontSize: 16 }}>
+        <View style={styles.avatarContainer}>
+          <Text style={styles.avatarText}>
             {user?.name?.charAt(0).toUpperCase() || '?'}
           </Text>
         </View>
@@ -75,10 +69,26 @@ const UserAvatar = () => {
   );
 };
 
+// Header avec cloche pour User
+const UserHeaderRight = () => {
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+      <UserNotificationBadge />
+      <UserAvatar />
+    </View>
+  );
+};
+
+// Header sans cloche pour Admin/Staff
+const AdminHeaderRight = () => {
+  return <UserAvatar />;
+};
+
 const DrawerNavigator = () => {
   const { user } = useAuthStore();
   const isAdmin = user?.role === 'ADMIN';
   const isStaff = user?.role === 'STAFF';
+  const isUser = !isAdmin && !isStaff;
 
   return (
     <Drawer.Navigator
@@ -95,7 +105,7 @@ const DrawerNavigator = () => {
         },
         headerStyle: { backgroundColor: colors.primary },
         headerTintColor: colors.text.white,
-        headerRight: () => <UserAvatar />,
+        headerRight: isUser ? UserHeaderRight : AdminHeaderRight,
         headerLeftContainerStyle: { paddingLeft: 8 },
         drawerLabelStyle: {
           fontSize: 15,
@@ -182,7 +192,7 @@ const DrawerNavigator = () => {
         </>
       )}
 
-      {!isAdmin && !isStaff && (
+      {isUser && (
         <>
           <Drawer.Screen 
             name="Catalogue" 
@@ -192,7 +202,6 @@ const DrawerNavigator = () => {
               headerTitle: '📚 Catalogue',
             }}
           />
-          {/* 🔥 RENOMMÉ */}
           <Drawer.Screen 
             name="Mes demandes" 
             component={LoansStack}
@@ -220,7 +229,7 @@ const CommonDrawer = () => {
 
   if (isLoading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
@@ -244,3 +253,25 @@ const CommonDrawer = () => {
 };
 
 export const RoleBasedNavigator = () => <CommonDrawer />;
+
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.background.primary,
+  },
+  avatarContainer: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 16,
+  },
+});

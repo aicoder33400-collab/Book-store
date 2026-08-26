@@ -6,10 +6,16 @@ export interface Book {
   author: string;
   isbn: string;
   description?: string;
-  totalQuantity: number;
+  totalCopies: number;
+  totalQuantity?: number; // Alias pour compatibilité
   availableQuantity: number;
-  isForSale: boolean;
   isForRent: boolean;
+  genre: string;
+  language: string;
+  imageUrl?: string;
+  copies?: Array<{ id: string; status: string; copyNumber: number }>;
+  genreLabel?: string;
+  languageLabel?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -22,10 +28,10 @@ interface Pagination {
 }
 
 interface BooksResponse {
-  status: string;
-  message: string;
+  success: boolean;
   data: Book[];
-  pagination: Pagination;
+  pagination?: Pagination;
+  message?: string;
 }
 
 export const bookService = {
@@ -33,14 +39,48 @@ export const bookService = {
     page?: number;
     limit?: number;
     search?: string;
+    genre?: string;
+    language?: string;
     availableOnly?: boolean;
   }) => {
-    const response = await api.get<BooksResponse>('/books', { params });
-    return response.data;
+    try {
+      const response = await api.get('/books', { params });
+      
+      // Transformer les données pour ajouter availableQuantity
+      const books = response.data.data?.map((book: any) => ({
+        ...book,
+        availableQuantity: book.availableQuantity !== undefined 
+          ? book.availableQuantity 
+          : book.copies?.filter((c: any) => c.status === 'AVAILABLE').length || 0,
+        totalQuantity: book.totalCopies || 0,
+      })) || [];
+      
+      return {
+        ...response.data,
+        data: books,
+      };
+    } catch (error) {
+      console.error('Erreur lors de la récupération des livres:', error);
+      throw error;
+    }
   },
 
   getBookById: async (id: string) => {
-    const response = await api.get<{ status: string; data: Book }>(`/books/${id}`);
-    return response.data.data;
+    try {
+      const response = await api.get(`/books/${id}`);
+      
+      const book = response.data.data;
+      if (book) {
+        book.availableQuantity = book.availableQuantity !== undefined 
+          ? book.availableQuantity 
+          : book.copies?.filter((c: any) => c.status === 'AVAILABLE').length || 0;
+        book.totalQuantity = book.totalCopies || 0;
+      }
+      
+      return response.data;
+    } catch (error) {
+      console.error('Erreur lors de la récupération du livre:', error);
+      throw error;
+    }
   },
 };

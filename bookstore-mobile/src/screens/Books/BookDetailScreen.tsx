@@ -22,13 +22,62 @@ import * as ImagePicker from 'expo-image-picker';
 
 const { width } = Dimensions.get('window');
 
+// 🔥 Mapping des genres pour l'affichage
+const GENRE_LABELS: Record<string, string> = {
+  ROMAN: '📖 Roman',
+  POESIE: '📝 Poésie',
+  THEATRE: '🎭 Théâtre',
+  HISTOIRE: '📜 Histoire',
+  SCIENCE_FICTION: '🚀 Science-Fiction',
+  FANTASTIQUE: '🧙 Fantastique',
+  POLAR: '🔍 Polar',
+  AVENTURE: '🗺️ Aventure',
+  BIOGRAPHIE: '👤 Biographie',
+  ESSAI: '📚 Essai',
+  PHILOSOPHIE: '🧠 Philosophie',
+  JEUNESSE: '🧒 Jeunesse',
+  BANDE_DESSINEE: '🖼️ Bande dessinée',
+  ART: '🎨 Art',
+  CUISINE: '🍳 Cuisine',
+  VOYAGE: '✈️ Voyage',
+  SPORT: '⚽ Sport',
+  SANTE: '💪 Santé',
+  RELIGION: '🕌 Religion',
+  AUTRE: '📦 Autre',
+};
+
+const LANGUAGE_LABELS: Record<string, string> = {
+  FRANCAIS: '🇫🇷 Français',
+  ANGLAIS: '🇬🇧 Anglais',
+  ARABE: '🇸🇦 Arabe',
+  ESPAGNOL: '🇪🇸 Espagnol',
+  ALLEMAND: '🇩🇪 Allemand',
+  ITALIEN: '🇮🇹 Italien',
+  PORTUGAIS: '🇵🇹 Portugais',
+  RUSSE: '🇷🇺 Russe',
+  CHINOIS: '🇨🇳 Chinois',
+  JAPONAIS: '🇯🇵 Japonais',
+  AUTRE: '📦 Autre',
+};
+
 export const BookDetailScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { user } = useAuthStore();
   const { fetchBooks } = useBookStore();
   const { book: initialBook } = route.params as any;
-  const [book, setBook] = useState(initialBook);
+  
+  // 🔥 Transformer le livre initial pour ajouter availableQuantity
+  const [book, setBook] = useState({
+    ...initialBook,
+    availableQuantity: initialBook.availableQuantity !== undefined 
+      ? initialBook.availableQuantity 
+      : initialBook.copies?.filter((c: any) => c.status === 'AVAILABLE').length || 0,
+    totalQuantity: initialBook.totalCopies || 0,
+    genreLabel: GENRE_LABELS[initialBook.genre] || initialBook.genre || 'Non défini',
+    languageLabel: LANGUAGE_LABELS[initialBook.language] || initialBook.language || 'Non défini',
+  });
+  
   const [loading, setLoading] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'STAFF';
@@ -39,12 +88,16 @@ export const BookDetailScreen = () => {
     author: book.author,
     isbn: book.isbn,
     description: book.description || '',
-    totalQuantity: String(book.totalQuantity),
+    totalCopies: String(book.totalCopies || book.totalQuantity || 1),
+    genre: book.genre || 'AUTRE',
+    language: book.language || 'FRANCAIS',
   });
   const [saving, setSaving] = useState(false);
   const [borrowVisible, setBorrowVisible] = useState(false);
   const [deleteVisible, setDeleteVisible] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  const isAvailable = (book.availableQuantity || 0) > 0;
 
   const pickImage = async () => {
     try {
@@ -112,7 +165,6 @@ export const BookDetailScreen = () => {
       
       setLoading(false);
       
-      // 🔥 SUCCÈS - Utiliser Alert.alert (fonctionne sur toutes les plateformes)
       Alert.alert(
         '📚 Demande envoyée !',
         'Votre demande d\'emprunt a bien été prise en compte.\nUn administrateur va la traiter.',
@@ -125,16 +177,8 @@ export const BookDetailScreen = () => {
       );
     } catch (error: any) {
       setLoading(false);
-      
-      // 🔥 AFFICHER LE MESSAGE D'ERREUR
       const errorMessage = error.response?.data?.message || "Erreur lors de l'emprunt";
-      console.log('❌ Erreur:', errorMessage);
-      
-      Alert.alert(
-        'Erreur',
-        errorMessage,
-        [{ text: 'OK' }]
-      );
+      Alert.alert('Erreur', errorMessage);
     }
   };
 
@@ -144,7 +188,9 @@ export const BookDetailScreen = () => {
       author: book.author,
       isbn: book.isbn,
       description: book.description || '',
-      totalQuantity: String(book.totalQuantity),
+      totalCopies: String(book.totalCopies || book.totalQuantity || 1),
+      genre: book.genre || 'AUTRE',
+      language: book.language || 'FRANCAIS',
     });
     setEditVisible(true);
   };
@@ -161,9 +207,20 @@ export const BookDetailScreen = () => {
         author: editData.author,
         isbn: editData.isbn,
         description: editData.description,
-        totalQuantity: parseInt(editData.totalQuantity) || 1,
+        totalCopies: parseInt(editData.totalCopies) || 1,
+        genre: editData.genre,
+        language: editData.language,
       });
-      setBook(res.data.data);
+      
+      const updatedBook = {
+        ...res.data.data,
+        availableQuantity: res.data.data.copies?.filter((c: any) => c.status === 'AVAILABLE').length || 0,
+        totalQuantity: res.data.data.totalCopies || 0,
+        genreLabel: GENRE_LABELS[res.data.data.genre] || res.data.data.genre || 'Non défini',
+        languageLabel: LANGUAGE_LABELS[res.data.data.language] || res.data.data.language || 'Non défini',
+      };
+      
+      setBook(updatedBook);
       setEditVisible(false);
       fetchBooks();
       Alert.alert('Succès', 'Livre mis à jour');
@@ -188,6 +245,10 @@ export const BookDetailScreen = () => {
       setDeleting(false);
     }
   };
+
+  // 🔥 Options pour le formulaire d'édition
+  const genreOptions = Object.keys(GENRE_LABELS).map(key => ({ label: GENRE_LABELS[key], value: key }));
+  const languageOptions = Object.keys(LANGUAGE_LABELS).map(key => ({ label: LANGUAGE_LABELS[key], value: key }));
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -219,9 +280,18 @@ export const BookDetailScreen = () => {
           <Text style={styles.title} numberOfLines={2}>{book.title}</Text>
           <Text style={styles.author}>✍️ {book.author}</Text>
           <View style={styles.availabilityRow}>
-            <View style={[styles.availabilityDot, book.availableQuantity > 0 ? styles.availableDot : styles.unavailableDot]} />
-            <Text style={[styles.availabilityText, book.availableQuantity > 0 ? styles.availableText : styles.unavailableText]}>
-              {book.availableQuantity > 0 ? '✅ Disponible' : '❌ Indisponible'}
+            <View style={[styles.availabilityDot, isAvailable ? styles.availableDot : styles.unavailableDot]} />
+            <Text style={[styles.availabilityText, isAvailable ? styles.availableText : styles.unavailableText]}>
+              {isAvailable ? `✅ Disponible (${book.availableQuantity} exemplaire${book.availableQuantity > 1 ? 's' : ''})` : '❌ Indisponible'}
+            </Text>
+          </View>
+          {/* 🔥 Genre et Langue affichés pour tout le monde */}
+          <View style={styles.metaRow}>
+            <Text style={styles.metaText}>
+              {book.genreLabel}
+            </Text>
+            <Text style={styles.metaText}>
+              {book.languageLabel}
             </Text>
           </View>
         </View>
@@ -236,14 +306,18 @@ export const BookDetailScreen = () => {
 
       {isAdmin && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>📋 Détails</Text>
+          <Text style={styles.sectionTitle}>📋 Détails (Admin)</Text>
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>ISBN</Text>
             <Text style={styles.detailValue}>{book.isbn}</Text>
           </View>
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Stock</Text>
-            <Text style={styles.detailValue}>{book.availableQuantity} / {book.totalQuantity}</Text>
+            <Text style={styles.detailValue}>{book.availableQuantity || 0} / {book.totalCopies || book.totalQuantity || 0}</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Copies totales</Text>
+            <Text style={styles.detailValue}>{book.totalCopies || book.totalQuantity || 0}</Text>
           </View>
         </View>
       )}
@@ -253,13 +327,13 @@ export const BookDetailScreen = () => {
           <TouchableOpacity 
             style={[styles.button, styles.borrowButton]}
             onPress={handleBorrow}
-            disabled={book.availableQuantity === 0 || loading}
+            disabled={!isAvailable || loading}
           >
             {loading ? (
               <ActivityIndicator color="#fff" />
             ) : (
               <Text style={styles.buttonText}>
-                {book.availableQuantity > 0 ? '📖 Emprunter' : '❌ Indisponible'}
+                {isAvailable ? '📖 Emprunter' : '❌ Indisponible'}
               </Text>
             )}
           </TouchableOpacity>
@@ -277,6 +351,7 @@ export const BookDetailScreen = () => {
         )}
       </View>
 
+      {/* Edit Modal */}
       <Modal visible={editVisible} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modal}>
@@ -285,7 +360,56 @@ export const BookDetailScreen = () => {
             <TextInput style={styles.modalInput} placeholder="Auteur *" value={editData.author} onChangeText={(t) => setEditData({...editData, author: t})} />
             <TextInput style={styles.modalInput} placeholder="ISBN *" value={editData.isbn} onChangeText={(t) => setEditData({...editData, isbn: t})} keyboardType="numeric" />
             <TextInput style={styles.modalInput} placeholder="Description" value={editData.description} onChangeText={(t) => setEditData({...editData, description: t})} multiline />
-            <TextInput style={styles.modalInput} placeholder="Quantité" value={editData.totalQuantity} onChangeText={(t) => setEditData({...editData, totalQuantity: t})} keyboardType="numeric" />
+            <TextInput style={styles.modalInput} placeholder="Nombre de copies" value={editData.totalCopies} onChangeText={(t) => setEditData({...editData, totalCopies: t})} keyboardType="numeric" />
+            
+            {/* 🔥 Genre */}
+            <View style={styles.modalSelectContainer}>
+              <Text style={styles.modalSelectLabel}>📚 Genre</Text>
+              <View style={styles.modalSelectWrapper}>
+                {genreOptions.map((option) => (
+                  <TouchableOpacity
+                    key={option.value}
+                    style={[
+                      styles.modalSelectOption,
+                      editData.genre === option.value && styles.modalSelectOptionActive,
+                    ]}
+                    onPress={() => setEditData({...editData, genre: option.value})}
+                  >
+                    <Text style={[
+                      styles.modalSelectText,
+                      editData.genre === option.value && styles.modalSelectTextActive,
+                    ]}>
+                      {option.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            {/* 🔥 Langue */}
+            <View style={styles.modalSelectContainer}>
+              <Text style={styles.modalSelectLabel}>🌐 Langue</Text>
+              <View style={styles.modalSelectWrapper}>
+                {languageOptions.map((option) => (
+                  <TouchableOpacity
+                    key={option.value}
+                    style={[
+                      styles.modalSelectOption,
+                      editData.language === option.value && styles.modalSelectOptionActive,
+                    ]}
+                    onPress={() => setEditData({...editData, language: option.value})}
+                  >
+                    <Text style={[
+                      styles.modalSelectText,
+                      editData.language === option.value && styles.modalSelectTextActive,
+                    ]}>
+                      {option.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
             <View style={styles.modalActions}>
               <TouchableOpacity style={styles.modalCancel} onPress={() => setEditVisible(false)}>
                 <Text style={styles.modalCancelText}>Annuler</Text>
@@ -298,6 +422,7 @@ export const BookDetailScreen = () => {
         </View>
       </Modal>
 
+      {/* Delete Modal */}
       <Modal visible={deleteVisible} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.confirmBox}>
@@ -315,6 +440,7 @@ export const BookDetailScreen = () => {
         </View>
       </Modal>
 
+      {/* Borrow Modal */}
       <Modal visible={borrowVisible} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.confirmBox}>
@@ -419,6 +545,22 @@ const styles = StyleSheet.create({
   unavailableText: {
     color: '#f44336',
   },
+  metaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 8,
+    flexWrap: 'wrap',
+    gap: 4,
+  },
+  metaText: {
+    fontSize: 12,
+    color: '#888',
+    backgroundColor: '#f5f5f5',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginBottom: 4,
+  },
 
   section: {
     padding: 16,
@@ -516,6 +658,40 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#1a1a2e',
     marginBottom: 12,
+  },
+  modalSelectContainer: {
+    marginBottom: 12,
+  },
+  modalSelectLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1a1a2e',
+    marginBottom: 6,
+  },
+  modalSelectWrapper: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  modalSelectOption: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: '#f5f5f5',
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  modalSelectOptionActive: {
+    backgroundColor: 'rgba(108,99,255,0.1)',
+    borderColor: '#6C63FF',
+  },
+  modalSelectText: {
+    fontSize: 12,
+    color: '#666',
+  },
+  modalSelectTextActive: {
+    color: '#6C63FF',
+    fontWeight: '500',
   },
   modalActions: {
     flexDirection: 'row',

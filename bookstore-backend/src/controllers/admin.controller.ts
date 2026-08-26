@@ -8,7 +8,16 @@ const prisma = new PrismaClient();
 export class AdminController {
   // Dashboard
   static getDashboard = catchAsync(async (_req: Request, res: Response) => {
-    const [totalBooks, totalUsers, totalLoans, activeLoans, requestedLoans, approvedLoans, overdueLoans] = await Promise.all([
+    const [
+      totalBooks,
+      totalUsers,
+      totalLoans,
+      activeLoans,
+      requestedLoans,
+      approvedLoans,
+      overdueLoans,
+      returnRequests
+    ] = await Promise.all([
       prisma.book.count(),
       prisma.user.count(),
       prisma.loan.count(),
@@ -16,7 +25,47 @@ export class AdminController {
       prisma.loan.count({ where: { status: 'REQUESTED' } }),
       prisma.loan.count({ where: { status: 'APPROVED' } }),
       prisma.loan.count({ where: { status: 'LATE' } }),
+      prisma.loan.count({ where: { status: 'RETURN_REQUESTED' } }),
     ]);
+
+    // 🔥 Récupérer les demandes en attente (emprunts + retours)
+    // Correction: utiliser copy.include.book au lieu de book directement
+    const pendingRequests = await prisma.loan.findMany({
+      where: { 
+        OR: [
+          { status: 'REQUESTED' },
+          { status: 'RETURN_REQUESTED' }
+        ]
+      },
+      include: {
+        user: { 
+          select: { 
+            id: true,
+            name: true, 
+            email: true 
+          } 
+        },
+        copy: {
+          include: {
+            book: { 
+              select: { 
+                id: true,
+                title: true, 
+                author: true 
+              } 
+            }
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 20,
+    });
+
+    // Transformer les données pour avoir book à la racine (comme dans votre ancien code)
+    const transformedPendingRequests = pendingRequests.map(loan => ({
+      ...loan,
+      book: loan.copy.book, // Ajouter book à la racine
+    }));
 
     const stats = {
       totalBooks,
@@ -26,6 +75,8 @@ export class AdminController {
       requestedLoans,
       approvedLoans,
       overdueLoans,
+      returnRequests,
+      pendingRequests: transformedPendingRequests,
     };
 
     res.status(200).json(
@@ -33,43 +84,68 @@ export class AdminController {
     );
   });
 
-  // 🔥 Notifications - Récupérer les demandes en attente
+  // 🔥 Notifications
   static getNotifications = catchAsync(async (_req: Request, res: Response) => {
-    // Récupérer les demandes en attente (REQUESTED)
+    // Correction: utiliser copy.include.book au lieu de book directement
     const pendingLoans = await prisma.loan.findMany({
-      where: { status: 'REQUESTED' },
+      where: { 
+        OR: [
+          { status: 'REQUESTED' },
+          { status: 'RETURN_REQUESTED' }
+        ]
+      },
       include: {
-        user: { select: { name: true, email: true } },
-        book: { select: { title: true, author: true } },
+        user: { 
+          select: { 
+            id: true,
+            name: true, 
+            email: true 
+          } 
+        },
+        copy: {
+          include: {
+            book: { 
+              select: { 
+                id: true,
+                title: true, 
+                author: true 
+              } 
+            }
+          }
+        }
       },
       orderBy: { createdAt: 'desc' },
       take: 20,
     });
 
-    // Construire les notifications
-    const notifications = pendingLoans.map((loan) => ({
-      id: loan.id,
-      type: 'loan_request',
-      message: `📚 ${loan.user.name} a demandé l'emprunt de "${loan.book.title}"`,
-      userId: loan.userId,
-      userName: loan.user.name,
-      bookTitle: loan.book.title,
-      createdAt: loan.createdAt.toISOString(),
-      read: false,
-    }));
+    const notifications = pendingLoans.map((loan) => {
+      const isReturnRequest = loan.status === 'RETURN_REQUESTED';
+      return {
+        id: loan.id,
+        type: isReturnRequest ? 'return_request' : 'loan_request',
+        message: isReturnRequest
+          ? `📩 ${loan.user.name} souhaite retourner "${loan.copy.book.title}"`
+          : `📚 ${loan.user.name} a demandé l'emprunt de "${loan.copy.book.title}"`,
+        userId: loan.userId,
+        userName: loan.user.name,
+        bookTitle: loan.copy.book.title,
+        createdAt: loan.createdAt.toISOString(),
+        read: false,
+      };
+    });
 
     res.status(200).json(
       ApiResponse.success(notifications, 'Notifications retrieved successfully')
     );
   });
 
-  // Marquer une notification comme lue
   static markNotificationRead = catchAsync(async (req: Request, res: Response) => {
     const { id } = req.params;
-    // Dans un vrai système, on aurait une table Notification
-    // Pour l'instant, on simule
+    // Ici vous pourriez implémenter la logique pour marquer comme lu
+    // par exemple, créer un modèle Notification ou mettre à jour un champ
+    
     res.status(200).json(
-      ApiResponse.success(null, 'Notification marquée comme lue')
+      ApiResponse.success({ id, read: true }, 'Notification marquée comme lue')
     );
   });
 }

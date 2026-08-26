@@ -1,9 +1,9 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, CopyStatus } from '@prisma/client';
 import { catchAsync } from '../utils/catchAsync';
 import { ApiResponse } from '../utils/response';
-import path from 'path';
 import fs from 'fs';
+import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 
 const prisma = new PrismaClient();
@@ -11,44 +11,94 @@ const prisma = new PrismaClient();
 export class BookController {
   getAllBooks = catchAsync(async (req: Request, res: Response) => {
     const books = await prisma.book.findMany({
+      include: {
+        copies: {
+          where: { status: 'AVAILABLE' },
+        },
+      },
       orderBy: { createdAt: 'desc' },
     });
-    return res.json(ApiResponse.success(books));
+    
+    const booksWithCount = books.map((book) => ({
+      ...book,
+      availableQuantity: book.copies?.length || 0,
+    }));
+    
+    return res.json(ApiResponse.success(booksWithCount));
   });
 
   getBookById = catchAsync(async (req: Request, res: Response) => {
     const { id } = req.params;
-    const book = await prisma.book.findUnique({ where: { id } });
+    const book = await prisma.book.findUnique({
+      where: { id },
+      include: {
+        copies: true,
+      },
+    });
+    
     if (!book) {
       return res.status(404).json(ApiResponse.error('Livre non trouvé'));
     }
-    return res.json(ApiResponse.success(book));
+    
+    const availableCopies = book.copies?.filter((c) => c.status === 'AVAILABLE').length || 0;
+    
+    return res.json(ApiResponse.success({
+      ...book,
+      availableCopies,
+    }));
   });
 
   createBook = catchAsync(async (req: Request, res: Response) => {
-    const { title, author, isbn, description, totalQuantity } = req.body;
+    const { title, author, isbn, description, totalCopies, genre, language } = req.body;
+    
+    const copiesCount = parseInt(totalCopies) || 1;
+    
     const book = await prisma.book.create({
       data: {
         title,
         author,
         isbn,
         description,
-        totalQuantity: parseInt(totalQuantity) || 1,
-        availableQuantity: parseInt(totalQuantity) || 1,
+        totalCopies: copiesCount,
         isForRent: true,
+        genre: genre || 'AUTRE',
+        language: language || 'FRANCAIS',
       },
     });
-    return res.status(201).json(ApiResponse.success(book, 'Livre créé'));
+
+    const copies = [];
+    for (let i = 1; i <= copiesCount; i++) {
+      copies.push({
+        bookId: book.id,
+        copyNumber: i,
+        status: 'AVAILABLE' as CopyStatus,
+      });
+    }
+    
+    await prisma.copy.createMany({
+      data: copies,
+    });
+
+    return res.status(201).json(ApiResponse.success({
+      ...book,
+      availableQuantity: copiesCount,
+    }, 'Livre créé'));
   });
 
   updateBook = catchAsync(async (req: Request, res: Response) => {
     const { id } = req.params;
-    const { title, author, isbn, description, totalQuantity } = req.body;
+    const { title, author, isbn, description, totalCopies, genre, language } = req.body;
 
-    const existing = await prisma.book.findUnique({ where: { id } });
+    const existing = await prisma.book.findUnique({ 
+      where: { id },
+      include: { copies: true },
+    });
+    
     if (!existing) {
       return res.status(404).json(ApiResponse.error('Livre non trouvé'));
     }
+
+    const newTotal = parseInt(totalCopies) || existing.totalCopies;
 
     const book = await prisma.book.update({
       where: { id },
@@ -57,10 +107,28 @@ export class BookController {
         author,
         isbn,
         description,
-        totalQuantity: parseInt(totalQuantity) || existing.totalQuantity,
-        availableQuantity: parseInt(totalQuantity) || existing.availableQuantity,
+        totalCopies: newTotal,
+        genre: genre || existing.genre,
+        language: language || existing.language,
       },
     });
+
+    const currentCopies = await prisma.copy.count({
+      where: { bookId: id },
+    });
+    
+    if (newTotal > currentCopies) {
+      const copies = [];
+      for (let i = currentCopies + 1; i <= newTotal; i++) {
+        copies.push({
+          bookId: id,
+          copyNumber: i,
+          status: 'AVAILABLE' as CopyStatus,
+        });
+      }
+      await prisma.copy.createMany({ data: copies });
+    }
+
     return res.json(ApiResponse.success(book, 'Livre mis à jour'));
   });
 
@@ -70,42 +138,31 @@ export class BookController {
     return res.json(ApiResponse.success(null, 'Livre supprimé'));
   });
 
-  // 🔥 Upload d'image en base64
   uploadImage = catchAsync(async (req: Request, res: Response) => {
     try {
-      const { bookId, imageBase64, filename } = req.body;
-
-      console.log('📸 Upload base64 - bookId:', bookId);
-      console.log('📸 Filename:', filename);
+      const { bookId, imageBase64 } = req.body;
 
       if (!bookId) {
-        return res.status(400).json({ success: false, message: 'ID du livre manquant' });
+        return res.status(400).json(ApiResponse.error('ID du livre manquant'));
       }
 
       if (!imageBase64) {
-        return res.status(400).json({ success: false, message: 'Image manquante' });
+        return res.status(400).json(ApiResponse.error('Image manquante'));
       }
 
-      // Vérifier que le livre existe
       const book = await prisma.book.findUnique({ where: { id: bookId } });
       if (!book) {
-        return res.status(404).json({ success: false, message: 'Livre non trouvé' });
+        return res.status(404).json(ApiResponse.error('Livre non trouvé'));
       }
-
-      // Supprimer le préfixe data:image/...;base64,
-      const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, '');
       
-      // Générer un nom de fichier
-      const ext = filename?.split('.').pop() || 'jpg';
-      const fileName = `${uuidv4()}.${ext}`;
+      const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, '');
+      const fileName = `${uuidv4()}.jpg`;
       const uploadDir = path.join(__dirname, '../../uploads/books');
       
-      // Créer le dossier s'il n'existe pas
       if (!fs.existsSync(uploadDir)) {
         fs.mkdirSync(uploadDir, { recursive: true });
       }
 
-      // Écrire le fichier
       const filePath = path.join(uploadDir, fileName);
       fs.writeFileSync(filePath, Buffer.from(base64Data, 'base64'));
 
@@ -123,7 +180,7 @@ export class BookController {
       });
     } catch (error: any) {
       console.error('❌ Erreur upload:', error);
-      return res.status(500).json({ success: false, message: error.message });
+      return res.status(500).json(ApiResponse.error(error.message));
     }
   });
 }

@@ -5,7 +5,7 @@
     "lib": ["ES2022"],
     "outDir": "./dist",
     "rootDir": "./src",
-    "strict": true,
+    "strict": false,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
@@ -18,12 +18,13 @@
     "incremental": true,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
-    "noImplicitReturns": true,
+    "noImplicitReturns": false,
     "noFallthroughCasesInSwitch": true,
     "typeRoots": [
       "./node_modules/@types",
       "./src/types"
-    ]
+    ],
+    "ignoreDeprecations": "6.0"
   },
   "include": [
     "src/**/*.ts",

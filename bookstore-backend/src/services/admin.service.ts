@@ -11,8 +11,6 @@ export class AdminService {
       requestedLoans,
       approvedLoans,
       lateLoans,
-      totalRevenue,
-      recentSales,
     ] = await Promise.all([
       // Total books
       prisma.book.count(),
@@ -40,19 +38,7 @@ export class AdminService {
         where: { status: 'LATE' },
       }),
       
-      // Total revenue
-      prisma.sale.aggregate({
-        _sum: { totalPrice: true },
-      }),
       
-      // Recent 5 sales with book info
-      prisma.sale.findMany({
-        take: 5,
-        orderBy: { soldAt: 'desc' },
-        include: {
-          book: { select: { title: true } },
-        },
-      }),
     ]);
 
     return {
@@ -62,8 +48,6 @@ export class AdminService {
       requestedLoans,
       approvedLoans,
       lateLoans,
-      totalRevenue: totalRevenue._sum.totalPrice || 0,
-      recentSales,
     };
   }
 }

@@ -1,3 +1,0 @@
--- AlterTable
-ALTER TABLE "books" ADD COLUMN     "isForRent" BOOLEAN NOT NULL DEFAULT true,
-ADD COLUMN     "isForSale" BOOLEAN NOT NULL DEFAULT true;

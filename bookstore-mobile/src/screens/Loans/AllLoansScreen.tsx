@@ -8,7 +8,6 @@ import {
   ActivityIndicator,
   RefreshControl,
   Alert,
-  Platform,
 } from 'react-native';
 import api from '../../services/api';
 import { colors } from '../../theme/colors';
@@ -54,80 +53,81 @@ export const AllLoansScreen = () => {
     fetchLoans();
   }, []);
 
+  // 🔥 Approbation avec notification
   const handleApprove = async (loanId: string) => {
-    try {
-      await api.put(`/loans/${loanId}/approve`);
-      Alert.alert('Succès', '✅ Demande approuvée');
-      fetchLoans();
-    } catch (error: any) {
-      console.error('Erreur approve:', error.response?.data || error.message);
-      Alert.alert('Erreur', error.response?.data?.message || 'Erreur');
-    }
+    Alert.alert(
+      'Approuver',
+      'Confirmer l\'approbation de cette demande ?',
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Approuver',
+          onPress: async () => {
+            try {
+              const response = await api.put(`/loans/${loanId}/approve`);
+              Alert.alert('✅ Succès', 'Demande approuvée ! L\'utilisateur a été notifié.');
+              fetchLoans();
+            } catch (error: any) {
+              console.error('Erreur approve:', error.response?.data || error.message);
+              Alert.alert('Erreur', error.response?.data?.message || 'Erreur');
+            }
+          }
+        }
+      ]
+    );
   };
 
+  // 🔥 Refus avec notification
   const handleReject = async (loanId: string) => {
-    try {
-      await api.put(`/loans/${loanId}/reject`);
-      Alert.alert('Succès', '❌ Demande refusée');
-      fetchLoans();
-    } catch (error: any) {
-      console.error('Erreur reject:', error.response?.data || error.message);
-      Alert.alert('Erreur', error.response?.data?.message || 'Erreur');
-    }
+    Alert.alert(
+      'Refuser',
+      'Confirmer le refus de cette demande ?',
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Refuser',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const response = await api.put(`/loans/${loanId}/reject`);
+              Alert.alert('❌ Succès', 'Demande refusée. L\'utilisateur a été notifié.');
+              fetchLoans();
+            } catch (error: any) {
+              console.error('Erreur reject:', error.response?.data || error.message);
+              Alert.alert('Erreur', error.response?.data?.message || 'Erreur');
+            }
+          }
+        }
+      ]
+    );
   };
 
+  // 🔥 Remise avec notification
   const handleHandOver = async (loanId: string) => {
-    try {
-      await api.put(`/loans/${loanId}/hand-over`);
-      Alert.alert('Succès', '📦 Livre remis');
-      fetchLoans();
-    } catch (error: any) {
-      console.error('Erreur hand-over:', error.response?.data || error.message);
-      Alert.alert('Erreur', error.response?.data?.message || 'Erreur');
-    }
+    Alert.alert(
+      'Remettre',
+      'Confirmer la remise du livre à l\'utilisateur ?',
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Remettre',
+          onPress: async () => {
+            try {
+              const response = await api.put(`/loans/${loanId}/hand-over`);
+              Alert.alert('📦 Succès', 'Livre remis à l\'utilisateur !');
+              fetchLoans();
+            } catch (error: any) {
+              console.error('Erreur hand-over:', error.response?.data || error.message);
+              Alert.alert('Erreur', error.response?.data?.message || 'Erreur');
+            }
+          }
+        }
+      ]
+    );
   };
 
-  // 🔥 Admin confirme le retour - avec window.confirm pour web
+  // 🔥 Confirmation de retour avec notification
   const handleConfirmReturn = async (loanId: string) => {
-    console.log('🟢 CONFIRMER LE RETOUR - ID:', loanId);
-    
-    // 🔥 Fonction pour exécuter la requête
-    const executeConfirm = async () => {
-      try {
-        console.log('📤 PUT /loans/' + loanId + '/confirm-return');
-        const response = await api.put(`/loans/${loanId}/confirm-return`);
-        console.log('✅ Réponse:', response.data);
-        
-        if (Platform.OS === 'web') {
-          alert('✅ Retour confirmé !');
-        } else {
-          Alert.alert('Succès', '✅ Retour confirmé !');
-        }
-        fetchLoans();
-      } catch (error: any) {
-        console.error('❌ ERREUR COMPLÈTE:', error);
-        console.error('❌ Status:', error.response?.status);
-        console.error('❌ Data:', error.response?.data);
-        
-        const errorMsg = error.response?.data?.message || 'Échec de la confirmation';
-        if (Platform.OS === 'web') {
-          alert('❌ Erreur: ' + errorMsg);
-        } else {
-          Alert.alert('Erreur', errorMsg);
-        }
-      }
-    };
-
-    // 🔥 Pour le web : utiliser window.confirm
-    if (Platform.OS === 'web') {
-      const confirmed = window.confirm('Avez-vous bien vérifié que le livre est en bon état ?');
-      if (confirmed) {
-        await executeConfirm();
-      }
-      return;
-    }
-
-    // 🔥 Pour mobile : utiliser Alert.alert
     Alert.alert(
       'Confirmer le retour',
       'Avez-vous bien vérifié que le livre est en bon état ?',
@@ -135,7 +135,16 @@ export const AllLoansScreen = () => {
         { text: 'Annuler', style: 'cancel' },
         {
           text: 'Confirmer le retour',
-          onPress: executeConfirm,
+          onPress: async () => {
+            try {
+              const response = await api.put(`/loans/${loanId}/confirm-return`);
+              Alert.alert('✅ Succès', 'Retour confirmé ! L\'utilisateur a été notifié.');
+              fetchLoans();
+            } catch (error: any) {
+              console.error('Erreur confirm return:', error.response?.data || error.message);
+              Alert.alert('Erreur', error.response?.data?.message || 'Erreur');
+            }
+          }
         }
       ]
     );
@@ -152,78 +161,76 @@ export const AllLoansScreen = () => {
     });
   };
 
-  const renderLoan = ({ item }: { item: any }) => {
-    return (
-      <View style={styles.card}>
-        <View style={styles.cardHeader}>
-          <Text style={styles.userName}>👤 {item.user?.name || 'Utilisateur'}</Text>
-          <View style={[styles.statusBadge, { backgroundColor: STATUS_COLORS[item.status] || '#999' }]}>
-            <Text style={styles.statusText}>{STATUS_LABELS[item.status] || item.status}</Text>
-          </View>
+  const renderLoan = ({ item }: { item: any }) => (
+    <View style={styles.card}>
+      <View style={styles.cardHeader}>
+        <Text style={styles.userName}>👤 {item.user?.name || 'Utilisateur'}</Text>
+        <View style={[styles.statusBadge, { backgroundColor: STATUS_COLORS[item.status] || '#999' }]}>
+          <Text style={styles.statusText}>{STATUS_LABELS[item.status] || item.status}</Text>
         </View>
+      </View>
 
-        <Text style={styles.bookTitle}>📖 {item.book?.title || 'Livre'}</Text>
-        <Text style={styles.bookAuthor}>✍️ {item.book?.author || ''}</Text>
+      <Text style={styles.bookTitle}>📖 {item.book?.title || 'Livre'}</Text>
+      <Text style={styles.bookAuthor}>✍️ {item.book?.author || ''}</Text>
 
-        <View style={styles.dates}>
-          <View style={styles.dateRow}>
-            <Text style={styles.dateLabel}>📅 Demandé le</Text>
-            <Text style={styles.dateValue}>{formatDate(item.createdAt)}</Text>
-          </View>
-          
-          {item.borrowedAt && (
-            <View style={styles.dateRow}>
-              <Text style={styles.dateLabel}>📆 Emprunté le</Text>
-              <Text style={styles.dateValue}>{formatDate(item.borrowedAt)}</Text>
-            </View>
-          )}
-          
-          <View style={styles.dateRow}>
-            <Text style={styles.dateLabel}>⏳ À rendre avant</Text>
-            <Text style={[styles.dateValue, styles.dueDate]}>{formatDate(item.dueDate)}</Text>
-          </View>
-          
-          {item.returnedAt && (
-            <View style={styles.dateRow}>
-              <Text style={styles.dateLabel}>↩️ Retourné le</Text>
-              <Text style={[styles.dateValue, styles.returnedDate]}>
-                {formatDate(item.returnedAt)}
-              </Text>
-            </View>
-          )}
+      <View style={styles.dates}>
+        <View style={styles.dateRow}>
+          <Text style={styles.dateLabel}>📅 Demandé le</Text>
+          <Text style={styles.dateValue}>{formatDate(item.createdAt)}</Text>
         </View>
-
-        {item.status === 'REQUESTED' && (
-          <View style={styles.actions}>
-            <TouchableOpacity style={styles.approveBtn} onPress={() => handleApprove(item.id)}>
-              <Text style={styles.btnText}>✓ Approuver</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.rejectBtn} onPress={() => handleReject(item.id)}>
-              <Text style={styles.btnText}>✗ Refuser</Text>
-            </TouchableOpacity>
+        
+        {item.borrowedAt && (
+          <View style={styles.dateRow}>
+            <Text style={styles.dateLabel}>📆 Emprunté le</Text>
+            <Text style={styles.dateValue}>{formatDate(item.borrowedAt)}</Text>
           </View>
         )}
-
-        {item.status === 'APPROVED' && (
-          <TouchableOpacity style={styles.handOverBtn} onPress={() => handleHandOver(item.id)}>
-            <Text style={styles.btnText}>📦 Remettre le livre</Text>
-          </TouchableOpacity>
-        )}
-
-        {item.status === 'RETURN_REQUESTED' && (
-          <TouchableOpacity style={styles.confirmReturnBtn} onPress={() => handleConfirmReturn(item.id)}>
-            <Text style={styles.btnText}>✅ Confirmer le retour</Text>
-          </TouchableOpacity>
-        )}
-
-        {(item.status === 'BORROWED' || item.status === 'LATE') && (
-          <View style={styles.waitingBadge}>
-            <Text style={styles.waitingText}>📖 En cours d'emprunt</Text>
+        
+        <View style={styles.dateRow}>
+          <Text style={styles.dateLabel}>⏳ À rendre avant</Text>
+          <Text style={[styles.dateValue, styles.dueDate]}>{formatDate(item.dueDate)}</Text>
+        </View>
+        
+        {item.returnedAt && (
+          <View style={styles.dateRow}>
+            <Text style={styles.dateLabel}>↩️ Retourné le</Text>
+            <Text style={[styles.dateValue, styles.returnedDate]}>
+              {formatDate(item.returnedAt)}
+            </Text>
           </View>
         )}
       </View>
-    );
-  };
+
+      {item.status === 'REQUESTED' && (
+        <View style={styles.actions}>
+          <TouchableOpacity style={styles.approveBtn} onPress={() => handleApprove(item.id)}>
+            <Text style={styles.btnText}>✓ Approuver</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.rejectBtn} onPress={() => handleReject(item.id)}>
+            <Text style={styles.btnText}>✗ Refuser</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {item.status === 'APPROVED' && (
+        <TouchableOpacity style={styles.handOverBtn} onPress={() => handleHandOver(item.id)}>
+          <Text style={styles.btnText}>📦 Remettre le livre</Text>
+        </TouchableOpacity>
+      )}
+
+      {item.status === 'RETURN_REQUESTED' && (
+        <TouchableOpacity style={styles.confirmReturnBtn} onPress={() => handleConfirmReturn(item.id)}>
+          <Text style={styles.btnText}>✅ Confirmer le retour</Text>
+        </TouchableOpacity>
+      )}
+
+      {(item.status === 'BORROWED' || item.status === 'LATE') && (
+        <View style={styles.waitingBadge}>
+          <Text style={styles.waitingText}>📖 En cours d'emprunt</Text>
+        </View>
+      )}
+    </View>
+  );
 
   if (loading) {
     return (

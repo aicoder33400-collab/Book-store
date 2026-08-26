@@ -1,170 +1,234 @@
-import { PrismaClient } from '@prisma/client';
+// prisma/seed.ts
+import { PrismaClient, CopyStatus, BookGenre, BookLanguage } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
 async function main() {
-  // Create admin user
-  const hashedPassword = await bcrypt.hash('admin111', 10);
-  
+  console.log('🌱 Seeding database...');
+
+  // === 1. CRÉER LES UTILISATEURS ===
+  const adminPassword = await bcrypt.hash('admin111', 10);
   await prisma.user.upsert({
     where: { email: 'admin@bookstore.com' },
     update: {},
     create: {
-      name: 'Admin User',
       email: 'admin@bookstore.com',
-      password: hashedPassword,
+      name: 'Admin User',
+      firstName: 'Admin',
+      lastName: 'User',
+      password: adminPassword,
       role: 'ADMIN',
+      authProvider: 'local',
       emailVerified: true,
+      isProfileComplete: true,
+      phone: '0612345678',
+      commune: 'Paris',
+      age: 30,
     },
   });
+  console.log('✅ Admin créé');
 
-  // Create staff user
   const staffPassword = await bcrypt.hash('staff111', 10);
   await prisma.user.upsert({
     where: { email: 'staff@bookstore.com' },
     update: {},
     create: {
-      name: 'Staff Member',
       email: 'staff@bookstore.com',
+      name: 'Staff User',
+      firstName: 'Staff',
+      lastName: 'User',
       password: staffPassword,
       role: 'STAFF',
+      authProvider: 'local',
       emailVerified: true,
+      isProfileComplete: true,
+      phone: '0687654321',
+      commune: 'Lyon',
+      age: 28,
     },
   });
+  console.log('✅ Staff créé');
 
-  // Create regular user
   const userPassword = await bcrypt.hash('user111', 10);
   await prisma.user.upsert({
     where: { email: 'user@bookstore.com' },
     update: {},
     create: {
-      name: 'Jean Dupont',
       email: 'user@bookstore.com',
+      name: 'Jean Dupont',
+      firstName: 'Jean',
+      lastName: 'Dupont',
       password: userPassword,
       role: 'USER',
+      authProvider: 'local',
       emailVerified: true,
+      isProfileComplete: true,
+      phone: '0612345678',
+      commune: 'Paris',
+      age: 25,
     },
   });
+  console.log('✅ User créé');
 
-  // Create books
-  const books = [
+  // === 2. CRÉER LES LIVRES AVEC LEURS COPIES ===
+  const booksData = [
     {
-      title: 'The Great Gatsby',
-      author: 'F. Scott Fitzgerald',
-      isbn: '978-0743273565',
-      description: 'A story of the mysteriously wealthy Jay Gatsby and his love for the beautiful Daisy Buchanan.',
-      totalQuantity: 5,
-      availableQuantity: 5,
-      isForSale: true,
-      isForRent: true,
+      title: "Le Petit Prince",
+      author: "Antoine de Saint-Exupéry",
+      isbn: "978-2070612758",
+      description: "Le chef-d'œuvre intemporel de la littérature française.",
+      totalCopies: 5,
+      genre: "ROMAN" as BookGenre,
+      language: "FRANCAIS" as BookLanguage,
     },
     {
-      title: '1984',
-      author: 'George Orwell',
-      isbn: '978-0451524935',
-      description: 'A dystopian social science fiction novel set in a totalitarian society.',
-      totalQuantity: 3,
-      availableQuantity: 3,
-      isForSale: true,
-      isForRent: true,
+      title: "1984",
+      author: "George Orwell",
+      isbn: "978-2070368228",
+      description: "Une dystopie visionnaire sur la surveillance totale.",
+      totalCopies: 3,
+      genre: "SCIENCE_FICTION" as BookGenre,
+      language: "ANGLAIS" as BookLanguage,
     },
     {
-      title: 'To Kill a Mockingbird',
-      author: 'Harper Lee',
-      isbn: '978-0446310789',
-      description: 'A novel about racial injustice in the American South.',
-      totalQuantity: 4,
-      availableQuantity: 4,
-      isForSale: true,
-      isForRent: false,
+      title: "Dune",
+      author: "Frank Herbert",
+      isbn: "978-2266296991",
+      description: "Le roman de science-fiction le plus vendu au monde.",
+      totalCopies: 4,
+      genre: "SCIENCE_FICTION" as BookGenre,
+      language: "ANGLAIS" as BookLanguage,
     },
     {
-      title: 'Pride and Prejudice',
-      author: 'Jane Austen',
-      isbn: '978-0141439518',
-      description: 'A romantic novel following Elizabeth Bennet.',
-      totalQuantity: 6,
-      availableQuantity: 6,
-      isForSale: true,
-      isForRent: true,
+      title: "L'Étranger",
+      author: "Albert Camus",
+      isbn: "978-2070360024",
+      description: "Un classique de la littérature française.",
+      totalCopies: 3,
+      genre: "ROMAN" as BookGenre,
+      language: "FRANCAIS" as BookLanguage,
     },
     {
-      title: 'The Catcher in the Rye',
-      author: 'J.D. Salinger',
-      isbn: '978-0316769488',
-      description: 'Holden Caulfield in New York City after prep school.',
-      totalQuantity: 2,
-      availableQuantity: 2,
-      isForSale: false,
-      isForRent: true,
+      title: "Harry Potter à l'école des sorciers",
+      author: "J.K. Rowling",
+      isbn: "978-2070584628",
+      description: "Le premier tome de la saga Harry Potter.",
+      totalCopies: 6,
+      genre: "FANTASTIQUE" as BookGenre,
+      language: "ANGLAIS" as BookLanguage,
     },
     {
-      title: 'One Hundred Years of Solitude',
-      author: 'Gabriel García Márquez',
-      isbn: '978-0060883287',
-      description: 'The multi-generational story of the Buendía family.',
-      totalQuantity: 3,
-      availableQuantity: 3,
-      isForSale: true,
-      isForRent: true,
+      title: "Le Seigneur des Anneaux",
+      author: "J.R.R. Tolkien",
+      isbn: "978-2266283846",
+      description: "La trilogie de référence de la fantasy.",
+      totalCopies: 4,
+      genre: "FANTASTIQUE" as BookGenre,
+      language: "ANGLAIS" as BookLanguage,
     },
     {
-      title: 'The Hobbit',
-      author: 'J.R.R. Tolkien',
-      isbn: '978-0547928227',
-      description: 'Bilbo Baggins quest to reclaim Erebor from the dragon Smaug.',
-      totalQuantity: 7,
-      availableQuantity: 7,
-      isForSale: true,
-      isForRent: true,
+      title: "La Peste",
+      author: "Albert Camus",
+      isbn: "978-2070360021",
+      description: "Un roman majeur d'Albert Camus.",
+      totalCopies: 3,
+      genre: "ROMAN" as BookGenre,
+      language: "FRANCAIS" as BookLanguage,
     },
     {
-      title: 'Brave New World',
-      author: 'Aldous Huxley',
-      isbn: '978-0060850524',
-      description: 'A futuristic World State with engineered social hierarchy.',
-      totalQuantity: 4,
-      availableQuantity: 4,
-      isForSale: true,
-      isForRent: false,
+      title: "Les Misérables",
+      author: "Victor Hugo",
+      isbn: "978-2010009354",
+      description: "Le chef-d'œuvre de Victor Hugo.",
+      totalCopies: 5,
+      genre: "ROMAN" as BookGenre,
+      language: "FRANCAIS" as BookLanguage,
     },
     {
-      title: 'The Alchemist',
-      author: 'Paulo Coelho',
-      isbn: '978-0062315007',
-      description: 'An Andalusian shepherd boy searching for treasure.',
-      totalQuantity: 5,
-      availableQuantity: 5,
-      isForSale: true,
-      isForRent: true,
+      title: "Le Guide du voyageur galactique",
+      author: "Douglas Adams",
+      isbn: "978-2266283847",
+      description: "Une comédie de science-fiction hilarante.",
+      totalCopies: 3,
+      genre: "SCIENCE_FICTION" as BookGenre,
+      language: "ANGLAIS" as BookLanguage,
     },
     {
-      title: 'Crime and Punishment',
-      author: 'Fyodor Dostoevsky',
-      isbn: '978-0143058144',
-      description: 'Mental anguish of an impoverished ex-student in Saint Petersburg.',
-      totalQuantity: 2,
-      availableQuantity: 2,
-      isForSale: true,
-      isForRent: true,
+      title: "Les Fleurs du Mal",
+      author: "Charles Baudelaire",
+      isbn: "978-2070360028",
+      description: "Recueil de poésie de Charles Baudelaire.",
+      totalCopies: 2,
+      genre: "POESIE" as BookGenre,
+      language: "FRANCAIS" as BookLanguage,
     },
   ];
 
-  for (const book of books) {
-    await prisma.book.upsert({
-      where: { isbn: book.isbn },
-      update: {},
-      create: book,
+  console.log('\n📚 Création des livres...');
+  
+  for (const bookData of booksData) {
+    // Créer ou mettre à jour le livre
+    const book = await prisma.book.upsert({
+      where: { isbn: bookData.isbn },
+      update: {
+        title: bookData.title,
+        author: bookData.author,
+        description: bookData.description,
+        totalCopies: bookData.totalCopies,
+        genre: bookData.genre,
+        language: bookData.language,
+      },
+      create: {
+        title: bookData.title,
+        author: bookData.author,
+        isbn: bookData.isbn,
+        description: bookData.description,
+        totalCopies: bookData.totalCopies,
+        isForRent: true,
+        genre: bookData.genre,
+        language: bookData.language,
+      },
     });
+
+    // 🔥 Vérifier et créer les copies
+    const existingCopies = await prisma.copy.count({
+      where: { bookId: book.id },
+    });
+
+    if (existingCopies < bookData.totalCopies) {
+      const copiesToCreate = [];
+      for (let i = existingCopies + 1; i <= bookData.totalCopies; i++) {
+        copiesToCreate.push({
+          bookId: book.id,
+          copyNumber: i,
+          status: 'AVAILABLE' as CopyStatus,
+        });
+      }
+      
+      if (copiesToCreate.length > 0) {
+        await prisma.copy.createMany({
+          data: copiesToCreate,
+        });
+        console.log(`   ✅ ${copiesToCreate.length} copies créées pour "${bookData.title}"`);
+      }
+    } else {
+      console.log(`   ✅ "${bookData.title}" déjà ${existingCopies} copies`);
+    }
   }
 
-  console.log('✅ Admin: admin@bookstore.com / admin111');
-  console.log('✅ Staff: staff@bookstore.com / staff111');
-  console.log('✅ User: user@bookstore.com / user111');
-  console.log(`✅ ${books.length} books created`);
+  console.log(`\n✅ ${booksData.length} livres créés/mis à jour avec leurs copies`);
+  console.log('\n📋 Comptes de test:');
+  console.log('  👑 Admin: admin@bookstore.com / admin111');
+  console.log('  📋 Staff: staff@bookstore.com / staff111');
+  console.log('  👤 User: user@bookstore.com / user111');
 }
 
+// 🔥 Version simplifiée sans process.exit
 main()
-  .catch(console.error)
-  .finally(() => prisma.$disconnect());
+  .catch((e) => {
+    console.error('❌ Erreur seed:', e);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

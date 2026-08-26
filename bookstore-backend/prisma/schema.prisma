@@ -23,6 +23,50 @@ enum LoanStatus {
   LATE
 }
 
+enum CopyStatus {
+  AVAILABLE
+  BORROWED
+  LOST
+  DAMAGED
+}
+
+enum BookGenre {
+  ROMAN
+  POESIE
+  THEATRE
+  HISTOIRE
+  SCIENCE_FICTION
+  FANTASTIQUE
+  POLAR
+  AVENTURE
+  BIOGRAPHIE
+  ESSAI
+  PHILOSOPHIE
+  JEUNESSE
+  BANDE_DESSINEE
+  ART
+  CUISINE
+  VOYAGE
+  SPORT
+  SANTE
+  RELIGION
+  AUTRE
+}
+
+enum BookLanguage {
+  FRANCAIS
+  ANGLAIS
+  ARABE
+  ESPAGNOL
+  ALLEMAND
+  ITALIEN
+  PORTUGAIS
+  RUSSE
+  CHINOIS
+  JAPONAIS
+  AUTRE
+}
+
 model User {
   id                String    @id @default(uuid())
   name              String
@@ -51,37 +95,57 @@ model User {
 }
 
 model Book {
-  id                String   @id @default(uuid())
+  id                String    @id @default(uuid())
   title             String
   author            String
-  isbn              String   @unique
+  isbn              String    @unique
   description       String?
-  totalQuantity     Int      @default(0)
-  availableQuantity Int      @default(0)
-  isForRent         Boolean  @default(true)
-  imageUrl          String?  // 🔥 NOUVEAU : URL de la photo
-  loans             Loan[]
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  isForRent         Boolean   @default(true)
+  imageUrl          String?
+  totalCopies       Int       @default(1)
+  genre             BookGenre @default(AUTRE)
+  language          BookLanguage @default(FRANCAIS)
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  copies            Copy[]
 
   @@map("books")
 }
 
+model Copy {
+  id                String    @id @default(uuid())
+  bookId            String
+  copyNumber        Int
+  status            CopyStatus @default(AVAILABLE)
+  
+  book              Book      @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  loans             Loan[]
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@unique([bookId, copyNumber])
+  @@map("copies")
+}
+
 model Loan {
-  id         String     @id @default(uuid())
-  userId     String
-  bookId     String
-  borrowedAt DateTime   @default(now())
-  dueDate    DateTime
-  returnedAt DateTime?
-  status     LoanStatus @default(BORROWED)
-  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  book       Book       @relation(fields: [bookId], references: [id], onDelete: Cascade)
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
+  id                String       @id @default(uuid())
+  userId            String
+  copyId            String
+  borrowedAt        DateTime     @default(now())
+  dueDate           DateTime
+  returnedAt        DateTime?
+  status            LoanStatus   @default(BORROWED)
+  
+  user              User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  copy              Copy         @relation(fields: [copyId], references: [id], onDelete: Cascade)
+  
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
 
   @@index([userId])
-  @@index([bookId])
+  @@index([copyId])
   @@index([status])
   @@map("loans")
 }

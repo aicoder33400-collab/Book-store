@@ -9,14 +9,20 @@ export class LoanService {
     // 1. Vérifier que le livre existe
     const book = await prisma.book.findUnique({
       where: { id: bookId },
+      include: {
+        copies: {
+          where: { status: 'AVAILABLE' },
+        },
+      },
     });
 
     if (!book) {
       throw new AppError('Livre non trouvé', 404);
     }
 
-    // 2. Vérifier la disponibilité
-    if (book.availableQuantity <= 0) {
+    // 2. Vérifier la disponibilité (copies disponibles)
+    const availableCopies = book.copies?.filter(c => c.status === 'AVAILABLE') || [];
+    if (availableCopies.length <= 0) {
       throw new AppError('Livre non disponible', 400);
     }
 
@@ -24,7 +30,9 @@ export class LoanService {
     const existingLoan = await prisma.loan.findFirst({
       where: {
         userId,
-        bookId,
+        copy: {
+          bookId: bookId,
+        },
         status: {
           in: ['REQUESTED', 'APPROVED', 'BORROWED', 'LATE'],
         },
@@ -35,27 +43,49 @@ export class LoanService {
       throw new AppError('Vous avez déjà ce livre en cours (demande en attente, approuvée ou emprunté)', 400);
     }
 
-    // 4. Créer l'emprunt
+    // 4. Créer l'emprunt avec la première copie disponible
     const loan = await prisma.loan.create({
       data: {
         userId,
-        bookId,
+        copyId: availableCopies[0].id,
         dueDate,
         status: 'REQUESTED',
       },
       include: {
         user: true,
-        book: true,
+        copy: {
+          include: {
+            book: true,
+          },
+        },
       },
     });
 
-    return loan;
+    // Mettre à jour le statut de la copie
+    await prisma.copy.update({
+      where: { id: availableCopies[0].id },
+      data: { status: 'BORROWED' },
+    });
+
+    // Transformer pour avoir une structure compatible avec votre frontend
+    return {
+      ...loan,
+      bookId: loan.copy.bookId,
+      book: loan.copy.book,
+    };
   }
 
   // 🔥 L'utilisateur demande le retour
   async requestReturn(loanId: string, userId: string) {
     const loan = await prisma.loan.findUnique({
       where: { id: loanId },
+      include: {
+        copy: {
+          include: {
+            book: true,
+          },
+        },
+      },
     });
 
     if (!loan) {
@@ -75,18 +105,32 @@ export class LoanService {
       data: { status: 'RETURN_REQUESTED' },
       include: {
         user: true,
-        book: true,
+        copy: {
+          include: {
+            book: true,
+          },
+        },
       },
     });
 
-    return updatedLoan;
+    return {
+      ...updatedLoan,
+      bookId: updatedLoan.copy.bookId,
+      book: updatedLoan.copy.book,
+    };
   }
 
   // 🔥 L'admin confirme le retour
   async confirmReturn(loanId: string) {
     const loan = await prisma.loan.findUnique({
       where: { id: loanId },
-      include: { book: true },
+      include: {
+        copy: {
+          include: {
+            book: true,
+          },
+        },
+      },
     });
 
     if (!loan) {
@@ -105,24 +149,38 @@ export class LoanService {
       },
       include: {
         user: true,
-        book: true,
+        copy: {
+          include: {
+            book: true,
+          },
+        },
       },
     });
 
-    // Augmenter la quantité disponible
-    await prisma.book.update({
-      where: { id: loan.bookId },
-      data: { availableQuantity: { increment: 1 } },
+    // Remettre la copie disponible
+    await prisma.copy.update({
+      where: { id: loan.copyId },
+      data: { status: 'AVAILABLE' },
     });
 
-    return updatedLoan;
+    return {
+      ...updatedLoan,
+      bookId: updatedLoan.copy.bookId,
+      book: updatedLoan.copy.book,
+    };
   }
 
   // Retourner un livre (ancienne méthode)
   async returnBook(loanId: string) {
     const loan = await prisma.loan.findUnique({
       where: { id: loanId },
-      include: { book: true },
+      include: {
+        copy: {
+          include: {
+            book: true,
+          },
+        },
+      },
     });
 
     if (!loan) {
@@ -141,16 +199,25 @@ export class LoanService {
       },
       include: {
         user: true,
-        book: true,
+        copy: {
+          include: {
+            book: true,
+          },
+        },
       },
     });
 
-    await prisma.book.update({
-      where: { id: loan.bookId },
-      data: { availableQuantity: { increment: 1 } },
+    // Remettre la copie disponible
+    await prisma.copy.update({
+      where: { id: loan.copyId },
+      data: { status: 'AVAILABLE' },
     });
 
-    return updatedLoan;
+    return {
+      ...updatedLoan,
+      bookId: updatedLoan.copy.bookId,
+      book: updatedLoan.copy.book,
+    };
   }
 
   async getAllLoans(filters?: any) {
@@ -161,7 +228,9 @@ export class LoanService {
     }
 
     if (filters?.bookId) {
-      where.bookId = filters.bookId;
+      where.copy = {
+        bookId: filters.bookId,
+      };
     }
 
     if (filters?.status) {
@@ -181,8 +250,12 @@ export class LoanService {
           user: {
             select: { id: true, name: true, email: true },
           },
-          book: {
-            select: { id: true, title: true, author: true, isbn: true },
+          copy: {
+            include: {
+              book: {
+                select: { id: true, title: true, author: true, isbn: true },
+              },
+            },
           },
         },
         orderBy: { createdAt: 'desc' },
@@ -190,8 +263,15 @@ export class LoanService {
       prisma.loan.count({ where }),
     ]);
 
+    // Transformer les données pour avoir bookId et book à la racine
+    const transformedData = data.map(loan => ({
+      ...loan,
+      bookId: loan.copy.bookId,
+      book: loan.copy.book,
+    }));
+
     return {
-      data,
+      data: transformedData,
       pagination: {
         page,
         limit,
@@ -206,7 +286,11 @@ export class LoanService {
       where: { id },
       include: {
         user: true,
-        book: true,
+        copy: {
+          include: {
+            book: true,
+          },
+        },
       },
     });
 
@@ -214,13 +298,23 @@ export class LoanService {
       throw new AppError('Emprunt non trouvé', 404);
     }
 
-    return loan;
+    return {
+      ...loan,
+      bookId: loan.copy.bookId,
+      book: loan.copy.book,
+    };
   }
 
   async approveRequest(loanId: string) {
     const loan = await prisma.loan.findUnique({
       where: { id: loanId },
-      include: { book: true },
+      include: {
+        copy: {
+          include: {
+            book: true,
+          },
+        },
+      },
     });
 
     if (!loan) {
@@ -231,8 +325,13 @@ export class LoanService {
       throw new AppError('Seulement les demandes en attente peuvent être approuvées', 400);
     }
 
-    if (loan.book.availableQuantity <= 0) {
-      throw new AppError('Livre non disponible', 400);
+    // Vérifier que la copie est toujours disponible
+    const copy = await prisma.copy.findUnique({
+      where: { id: loan.copyId },
+    });
+
+    if (!copy || copy.status !== 'BORROWED') {
+      throw new AppError('La copie n\'est plus disponible', 400);
     }
 
     const updatedLoan = await prisma.loan.update({
@@ -240,16 +339,31 @@ export class LoanService {
       data: { status: 'APPROVED' },
       include: {
         user: true,
-        book: true,
+        copy: {
+          include: {
+            book: true,
+          },
+        },
       },
     });
 
-    return updatedLoan;
+    return {
+      ...updatedLoan,
+      bookId: updatedLoan.copy.bookId,
+      book: updatedLoan.copy.book,
+    };
   }
 
   async rejectRequest(loanId: string) {
     const loan = await prisma.loan.findUnique({
       where: { id: loanId },
+      include: {
+        copy: {
+          include: {
+            book: true,
+          },
+        },
+      },
     });
 
     if (!loan) {
@@ -265,17 +379,37 @@ export class LoanService {
       data: { status: 'REJECTED' },
       include: {
         user: true,
-        book: true,
+        copy: {
+          include: {
+            book: true,
+          },
+        },
       },
     });
 
-    return updatedLoan;
+    // Remettre la copie disponible
+    await prisma.copy.update({
+      where: { id: loan.copyId },
+      data: { status: 'AVAILABLE' },
+    });
+
+    return {
+      ...updatedLoan,
+      bookId: updatedLoan.copy.bookId,
+      book: updatedLoan.copy.book,
+    };
   }
 
   async handOverBook(loanId: string) {
     const loan = await prisma.loan.findUnique({
       where: { id: loanId },
-      include: { book: true },
+      include: {
+        copy: {
+          include: {
+            book: true,
+          },
+        },
+      },
     });
 
     if (!loan) {
@@ -286,10 +420,6 @@ export class LoanService {
       throw new AppError('Seulement les prêts approuvés peuvent être remis', 400);
     }
 
-    if (loan.book.availableQuantity <= 0) {
-      throw new AppError('Livre non disponible', 400);
-    }
-
     const updatedLoan = await prisma.loan.update({
       where: { id: loanId },
       data: {
@@ -298,26 +428,39 @@ export class LoanService {
       },
       include: {
         user: true,
-        book: true,
+        copy: {
+          include: {
+            book: true,
+          },
+        },
       },
     });
 
-    // Réduire la quantité disponible
-    await prisma.book.update({
-      where: { id: loan.bookId },
-      data: { availableQuantity: { decrement: 1 } },
-    });
-
-    return updatedLoan;
+    return {
+      ...updatedLoan,
+      bookId: updatedLoan.copy.bookId,
+      book: updatedLoan.copy.book,
+    };
   }
 
   async deleteLoan(loanId: string) {
     const loan = await prisma.loan.findUnique({
       where: { id: loanId },
+      include: {
+        copy: true,
+      },
     });
 
     if (!loan) {
       throw new AppError('Emprunt non trouvé', 404);
+    }
+
+    // Si l'emprunt est en cours, remettre la copie disponible
+    if (loan.status === 'BORROWED' || loan.status === 'LATE' || loan.status === 'APPROVED') {
+      await prisma.copy.update({
+        where: { id: loan.copyId },
+        data: { status: 'AVAILABLE' },
+      });
     }
 
     await prisma.loan.delete({
