@@ -12,6 +12,7 @@ import { UserNotificationBadge } from '../components/UserNotificationBadge';
 import { LoginScreen } from '../screens/Auth/LoginScreen';
 import { BooksScreen } from '../screens/Books/BooksScreen';
 import { BookDetailScreen } from '../screens/Books/BookDetailScreen';
+import { AddBookScreen } from '../screens/Books/AddBookScreen';
 import { MyLoansScreen } from '../screens/Loans/MyLoansScreen';
 import { ProfileScreen } from '../screens/Profile/ProfileScreen';
 import { DashboardScreen } from '../screens/Dashboard/DashboardScreen';
@@ -31,6 +32,18 @@ const BooksStack = () => (
       options={{ 
         headerShown: true,
         title: 'Détail du livre',
+        headerStyle: { backgroundColor: colors.primary },
+        headerTintColor: colors.text.white,
+        headerBackTitle: 'Retour',
+      }} 
+    />
+    {/* 🔥 Nouvel écran pour ajouter un livre */}
+    <Stack.Screen 
+      name="AddBook" 
+      component={AddBookScreen} 
+      options={{ 
+        headerShown: true,
+        title: 'Ajouter un livre',
         headerStyle: { backgroundColor: colors.primary },
         headerTintColor: colors.text.white,
         headerBackTitle: 'Retour',

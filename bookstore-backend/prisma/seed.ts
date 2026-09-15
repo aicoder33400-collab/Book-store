@@ -1,4 +1,3 @@
-// prisma/seed.ts
 import { PrismaClient, CopyStatus, BookGenre, BookLanguage } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
@@ -76,7 +75,6 @@ async function main() {
     {
       title: "Le Petit Prince",
       author: "Antoine de Saint-Exupéry",
-      isbn: "978-2070612758",
       description: "Le chef-d'œuvre intemporel de la littérature française.",
       totalCopies: 5,
       genre: "ROMAN" as BookGenre,
@@ -85,7 +83,6 @@ async function main() {
     {
       title: "1984",
       author: "George Orwell",
-      isbn: "978-2070368228",
       description: "Une dystopie visionnaire sur la surveillance totale.",
       totalCopies: 3,
       genre: "SCIENCE_FICTION" as BookGenre,
@@ -94,7 +91,6 @@ async function main() {
     {
       title: "Dune",
       author: "Frank Herbert",
-      isbn: "978-2266296991",
       description: "Le roman de science-fiction le plus vendu au monde.",
       totalCopies: 4,
       genre: "SCIENCE_FICTION" as BookGenre,
@@ -103,7 +99,6 @@ async function main() {
     {
       title: "L'Étranger",
       author: "Albert Camus",
-      isbn: "978-2070360024",
       description: "Un classique de la littérature française.",
       totalCopies: 3,
       genre: "ROMAN" as BookGenre,
@@ -112,7 +107,6 @@ async function main() {
     {
       title: "Harry Potter à l'école des sorciers",
       author: "J.K. Rowling",
-      isbn: "978-2070584628",
       description: "Le premier tome de la saga Harry Potter.",
       totalCopies: 6,
       genre: "FANTASTIQUE" as BookGenre,
@@ -121,7 +115,6 @@ async function main() {
     {
       title: "Le Seigneur des Anneaux",
       author: "J.R.R. Tolkien",
-      isbn: "978-2266283846",
       description: "La trilogie de référence de la fantasy.",
       totalCopies: 4,
       genre: "FANTASTIQUE" as BookGenre,
@@ -130,7 +123,6 @@ async function main() {
     {
       title: "La Peste",
       author: "Albert Camus",
-      isbn: "978-2070360021",
       description: "Un roman majeur d'Albert Camus.",
       totalCopies: 3,
       genre: "ROMAN" as BookGenre,
@@ -139,7 +131,6 @@ async function main() {
     {
       title: "Les Misérables",
       author: "Victor Hugo",
-      isbn: "978-2010009354",
       description: "Le chef-d'œuvre de Victor Hugo.",
       totalCopies: 5,
       genre: "ROMAN" as BookGenre,
@@ -148,7 +139,6 @@ async function main() {
     {
       title: "Le Guide du voyageur galactique",
       author: "Douglas Adams",
-      isbn: "978-2266283847",
       description: "Une comédie de science-fiction hilarante.",
       totalCopies: 3,
       genre: "SCIENCE_FICTION" as BookGenre,
@@ -157,7 +147,6 @@ async function main() {
     {
       title: "Les Fleurs du Mal",
       author: "Charles Baudelaire",
-      isbn: "978-2070360028",
       description: "Recueil de poésie de Charles Baudelaire.",
       totalCopies: 2,
       genre: "POESIE" as BookGenre,
@@ -168,30 +157,41 @@ async function main() {
   console.log('\n📚 Création des livres...');
   
   for (const bookData of booksData) {
-    // Créer ou mettre à jour le livre
-    const book = await prisma.book.upsert({
-      where: { isbn: bookData.isbn },
-      update: {
+    // 🔥 Chercher par titre + auteur (car isbn n'existe plus)
+    let book = await prisma.book.findFirst({
+      where: {
         title: bookData.title,
         author: bookData.author,
-        description: bookData.description,
-        totalCopies: bookData.totalCopies,
-        genre: bookData.genre,
-        language: bookData.language,
-      },
-      create: {
-        title: bookData.title,
-        author: bookData.author,
-        isbn: bookData.isbn,
-        description: bookData.description,
-        totalCopies: bookData.totalCopies,
-        isForRent: true,
-        genre: bookData.genre,
-        language: bookData.language,
       },
     });
 
-    // 🔥 Vérifier et créer les copies
+    if (book) {
+      // Mettre à jour le livre existant
+      book = await prisma.book.update({
+        where: { id: book.id },
+        data: {
+          description: bookData.description,
+          totalCopies: bookData.totalCopies,
+          genre: bookData.genre,
+          language: bookData.language,
+        },
+      });
+    } else {
+      // Créer un nouveau livre
+      book = await prisma.book.create({
+        data: {
+          title: bookData.title,
+          author: bookData.author,
+          description: bookData.description,
+          totalCopies: bookData.totalCopies,
+          isForRent: true,
+          genre: bookData.genre,
+          language: bookData.language,
+        },
+      });
+    }
+
+    // 🔥 Vérifier et créer les copies manquantes
     const existingCopies = await prisma.copy.count({
       where: { bookId: book.id },
     });
@@ -224,7 +224,6 @@ async function main() {
   console.log('  👤 User: user@bookstore.com / user111');
 }
 
-// 🔥 Version simplifiée sans process.exit
 main()
   .catch((e) => {
     console.error('❌ Erreur seed:', e);

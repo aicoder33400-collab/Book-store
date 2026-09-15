@@ -31,9 +31,7 @@ export class BookController {
     const { id } = req.params;
     const book = await prisma.book.findUnique({
       where: { id },
-      include: {
-        copies: true,
-      },
+      include: { copies: true },
     });
     
     if (!book) {
@@ -48,52 +46,65 @@ export class BookController {
     }));
   });
 
-  createBook = catchAsync(async (req: Request, res: Response) => {
-    const { title, author, isbn, description, totalCopies, genre, language } = req.body;
-    
-    const copiesCount = parseInt(totalCopies) || 1;
-    
-    const book = await prisma.book.create({
-      data: {
-        title,
-        author,
-        isbn,
-        description,
-        totalCopies: copiesCount,
-        isForRent: true,
-        genre: genre || 'AUTRE',
-        language: language || 'FRANCAIS',
+ createBook = catchAsync(async (req: Request, res: Response) => {
+  const { title, author, description, totalCopies, genre, language } = req.body;
+  
+  // 🔥 Vérifier si un livre avec le même titre ET auteur existe déjà
+  const existingBook = await prisma.book.findFirst({
+    where: {
+      title: {
+        equals: title.trim(),
+        mode: 'insensitive',
       },
-    });
-
-    const copies = [];
-    for (let i = 1; i <= copiesCount; i++) {
-      copies.push({
-        bookId: book.id,
-        copyNumber: i,
-        status: 'AVAILABLE' as CopyStatus,
-      });
-    }
-    
-    await prisma.copy.createMany({
-      data: copies,
-    });
-
-    return res.status(201).json(ApiResponse.success({
-      ...book,
-      availableQuantity: copiesCount,
-    }, 'Livre créé'));
+      author: {
+        equals: author.trim(),
+        mode: 'insensitive',
+      },
+    },
   });
+
+  if (existingBook) {
+    return res.status(400).json(
+      ApiResponse.error(`Le livre "${title}" de ${author} existe déjà dans le catalogue`)
+    );
+  }
+
+  const copiesCount = parseInt(totalCopies) || 1;
+  
+  const book = await prisma.book.create({
+    data: {
+      title: title.trim(),
+      author: author.trim(),
+      description: description?.trim() || '',
+      totalCopies: copiesCount,
+      isForRent: true,
+      genre: genre || 'AUTRE',
+      language: language || 'FRANCAIS',
+    },
+  });
+
+  const copies = [];
+  for (let i = 1; i <= copiesCount; i++) {
+    copies.push({
+      bookId: book.id,
+      copyNumber: i,
+      status: 'AVAILABLE' as CopyStatus,
+    });
+  }
+  
+  await prisma.copy.createMany({ data: copies });
+
+  return res.status(201).json(ApiResponse.success({
+    ...book,
+    availableQuantity: copiesCount,
+  }, 'Livre créé'));
+});
 
   updateBook = catchAsync(async (req: Request, res: Response) => {
     const { id } = req.params;
-    const { title, author, isbn, description, totalCopies, genre, language } = req.body;
+    const { title, author, description, totalCopies, genre, language } = req.body;
 
-    const existing = await prisma.book.findUnique({ 
-      where: { id },
-      include: { copies: true },
-    });
-    
+    const existing = await prisma.book.findUnique({ where: { id } });
     if (!existing) {
       return res.status(404).json(ApiResponse.error('Livre non trouvé'));
     }
@@ -105,7 +116,6 @@ export class BookController {
       data: {
         title,
         author,
-        isbn,
         description,
         totalCopies: newTotal,
         genre: genre || existing.genre,
@@ -113,9 +123,7 @@ export class BookController {
       },
     });
 
-    const currentCopies = await prisma.copy.count({
-      where: { bookId: id },
-    });
+    const currentCopies = await prisma.copy.count({ where: { bookId: id } });
     
     if (newTotal > currentCopies) {
       const copies = [];

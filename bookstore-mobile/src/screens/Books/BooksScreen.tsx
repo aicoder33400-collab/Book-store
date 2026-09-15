@@ -18,7 +18,7 @@ import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import api from '../../services/api';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '../../theme/colors';
+import { useAuthStore } from '../../store/auth.store';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 32) / 2;
@@ -26,6 +26,7 @@ const CARD_WIDTH = (width - 32) / 2;
 type RootStackParamList = {
   BookDetail: { book: any };
   BooksList: undefined;
+  AddBook: undefined;
 };
 
 type BooksScreenNavigationProp = StackNavigationProp<RootStackParamList, 'BooksList'>;
@@ -71,7 +72,7 @@ const LANGUAGES = [
   { label: '📦 Autre', value: 'AUTRE' },
 ];
 
-// 🔥 Mapping des genres pour l'affichage (réutilisé)
+// 🔥 Labels genres
 const GENRE_LABELS: Record<string, string> = {
   ROMAN: '📖 Roman',
   POESIE: '📝 Poésie',
@@ -119,31 +120,22 @@ export const BooksScreen = () => {
   const [selectedLanguage, setSelectedLanguage] = useState('TOUTES');
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const navigation = useNavigation<BooksScreenNavigationProp>();
+  const { user } = useAuthStore();
+  const isAdmin = user?.role === 'ADMIN' || user?.role === 'STAFF';
 
   const fetchBooks = async () => {
     try {
       const response = await api.get('/books', { params: { limit: 100 } });
       
-      // 🔥 Transformer les données pour ajouter availableQuantity
       const booksWithAvailability = response.data.data?.map((book: any) => ({
         ...book,
-        // Calculer availableQuantity à partir des copies
         availableQuantity: book.availableQuantity !== undefined 
           ? book.availableQuantity 
           : book.copies?.filter((c: any) => c.status === 'AVAILABLE').length || 0,
-        // Ajouter totalQuantity comme alias pour compatibilité
         totalQuantity: book.totalCopies || 0,
-        // Ajouter les labels pour l'affichage
         genreLabel: GENRE_LABELS[book.genre] || book.genre || 'Non défini',
         languageLabel: LANGUAGE_LABELS[book.language] || book.language || 'Non défini',
       })) || [];
-      
-      console.log('📚 Livres chargés:', booksWithAvailability.map((b: any) => ({
-        title: b.title,
-        availableQuantity: b.availableQuantity,
-        totalCopies: b.totalCopies,
-        copies: b.copies?.length || 0,
-      })));
       
       setBooks(booksWithAvailability);
       applyFilters(booksWithAvailability, search, selectedGenre, selectedLanguage);
@@ -156,13 +148,15 @@ export const BooksScreen = () => {
   };
 
   useEffect(() => {
-    fetchBooks();
-  }, []);
+    const unsubscribe = navigation.addListener('focus', () => {
+      fetchBooks();
+    });
+    return unsubscribe;
+  }, [navigation]);
 
   const applyFilters = (booksList: any[], searchText: string, genre: string, language: string) => {
     let filtered = booksList;
 
-    // 🔥 Recherche par texte
     if (searchText.trim()) {
       const query = searchText.toLowerCase();
       filtered = filtered.filter(
@@ -172,12 +166,10 @@ export const BooksScreen = () => {
       );
     }
 
-    // 🔥 Filtre par genre
     if (genre !== 'TOUS') {
       filtered = filtered.filter((book) => book.genre === genre);
     }
 
-    // 🔥 Filtre par langue
     if (language !== 'TOUTES') {
       filtered = filtered.filter((book) => book.language === language);
     }
@@ -249,11 +241,13 @@ export const BooksScreen = () => {
               {isAvailable ? `Disponible (${item.availableQuantity})` : 'Indisponible'}
             </Text>
           </View>
-          {/* 🔥 Afficher genre et langue */}
           <View style={styles.metaRow}>
             <Text style={styles.metaText} numberOfLines={1}>{item.genreLabel}</Text>
             <Text style={styles.metaText} numberOfLines={1}>{item.languageLabel}</Text>
           </View>
+          {isAdmin && (
+            <Text style={styles.stockText}>📦 {item.availableQuantity}/{item.totalQuantity}</Text>
+          )}
         </View>
       </TouchableOpacity>
     );
@@ -270,7 +264,7 @@ export const BooksScreen = () => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        {/* 🔥 Barre de recherche + Filtre */}
+        {/* Barre de recherche + Filtre */}
         <View style={styles.searchContainer}>
           <View style={styles.searchWrapper}>
             <Ionicons name="search-outline" size={20} color="#999" style={styles.searchIcon} />
@@ -293,7 +287,7 @@ export const BooksScreen = () => {
           </TouchableOpacity>
         </View>
 
-        {/* 🔥 Filtres actifs */}
+        {/* Filtres actifs */}
         {(selectedGenre !== 'TOUS' || selectedLanguage !== 'TOUTES') && (
           <ScrollView horizontal style={styles.activeFilters} showsHorizontalScrollIndicator={false}>
             {selectedGenre !== 'TOUS' && (
@@ -335,9 +329,20 @@ export const BooksScreen = () => {
             </View>
           }
         />
+
+        {/* 🔥 BOUTON FLOTTANT "+" pour Admin/Staff */}
+        {isAdmin && (
+          <TouchableOpacity
+            style={styles.fab}
+            onPress={() => navigation.navigate('AddBook')}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="add" size={32} color="#fff" />
+          </TouchableOpacity>
+        )}
       </View>
 
-      {/* 🔥 MODAL DE FILTRES */}
+      {/* Modal de filtres */}
       <Modal
         visible={filterModalVisible}
         transparent
@@ -354,7 +359,6 @@ export const BooksScreen = () => {
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
-              {/* Genre */}
               <Text style={styles.filterLabel}>📚 Genre</Text>
               <View style={styles.filterOptions}>
                 {GENRES.map((genre) => (
@@ -378,7 +382,6 @@ export const BooksScreen = () => {
                 ))}
               </View>
 
-              {/* Langue */}
               <Text style={[styles.filterLabel, styles.filterLabelTop]}>🌐 Langue</Text>
               <View style={styles.filterOptions}>
                 {LANGUAGES.map((lang) => (
@@ -419,20 +422,9 @@ export const BooksScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#f8f9fc',
-  },
-  container: {
-    flex: 1,
-    backgroundColor: '#f8f9fc',
-  },
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f8f9fc',
-  },
+  safeArea: { flex: 1, backgroundColor: '#f8f9fc' },
+  container: { flex: 1, backgroundColor: '#f8f9fc' },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f8f9fc' },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -450,15 +442,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#f0f0f0',
   },
-  searchIcon: {
-    marginRight: 8,
-  },
-  searchInput: {
-    flex: 1,
-    paddingVertical: 12,
-    fontSize: 15,
-    color: '#1a1a2e',
-  },
+  searchIcon: { marginRight: 8 },
+  searchInput: { flex: 1, paddingVertical: 12, fontSize: 15, color: '#1a1a2e' },
   filterButton: {
     padding: 10,
     backgroundColor: '#fff',
@@ -476,10 +461,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: '#e94560',
   },
-  activeFilters: {
-    paddingHorizontal: 16,
-    paddingBottom: 8,
-  },
+  activeFilters: { paddingHorizontal: 16, paddingBottom: 8 },
   activeFilterChip: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -491,15 +473,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(108, 99, 255, 0.2)',
   },
-  activeFilterText: {
-    fontSize: 12,
-    color: '#6C63FF',
-    marginRight: 4,
-  },
-  list: {
-    padding: 8,
-    paddingBottom: 80,
-  },
+  activeFilterText: { fontSize: 12, color: '#6C63FF', marginRight: 4 },
+  list: { padding: 8, paddingBottom: 100 },
   card: {
     flex: 1,
     maxWidth: CARD_WIDTH,
@@ -513,202 +488,71 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
   },
-  imageContainer: {
-    width: '100%',
-    height: CARD_WIDTH * 1.3,
-    backgroundColor: '#f5f6fa',
-    position: 'relative',
+  imageContainer: { width: '100%', height: CARD_WIDTH * 1.3, backgroundColor: '#f5f6fa', position: 'relative' },
+  bookImage: { width: '100%', height: '100%', resizeMode: 'cover' },
+  placeholderImage: { width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center', backgroundColor: '#f5f6fa' },
+  unavailableBadge: {
+    position: 'absolute', top: 8, right: 8,
+    backgroundColor: 'rgba(244,67,54,0.9)',
+    paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8,
   },
-  bookImage: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
+  unavailableBadgeText: { color: '#fff', fontSize: 10, fontWeight: '600' },
+  lowStockBadge: {
+    position: 'absolute', top: 8, left: 8,
+    backgroundColor: 'rgba(255,152,0,0.9)',
+    paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8,
   },
-  placeholderImage: {
-    width: '100%',
-    height: '100%',
+  lowStockBadgeText: { color: '#fff', fontSize: 10, fontWeight: '600' },
+  cardContent: { padding: 12 },
+  bookTitle: { fontSize: 14, fontWeight: '600', color: '#1a1a2e', marginBottom: 2 },
+  bookAuthor: { fontSize: 12, color: '#888', marginBottom: 4 },
+  availabilityRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
+  availabilityDot: { width: 6, height: 6, borderRadius: 3, marginRight: 6 },
+  availableDot: { backgroundColor: '#4CAF50' },
+  unavailableDot: { backgroundColor: '#f44336' },
+  availabilityText: { fontSize: 11, fontWeight: '500' },
+  availableText: { color: '#4CAF50' },
+  unavailableText: { color: '#f44336' },
+  metaRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 2, gap: 4 },
+  metaText: { fontSize: 9, color: '#999', flex: 1 },
+  stockText: { fontSize: 10, color: '#999', marginTop: 2 },
+  emptyContainer: { alignItems: 'center', paddingVertical: 60 },
+  emptyText: { fontSize: 16, color: '#999', marginTop: 12 },
+  // 🔥 Bouton flottant
+  fab: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#6C63FF',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f6fa',
-  },
-  unavailableBadge: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    backgroundColor: 'rgba(244,67,54,0.9)',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  unavailableBadgeText: {
-    color: '#fff',
-    fontSize: 10,
-    fontWeight: '600',
-  },
-  lowStockBadge: {
-    position: 'absolute',
-    top: 8,
-    left: 8,
-    backgroundColor: 'rgba(255,152,0,0.9)',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  lowStockBadgeText: {
-    color: '#fff',
-    fontSize: 10,
-    fontWeight: '600',
-  },
-  cardContent: {
-    padding: 12,
-  },
-  bookTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1a1a2e',
-    marginBottom: 2,
-  },
-  bookAuthor: {
-    fontSize: 12,
-    color: '#888',
-    marginBottom: 4,
-  },
-  availabilityRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  availabilityDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    marginRight: 6,
-  },
-  availableDot: {
-    backgroundColor: '#4CAF50',
-  },
-  unavailableDot: {
-    backgroundColor: '#f44336',
-  },
-  availabilityText: {
-    fontSize: 11,
-    fontWeight: '500',
-  },
-  availableText: {
-    color: '#4CAF50',
-  },
-  unavailableText: {
-    color: '#f44336',
-  },
-  metaRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 2,
-    gap: 4,
-  },
-  metaText: {
-    fontSize: 9,
-    color: '#999',
-    flex: 1,
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    paddingVertical: 60,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: '#999',
-    marginTop: 12,
+    shadowColor: '#6C63FF',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 8,
   },
   // Modal
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 24,
-    maxHeight: '80%',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1a1a2e',
-  },
-  filterLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1a1a2e',
-    marginBottom: 8,
-  },
-  filterLabelTop: {
-    marginTop: 16,
-  },
-  filterOptions: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 8,
-  },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  modalContent: { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: '80%' },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  modalTitle: { fontSize: 20, fontWeight: 'bold', color: '#1a1a2e' },
+  filterLabel: { fontSize: 14, fontWeight: '600', color: '#1a1a2e', marginBottom: 8 },
+  filterLabelTop: { marginTop: 16 },
+  filterOptions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 },
   filterChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#f5f5f5',
-    borderWidth: 1,
-    borderColor: 'transparent',
+    paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20,
+    backgroundColor: '#f5f5f5', borderWidth: 1, borderColor: 'transparent',
   },
-  filterChipActive: {
-    backgroundColor: 'rgba(108, 99, 255, 0.1)',
-    borderColor: '#6C63FF',
-  },
-  filterChipText: {
-    fontSize: 13,
-    color: '#666',
-  },
-  filterChipTextActive: {
-    color: '#6C63FF',
-    fontWeight: '500',
-  },
-  modalFooter: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 20,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
-  },
-  resetButton: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 12,
-    backgroundColor: '#f5f5f5',
-    alignItems: 'center',
-  },
-  resetButtonText: {
-    fontSize: 15,
-    color: '#666',
-    fontWeight: '500',
-  },
-  applyButton: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 12,
-    backgroundColor: '#6C63FF',
-    alignItems: 'center',
-  },
-  applyButtonText: {
-    fontSize: 15,
-    color: '#fff',
-    fontWeight: '600',
-  },
+  filterChipActive: { backgroundColor: 'rgba(108, 99, 255, 0.1)', borderColor: '#6C63FF' },
+  filterChipText: { fontSize: 13, color: '#666' },
+  filterChipTextActive: { color: '#6C63FF', fontWeight: '500' },
+  modalFooter: { flexDirection: 'row', gap: 12, marginTop: 20, paddingTop: 16, borderTopWidth: 1, borderTopColor: '#f0f0f0' },
+  resetButton: { flex: 1, paddingVertical: 14, borderRadius: 12, backgroundColor: '#f5f5f5', alignItems: 'center' },
+  resetButtonText: { fontSize: 15, color: '#666', fontWeight: '500' },
+  applyButton: { flex: 1, paddingVertical: 14, borderRadius: 12, backgroundColor: '#6C63FF', alignItems: 'center' },
+  applyButtonText: { fontSize: 15, color: '#fff', fontWeight: '600' },
 });

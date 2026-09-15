@@ -86,7 +86,6 @@ export const BookDetailScreen = () => {
   const [editData, setEditData] = useState({
     title: book.title,
     author: book.author,
-    isbn: book.isbn,
     description: book.description || '',
     totalCopies: String(book.totalCopies || book.totalQuantity || 1),
     genre: book.genre || 'AUTRE',
@@ -186,7 +185,6 @@ export const BookDetailScreen = () => {
     setEditData({
       title: book.title,
       author: book.author,
-      isbn: book.isbn,
       description: book.description || '',
       totalCopies: String(book.totalCopies || book.totalQuantity || 1),
       genre: book.genre || 'AUTRE',
@@ -196,8 +194,8 @@ export const BookDetailScreen = () => {
   };
 
   const handleSaveEdit = async () => {
-    if (!editData.title || !editData.author || !editData.isbn) {
-      Alert.alert('Erreur', 'Titre, auteur et ISBN sont requis');
+    if (!editData.title || !editData.author) {
+      Alert.alert('Erreur', 'Titre et auteur sont requis');
       return;
     }
     setSaving(true);
@@ -205,7 +203,6 @@ export const BookDetailScreen = () => {
       const res = await api.put(`/books/${book.id}`, {
         title: editData.title,
         author: editData.author,
-        isbn: editData.isbn,
         description: editData.description,
         totalCopies: parseInt(editData.totalCopies) || 1,
         genre: editData.genre,
@@ -308,8 +305,6 @@ export const BookDetailScreen = () => {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>📋 Détails (Admin)</Text>
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>ISBN</Text>
-            <Text style={styles.detailValue}>{book.isbn}</Text>
           </View>
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Stock</Text>
@@ -358,7 +353,6 @@ export const BookDetailScreen = () => {
             <Text style={styles.modalTitle}>Modifier le livre</Text>
             <TextInput style={styles.modalInput} placeholder="Titre *" value={editData.title} onChangeText={(t) => setEditData({...editData, title: t})} />
             <TextInput style={styles.modalInput} placeholder="Auteur *" value={editData.author} onChangeText={(t) => setEditData({...editData, author: t})} />
-            <TextInput style={styles.modalInput} placeholder="ISBN *" value={editData.isbn} onChangeText={(t) => setEditData({...editData, isbn: t})} keyboardType="numeric" />
             <TextInput style={styles.modalInput} placeholder="Description" value={editData.description} onChangeText={(t) => setEditData({...editData, description: t})} multiline />
             <TextInput style={styles.modalInput} placeholder="Nombre de copies" value={editData.totalCopies} onChangeText={(t) => setEditData({...editData, totalCopies: t})} keyboardType="numeric" />
             

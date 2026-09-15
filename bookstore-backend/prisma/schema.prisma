@@ -98,7 +98,6 @@ model Book {
   id                String    @id @default(uuid())
   title             String
   author            String
-  isbn              String    @unique
   description       String?
   isForRent         Boolean   @default(true)
   imageUrl          String?

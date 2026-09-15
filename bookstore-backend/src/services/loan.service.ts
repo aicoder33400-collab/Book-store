@@ -26,7 +26,7 @@ export class LoanService {
       throw new AppError('Livre non disponible', 400);
     }
 
-    // 3. 🔥 Vérifier si l'utilisateur a déjà ce livre en cours
+    // 3. Vérifier si l'utilisateur a déjà ce livre en cours
     const existingLoan = await prisma.loan.findFirst({
       where: {
         userId,
@@ -67,7 +67,6 @@ export class LoanService {
       data: { status: 'BORROWED' },
     });
 
-    // Transformer pour avoir une structure compatible avec votre frontend
     return {
       ...loan,
       bookId: loan.copy.bookId,
@@ -75,7 +74,7 @@ export class LoanService {
     };
   }
 
-  // 🔥 L'utilisateur demande le retour
+  // L'utilisateur demande le retour
   async requestReturn(loanId: string, userId: string) {
     const loan = await prisma.loan.findUnique({
       where: { id: loanId },
@@ -120,7 +119,7 @@ export class LoanService {
     };
   }
 
-  // 🔥 L'admin confirme le retour
+  // L'admin confirme le retour
   async confirmReturn(loanId: string) {
     const loan = await prisma.loan.findUnique({
       where: { id: loanId },
@@ -252,8 +251,9 @@ export class LoanService {
           },
           copy: {
             include: {
+              // 🔥 isbn retiré
               book: {
-                select: { id: true, title: true, author: true, isbn: true },
+                select: { id: true, title: true, author: true },
               },
             },
           },
@@ -323,15 +323,6 @@ export class LoanService {
 
     if (loan.status !== 'REQUESTED') {
       throw new AppError('Seulement les demandes en attente peuvent être approuvées', 400);
-    }
-
-    // Vérifier que la copie est toujours disponible
-    const copy = await prisma.copy.findUnique({
-      where: { id: loan.copyId },
-    });
-
-    if (!copy || copy.status !== 'BORROWED') {
-      throw new AppError('La copie n\'est plus disponible', 400);
     }
 
     const updatedLoan = await prisma.loan.update({
