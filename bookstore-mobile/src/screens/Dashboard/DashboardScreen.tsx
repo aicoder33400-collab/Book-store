@@ -7,13 +7,11 @@ import {
   RefreshControl,
   ActivityIndicator,
   TouchableOpacity,
-  Dimensions,
 } from 'react-native';
 import { useNavigation, CommonActions } from '@react-navigation/native';
+import { LinearGradient } from 'expo-linear-gradient';
 import api from '../../services/api';
 import { colors } from '../../theme/colors';
-
-const { width } = Dimensions.get('window');
 
 interface DashboardStats {
   totalBooks: number;
@@ -63,7 +61,6 @@ export const DashboardScreen = () => {
     );
   }
 
-  // 🔥 Compter les demandes en attente (emprunts + retours)
   const pendingCount = stats?.pendingRequests?.length || 0;
 
   const handleGoToLoans = () => {
@@ -79,17 +76,30 @@ export const DashboardScreen = () => {
       style={styles.container}
       contentContainerStyle={styles.contentContainer}
       refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchDashboard(); }} />
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={() => {
+            setRefreshing(true);
+            fetchDashboard();
+          }}
+          colors={[colors.primary]}
+          tintColor={colors.primary}
+        />
       }
     >
-      {/* 🔥 BANNIÈRE DEMANDES EN ATTENTE */}
+
+      
+      {/* 🔔 BANNIÈRE DEMANDES */}
       {pendingCount > 0 && (
         <TouchableOpacity
           style={styles.pendingBanner}
           onPress={handleGoToLoans}
+          activeOpacity={0.85}
         >
           <View style={styles.pendingIconContainer}>
-            <Text style={styles.pendingIcon}>🔔</Text>
+            <View style={styles.pendingIconBg}>
+              <Text style={styles.pendingIcon}>🔔</Text>
+            </View>
             <View style={styles.pendingBadge}>
               <Text style={styles.pendingBadgeText}>{pendingCount}</Text>
             </View>
@@ -98,67 +108,101 @@ export const DashboardScreen = () => {
             <Text style={styles.pendingTitle}>
               {pendingCount} demande{pendingCount > 1 ? 's' : ''} en attente
             </Text>
-            <Text style={styles.pendingSub}>Cliquez pour voir et valider</Text>
+            <Text style={styles.pendingSub}>
+              Appuyez pour voir et valider
+            </Text>
           </View>
           <Text style={styles.pendingArrow}>›</Text>
         </TouchableOpacity>
       )}
 
-      {/* STATS */}
+      {/* 📊 STATS */}
       <View style={styles.statsGrid}>
-        <View style={[styles.statCard, styles.statBlue]}>
-          <Text style={styles.statNumber}>{stats?.totalBooks || 0}</Text>
-          <Text style={styles.statLabel}>📚 Livres</Text>
-        </View>
-        <View style={[styles.statCard, styles.statGreen]}>
-          <Text style={styles.statNumber}>{stats?.totalUsers || 0}</Text>
-          <Text style={styles.statLabel}>👥 Utilisateurs</Text>
-        </View>
-        <View style={[styles.statCard, styles.statOrange]}>
-          <Text style={styles.statNumber}>{stats?.activeLoans || 0}</Text>
-          <Text style={styles.statLabel}>📖 En cours</Text>
-        </View>
-        <View style={[styles.statCard, styles.statRed]}>
-          <Text style={styles.statNumber}>{stats?.requestedLoans || 0}</Text>
-          <Text style={styles.statLabel}>⏳ En attente</Text>
-        </View>
-        <View style={[styles.statCard, styles.statPurple]}>
-          <Text style={styles.statNumber}>{stats?.overdueLoans || 0}</Text>
-          <Text style={styles.statLabel}>⚠️ Retards</Text>
-        </View>
-        <View style={[styles.statCard, styles.statTeal]}>
-          <Text style={styles.statNumber}>{stats?.totalLoans || 0}</Text>
-          <Text style={styles.statLabel}>🔄 Total</Text>
-        </View>
         <View style={[styles.statCard, styles.statGold]}>
+          <Text style={styles.statEmoji}>📚</Text>
+          <Text style={styles.statNumber}>{stats?.totalBooks || 0}</Text>
+          <Text style={styles.statLabel}>Livres</Text>
+        </View>
+
+        <View style={[styles.statCard, styles.statGreen]}>
+          <Text style={styles.statEmoji}>👥</Text>
+          <Text style={styles.statNumber}>{stats?.totalUsers || 0}</Text>
+          <Text style={styles.statLabel}>Utilisateurs</Text>
+        </View>
+
+        <View style={[styles.statCard, styles.statBlue]}>
+          <Text style={styles.statEmoji}>📖</Text>
+          <Text style={styles.statNumber}>{stats?.activeLoans || 0}</Text>
+          <Text style={styles.statLabel}>En cours</Text>
+        </View>
+
+        <View style={[styles.statCard, styles.statOrange]}>
+          <Text style={styles.statEmoji}>⏳</Text>
+          <Text style={styles.statNumber}>{stats?.requestedLoans || 0}</Text>
+          <Text style={styles.statLabel}>En attente</Text>
+        </View>
+
+        <View style={[styles.statCard, styles.statRed]}>
+          <Text style={styles.statEmoji}>⚠️</Text>
+          <Text style={styles.statNumber}>{stats?.overdueLoans || 0}</Text>
+          <Text style={styles.statLabel}>Retards</Text>
+        </View>
+
+        <View style={[styles.statCard, styles.statPurple]}>
+          <Text style={styles.statEmoji}>🔄</Text>
+          <Text style={styles.statNumber}>{stats?.totalLoans || 0}</Text>
+          <Text style={styles.statLabel}>Total</Text>
+        </View>
+
+        <View style={[styles.statCard, styles.statGold]}>
+          <Text style={styles.statEmoji}>📩</Text>
           <Text style={styles.statNumber}>{stats?.returnRequests || 0}</Text>
-          <Text style={styles.statLabel}>📩 Retours demandés</Text>
+          <Text style={styles.statLabel}>Retours</Text>
         </View>
       </View>
 
-      {/* LISTE DES DEMANDES RÉCENTES */}
+      {/* 📋 DERNIÈRES DEMANDES */}
       {pendingCount > 0 && (
         <View style={styles.requestsList}>
-          <Text style={styles.sectionTitle}>📋 Dernières demandes</Text>
+          <View style={styles.requestsHeader}>
+            <View style={styles.requestsHeaderLine} />
+            <Text style={styles.sectionTitle}>Dernières demandes</Text>
+            <View style={styles.requestsHeaderLine} />
+          </View>
+
           {stats?.pendingRequests?.slice(0, 5).map((req) => {
             const isReturnRequest = req.status === 'RETURN_REQUESTED';
             return (
               <View key={req.id} style={styles.requestItem}>
-                <View style={styles.requestHeader}>
-                  <Text style={styles.requestType}>
-                    {isReturnRequest ? '📩 Retour' : '📚 Emprunt'}
+                <View style={styles.requestIconBg}>
+                  <Text style={styles.requestIcon}>
+                    {isReturnRequest ? '📩' : '📚'}
                   </Text>
-                  <Text style={styles.requestUser}>👤 {req.user.name}</Text>
                 </View>
-                <Text style={styles.requestBook}>📖 {req.book.title}</Text>
-                <Text style={styles.requestTime}>
-                  {new Date(req.createdAt).toLocaleString('fr-FR')}
-                </Text>
+                <View style={styles.requestContent}>
+                  <Text style={styles.requestUser}>👤 {req.user.name}</Text>
+                  <Text style={styles.requestBook} numberOfLines={1}>
+                    📖 {req.book.title}
+                  </Text>
+                  <Text style={styles.requestTime}>
+                    {new Date(req.createdAt).toLocaleString('fr-FR')}
+                  </Text>
+                </View>
+                <View style={[styles.requestTypeBadge, { backgroundColor: isReturnRequest ? colors.warning : colors.success }]}>
+                  <Text style={styles.requestTypeBadgeText}>
+                    {isReturnRequest ? 'Retour' : 'Emprunt'}
+                  </Text>
+                </View>
               </View>
             );
           })}
         </View>
       )}
+
+      {/* Motif pied de page */}
+      <View style={styles.footer}>
+        <Text style={styles.footerStar}>✦</Text>
+      </View>
     </ScrollView>
   );
 };
@@ -166,7 +210,7 @@ export const DashboardScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f7fa',
+    backgroundColor: colors.background.primary,
   },
   contentContainer: {
     paddingBottom: 40,
@@ -175,38 +219,110 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: colors.background.primary,
   },
 
+  // En-tête islamique
+  header: {
+    paddingTop: 30,
+    paddingBottom: 24,
+    paddingHorizontal: 20,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+    overflow: 'hidden',
+    position: 'relative',
+    marginBottom: 16,
+  },
+  headerPattern1: {
+    position: 'absolute',
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    borderWidth: 1,
+    borderColor: 'rgba(201,169,97,0.15)',
+    top: -60,
+    right: -50,
+  },
+  headerPattern2: {
+    position: 'absolute',
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    borderWidth: 1,
+    borderColor: 'rgba(201,169,97,0.10)',
+    bottom: -40,
+    left: -30,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  headerEmoji: {
+    fontSize: 42,
+    marginRight: 14,
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: colors.text.white,
+    letterSpacing: 0.5,
+  },
+  headerSubtitle: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.7)',
+    letterSpacing: 1,
+    marginTop: 2,
+  },
+  headerLine: {
+    width: 40,
+    height: 2,
+    backgroundColor: colors.secondary,
+    borderRadius: 1,
+  },
+
+  // Bannière demandes
   pendingBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    margin: 12,
+    backgroundColor: colors.background.secondary,
+    marginHorizontal: 16,
+    marginBottom: 20,
     padding: 16,
-    borderRadius: 12,
+    borderRadius: 16,
     borderLeftWidth: 4,
-    borderLeftColor: '#e94560',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    borderLeftColor: colors.secondary,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
   pendingIconContainer: {
     position: 'relative',
-    marginRight: 12,
+    marginRight: 14,
   },
-  pendingIcon: { fontSize: 28 },
-  pendingBadge: {
-    position: 'absolute',
-    top: -6,
-    right: -6,
-    backgroundColor: '#e94560',
-    borderRadius: 10,
-    minWidth: 18,
-    height: 18,
+  pendingIconBg: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(201,169,97,0.15)',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  pendingIcon: { fontSize: 22 },
+  pendingBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: colors.danger,
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: colors.background.secondary,
   },
   pendingBadgeText: {
     color: '#fff',
@@ -215,91 +331,151 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   pendingContent: { flex: 1 },
-  pendingTitle: { fontSize: 15, fontWeight: '600', color: '#1a1a2e' },
-  pendingSub: { fontSize: 12, color: '#666', marginTop: 2 },
-  pendingArrow: { fontSize: 22, color: '#ccc' },
+  pendingTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.text.primary,
+  },
+  pendingSub: {
+    fontSize: 12,
+    color: colors.text.secondary,
+    marginTop: 2,
+  },
+  pendingArrow: {
+    fontSize: 24,
+    color: colors.secondary,
+    fontWeight: '300',
+  },
 
+  // Stats
   statsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: 8,
+    paddingHorizontal: 12,
     justifyContent: 'space-between',
   },
   statCard: {
     width: '30%',
-    marginBottom: 10,
-    padding: 14,
-    borderRadius: 12,
+    marginBottom: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 8,
+    borderRadius: 16,
     alignItems: 'center',
-    backgroundColor: '#fff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
+    backgroundColor: colors.background.secondary,
+    borderTopWidth: 3,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
     elevation: 2,
   },
-  statBlue: { borderTopColor: '#4A90D9', borderTopWidth: 3 },
-  statGreen: { borderTopColor: '#2ecc71', borderTopWidth: 3 },
-  statOrange: { borderTopColor: '#f39c12', borderTopWidth: 3 },
-  statRed: { borderTopColor: '#e94560', borderTopWidth: 3 },
-  statPurple: { borderTopColor: '#9b59b6', borderTopWidth: 3 },
-  statTeal: { borderTopColor: '#1abc9c', borderTopWidth: 3 },
-  statGold: { borderTopColor: '#f1c40f', borderTopWidth: 3 },
+  statGold: { borderTopColor: colors.secondary },
+  statGreen: { borderTopColor: colors.primary },
+  statBlue: { borderTopColor: colors.info },
+  statOrange: { borderTopColor: colors.warning },
+  statRed: { borderTopColor: colors.danger },
+  statPurple: { borderTopColor: '#7A6DA8' },
+  statEmoji: {
+    fontSize: 22,
+    marginBottom: 6,
+  },
   statNumber: {
     fontSize: 22,
-    fontWeight: 'bold',
-    color: '#1a1a2e',
+    fontWeight: '700',
+    color: colors.text.primary,
+    letterSpacing: -0.5,
   },
   statLabel: {
     fontSize: 11,
-    color: '#666',
+    color: colors.text.secondary,
     marginTop: 4,
+    fontWeight: '500',
   },
 
+  // Demandes récentes
   requestsList: {
-    backgroundColor: '#fff',
-    margin: 12,
-    padding: 16,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
+    backgroundColor: colors.background.secondary,
+    marginHorizontal: 16,
+    marginTop: 12,
+    padding: 18,
+    borderRadius: 18,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
     elevation: 2,
   },
+  requestsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  requestsHeaderLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.border,
+  },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1a1a2e',
-    marginBottom: 12,
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.primary,
+    marginHorizontal: 12,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
   requestItem: {
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  requestHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 2,
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
-  requestType: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#e94560',
+  requestIconBg: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: colors.background.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
   },
+  requestIcon: { fontSize: 18 },
+  requestContent: { flex: 1 },
   requestUser: {
     fontSize: 13,
-    fontWeight: '500',
-    color: '#1a1a2e',
+    fontWeight: '600',
+    color: colors.text.primary,
   },
   requestBook: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: 12,
+    color: colors.text.secondary,
+    marginTop: 2,
   },
   requestTime: {
-    fontSize: 11,
-    color: '#999',
+    fontSize: 10,
+    color: colors.text.light,
     marginTop: 2,
+  },
+  requestTypeBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  requestTypeBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+  },
+
+  // Footer
+  footer: {
+    alignItems: 'center',
+    marginTop: 24,
+  },
+  footerStar: {
+    color: colors.secondary,
+    fontSize: 16,
+    opacity: 0.6,
   },
 });

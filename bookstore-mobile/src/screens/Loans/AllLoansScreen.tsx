@@ -8,39 +8,56 @@ import {
   ActivityIndicator,
   RefreshControl,
   Alert,
+  Platform,
+  ScrollView,
 } from 'react-native';
 import api from '../../services/api';
 import { colors } from '../../theme/colors';
 
 const STATUS_LABELS: Record<string, string> = {
-  REQUESTED: '🔔 En attente',
-  APPROVED: '✅ Approuvé',
-  REJECTED: '❌ Refusé',
-  BORROWED: '📖 Emprunté',
-  RETURN_REQUESTED: '📩 Retour demandé',
-  RETURNED: '↩️ Retourné',
-  LATE: '⚠️ En retard',
+  REQUESTED: 'En attente',
+  APPROVED: 'Approuvé',
+  REJECTED: 'Refusé',
+  BORROWED: 'Emprunté',
+  RETURN_REQUESTED: 'Retour demandé',
+  RETURNED: 'Retourné',
+  LATE: 'En retard',
+};
+
+const STATUS_ICONS: Record<string, string> = {
+  REQUESTED: '🔔',
+  APPROVED: '✅',
+  REJECTED: '❌',
+  BORROWED: '📖',
+  RETURN_REQUESTED: '📩',
+  RETURNED: '↩️',
+  LATE: '⚠️',
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  REQUESTED: '#F5A623',
-  APPROVED: '#4A90D9',
-  REJECTED: '#f44336',
-  BORROWED: '#4CAF50',
-  RETURN_REQUESTED: '#FF9800',
-  RETURNED: '#9E9E9E',
-  LATE: '#FF5722',
+  REQUESTED: '#D4853A',
+  APPROVED: '#3A6B8F',
+  REJECTED: '#B53A3A',
+  BORROWED: '#2D7A55',
+  RETURN_REQUESTED: '#C9A961',
+  RETURNED: '#6B7B72',
+  LATE: '#B53A3A',
 };
+
+type FilterType = 'ALL' | 'REQUESTED' | 'APPROVED' | 'BORROWED' | 'RETURN_REQUESTED' | 'RETURNED';
 
 export const AllLoansScreen = () => {
   const [loans, setLoans] = useState<any[]>([]);
+  const [filteredLoans, setFilteredLoans] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [activeFilter, setActiveFilter] = useState<FilterType>('ALL');
 
   const fetchLoans = async () => {
     try {
       const response = await api.get('/loans', { params: { limit: 100 } });
       setLoans(response.data.data);
+      applyFilter(response.data.data, activeFilter);
     } catch (error: any) {
       console.error('Erreur:', error.response?.data || error.message);
     } finally {
@@ -53,100 +70,102 @@ export const AllLoansScreen = () => {
     fetchLoans();
   }, []);
 
-  // 🔥 Approbation avec notification
+  const applyFilter = (list: any[], filter: FilterType) => {
+    if (filter === 'ALL') {
+      setFilteredLoans(list);
+    } else {
+      setFilteredLoans(list.filter((l) => l.status === filter));
+    }
+  };
+
+  const handleFilterChange = (filter: FilterType) => {
+    setActiveFilter(filter);
+    applyFilter(loans, filter);
+  };
+
+  // 🔥 Fonction pour afficher un message (compatible web)
+  const showMessage = (title: string, message: string) => {
+    if (Platform.OS === 'web') {
+      window.alert(`${title}\n\n${message}`);
+    } else {
+      Alert.alert(title, message);
+    }
+  };
+
+  // 🔥 Fonction pour confirmer (compatible web)
+  const confirmAction = (title: string, message: string, onConfirm: () => void) => {
+    if (Platform.OS === 'web') {
+      const ok = window.confirm(`${title}\n\n${message}`);
+      if (ok) onConfirm();
+    } else {
+      Alert.alert(title, message, [
+        { text: 'Annuler', style: 'cancel' },
+        { text: 'Confirmer', onPress: onConfirm },
+      ]);
+    }
+  };
+
   const handleApprove = async (loanId: string) => {
-    Alert.alert(
+    confirmAction(
       'Approuver',
       'Confirmer l\'approbation de cette demande ?',
-      [
-        { text: 'Annuler', style: 'cancel' },
-        {
-          text: 'Approuver',
-          onPress: async () => {
-            try {
-              const response = await api.put(`/loans/${loanId}/approve`);
-              Alert.alert('✅ Succès', 'Demande approuvée ! L\'utilisateur a été notifié.');
-              fetchLoans();
-            } catch (error: any) {
-              console.error('Erreur approve:', error.response?.data || error.message);
-              Alert.alert('Erreur', error.response?.data?.message || 'Erreur');
-            }
-          }
+      async () => {
+        try {
+          await api.put(`/loans/${loanId}/approve`);
+          showMessage('✅ Succès', 'Demande approuvée !');
+          fetchLoans();
+        } catch (error: any) {
+          showMessage('Erreur', error.response?.data?.message || 'Erreur');
         }
-      ]
+      }
     );
   };
 
-  // 🔥 Refus avec notification
   const handleReject = async (loanId: string) => {
-    Alert.alert(
+    confirmAction(
       'Refuser',
       'Confirmer le refus de cette demande ?',
-      [
-        { text: 'Annuler', style: 'cancel' },
-        {
-          text: 'Refuser',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              const response = await api.put(`/loans/${loanId}/reject`);
-              Alert.alert('❌ Succès', 'Demande refusée. L\'utilisateur a été notifié.');
-              fetchLoans();
-            } catch (error: any) {
-              console.error('Erreur reject:', error.response?.data || error.message);
-              Alert.alert('Erreur', error.response?.data?.message || 'Erreur');
-            }
-          }
+      async () => {
+        try {
+          await api.put(`/loans/${loanId}/reject`);
+          showMessage('❌ Succès', 'Demande refusée');
+          fetchLoans();
+        } catch (error: any) {
+          showMessage('Erreur', error.response?.data?.message || 'Erreur');
         }
-      ]
+      }
     );
   };
 
-  // 🔥 Remise avec notification
   const handleHandOver = async (loanId: string) => {
-    Alert.alert(
+    confirmAction(
       'Remettre',
       'Confirmer la remise du livre à l\'utilisateur ?',
-      [
-        { text: 'Annuler', style: 'cancel' },
-        {
-          text: 'Remettre',
-          onPress: async () => {
-            try {
-              const response = await api.put(`/loans/${loanId}/hand-over`);
-              Alert.alert('📦 Succès', 'Livre remis à l\'utilisateur !');
-              fetchLoans();
-            } catch (error: any) {
-              console.error('Erreur hand-over:', error.response?.data || error.message);
-              Alert.alert('Erreur', error.response?.data?.message || 'Erreur');
-            }
-          }
+      async () => {
+        try {
+          await api.put(`/loans/${loanId}/hand-over`);
+          showMessage('📦 Succès', 'Livre remis !');
+          fetchLoans();
+        } catch (error: any) {
+          showMessage('Erreur', error.response?.data?.message || 'Erreur');
         }
-      ]
+      }
     );
   };
 
-  // 🔥 Confirmation de retour avec notification
   const handleConfirmReturn = async (loanId: string) => {
-    Alert.alert(
+    confirmAction(
       'Confirmer le retour',
-      'Avez-vous bien vérifié que le livre est en bon état ?',
-      [
-        { text: 'Annuler', style: 'cancel' },
-        {
-          text: 'Confirmer le retour',
-          onPress: async () => {
-            try {
-              const response = await api.put(`/loans/${loanId}/confirm-return`);
-              Alert.alert('✅ Succès', 'Retour confirmé ! L\'utilisateur a été notifié.');
-              fetchLoans();
-            } catch (error: any) {
-              console.error('Erreur confirm return:', error.response?.data || error.message);
-              Alert.alert('Erreur', error.response?.data?.message || 'Erreur');
-            }
-          }
+      'Avez-vous vérifié que le livre est en bon état ?',
+      async () => {
+        try {
+          await api.put(`/loans/${loanId}/confirm-return`);
+          showMessage('✅ Succès', 'Retour confirmé !');
+          fetchLoans();
+        } catch (error: any) {
+          showMessage('Erreur', error.response?.data?.message || 'Erreur');
         }
-      ]
+      }
     );
   };
 
@@ -161,36 +180,68 @@ export const AllLoansScreen = () => {
     });
   };
 
+  const FILTERS: Array<{ key: FilterType; label: string; icon: string }> = [
+    { key: 'ALL', label: 'Tout', icon: '📋' },
+    { key: 'REQUESTED', label: 'En attente', icon: '🔔' },
+    { key: 'APPROVED', label: 'Approuvés', icon: '✅' },
+    { key: 'BORROWED', label: 'Empruntés', icon: '📖' },
+    { key: 'RETURN_REQUESTED', label: 'Retours', icon: '📩' },
+    { key: 'RETURNED', label: 'Retournés', icon: '↩️' },
+  ];
+
   const renderLoan = ({ item }: { item: any }) => (
     <View style={styles.card}>
+      {/* En-tête */}
       <View style={styles.cardHeader}>
-        <Text style={styles.userName}>👤 {item.user?.name || 'Utilisateur'}</Text>
-        <View style={[styles.statusBadge, { backgroundColor: STATUS_COLORS[item.status] || '#999' }]}>
+        <View style={styles.userRow}>
+          <View style={styles.userAvatar}>
+            <Text style={styles.userAvatarText}>
+              {(item.user?.name || 'U').charAt(0).toUpperCase()}
+            </Text>
+          </View>
+          <View style={styles.userInfo}>
+            <Text style={styles.userName}>{item.user?.name || 'Utilisateur'}</Text>
+            <Text style={styles.userEmail} numberOfLines={1}>
+              {item.user?.email || ''}
+            </Text>
+          </View>
+        </View>
+        <View style={[styles.statusBadge, { backgroundColor: STATUS_COLORS[item.status] }]}>
+          <Text style={styles.statusIcon}>{STATUS_ICONS[item.status]}</Text>
           <Text style={styles.statusText}>{STATUS_LABELS[item.status] || item.status}</Text>
         </View>
       </View>
 
-      <Text style={styles.bookTitle}>📖 {item.book?.title || 'Livre'}</Text>
-      <Text style={styles.bookAuthor}>✍️ {item.book?.author || ''}</Text>
+      {/* Livre */}
+      <View style={styles.bookRow}>
+        <Text style={styles.bookEmoji}>📖</Text>
+        <View style={styles.bookInfo}>
+          <Text style={styles.bookTitle} numberOfLines={1}>{item.book?.title || 'Livre'}</Text>
+          <Text style={styles.bookAuthor} numberOfLines={1}>✍️ {item.book?.author || ''}</Text>
+        </View>
+      </View>
 
+      {/* Dates */}
       <View style={styles.dates}>
         <View style={styles.dateRow}>
           <Text style={styles.dateLabel}>📅 Demandé le</Text>
           <Text style={styles.dateValue}>{formatDate(item.createdAt)}</Text>
         </View>
-        
+
         {item.borrowedAt && (
           <View style={styles.dateRow}>
             <Text style={styles.dateLabel}>📆 Emprunté le</Text>
             <Text style={styles.dateValue}>{formatDate(item.borrowedAt)}</Text>
           </View>
         )}
-        
+
         <View style={styles.dateRow}>
           <Text style={styles.dateLabel}>⏳ À rendre avant</Text>
-          <Text style={[styles.dateValue, styles.dueDate]}>{formatDate(item.dueDate)}</Text>
+          <Text style={[styles.dateValue, styles.dueDate]}>
+            {formatDate(item.dueDate)}
+          </Text>
         </View>
-        
+
         {item.returnedAt && (
           <View style={styles.dateRow}>
             <Text style={styles.dateLabel}>↩️ Retourné le</Text>
@@ -201,26 +252,43 @@ export const AllLoansScreen = () => {
         )}
       </View>
 
+      {/* Actions */}
       {item.status === 'REQUESTED' && (
         <View style={styles.actions}>
-          <TouchableOpacity style={styles.approveBtn} onPress={() => handleApprove(item.id)}>
-            <Text style={styles.btnText}>✓ Approuver</Text>
+          <TouchableOpacity
+            style={[styles.actionBtn, styles.approveBtn]}
+            onPress={() => handleApprove(item.id)}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.actionBtnText}>✓ Approuver</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.rejectBtn} onPress={() => handleReject(item.id)}>
-            <Text style={styles.btnText}>✗ Refuser</Text>
+          <TouchableOpacity
+            style={[styles.actionBtn, styles.rejectBtn]}
+            onPress={() => handleReject(item.id)}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.actionBtnText}>✗ Refuser</Text>
           </TouchableOpacity>
         </View>
       )}
 
       {item.status === 'APPROVED' && (
-        <TouchableOpacity style={styles.handOverBtn} onPress={() => handleHandOver(item.id)}>
-          <Text style={styles.btnText}>📦 Remettre le livre</Text>
+        <TouchableOpacity
+          style={[styles.actionBtn, styles.handOverBtn]}
+          onPress={() => handleHandOver(item.id)}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.actionBtnText}>📦 Remettre le livre</Text>
         </TouchableOpacity>
       )}
 
       {item.status === 'RETURN_REQUESTED' && (
-        <TouchableOpacity style={styles.confirmReturnBtn} onPress={() => handleConfirmReturn(item.id)}>
-          <Text style={styles.btnText}>✅ Confirmer le retour</Text>
+        <TouchableOpacity
+          style={[styles.actionBtn, styles.confirmReturnBtn]}
+          onPress={() => handleConfirmReturn(item.id)}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.actionBtnText}>✅ Confirmer le retour</Text>
         </TouchableOpacity>
       )}
 
@@ -241,93 +309,304 @@ export const AllLoansScreen = () => {
   }
 
   return (
-    <FlatList
-      data={loans}
-      keyExtractor={(item) => item.id}
-      renderItem={renderLoan}
-      contentContainerStyle={styles.list}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchLoans(); }} />}
-      ListEmptyComponent={<Text style={styles.empty}>Aucun emprunt trouvé</Text>}
-    />
+    <View style={styles.container}>
+      {/* Filtres */}
+      <View style={styles.filtersWrapper}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filtersContent}
+        >
+          {FILTERS.map((f) => {
+            const count =
+              f.key === 'ALL' ? loans.length : loans.filter((l) => l.status === f.key).length;
+            return (
+              <TouchableOpacity
+                key={f.key}
+                style={[
+                  styles.filterChip,
+                  activeFilter === f.key && styles.filterChipActive,
+                ]}
+                onPress={() => handleFilterChange(f.key)}
+                activeOpacity={0.8}
+              >
+                <Text
+                  style={[
+                    styles.filterChipText,
+                    activeFilter === f.key && styles.filterChipTextActive,
+                  ]}
+                >
+                  {f.icon} {f.label} ({count})
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      </View>
+
+      <FlatList
+        data={filteredLoans}
+        keyExtractor={(item) => item.id}
+        renderItem={renderLoan}
+        contentContainerStyle={styles.list}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => {
+              setRefreshing(true);
+              fetchLoans();
+            }}
+            colors={[colors.primary]}
+            tintColor={colors.primary}
+          />
+        }
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyIcon}>📭</Text>
+            <Text style={styles.emptyText}>Aucune demande</Text>
+            <Text style={styles.emptySubText}>
+              {activeFilter === 'ALL'
+                ? 'Aucun emprunt enregistré'
+                : 'Aucune demande dans cette catégorie'}
+            </Text>
+          </View>
+        }
+      />
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  list: { padding: 16 },
-  empty: { textAlign: 'center', color: '#999', marginTop: 40, fontSize: 16 },
+  container: {
+    flex: 1,
+    backgroundColor: colors.background.primary,
+  },
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.background.primary,
+  },
+
+  // Filtres
+  filtersWrapper: {
+    backgroundColor: colors.background.secondary,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  filtersContent: {
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    gap: 8,
+  },
+  filterChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: colors.background.primary,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  filterChipActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  filterChipText: {
+    fontSize: 12,
+    color: colors.text.secondary,
+    fontWeight: '600',
+  },
+  filterChipTextActive: {
+    color: colors.text.white,
+  },
+
+  // Liste
+  list: {
+    padding: 16,
+    paddingBottom: 60,
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  emptyIcon: { fontSize: 48, marginBottom: 12, opacity: 0.4 },
+  emptyText: {
+    fontSize: 16,
+    color: colors.text.secondary,
+    fontWeight: '600',
+  },
+  emptySubText: {
+    fontSize: 13,
+    color: colors.text.light,
+    marginTop: 4,
+  },
+
+  // Carte
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
+    backgroundColor: colors.background.secondary,
+    borderRadius: 16,
     padding: 16,
     marginBottom: 12,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.secondary,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
     elevation: 2,
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  userRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 4,
+    flex: 1,
+    marginRight: 8,
   },
-  userName: { fontSize: 15, fontWeight: '600', color: colors.text.primary },
+  userAvatar: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  userAvatarText: {
+    color: colors.text.white,
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  userInfo: { flex: 1 },
+  userName: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.text.primary,
+  },
+  userEmail: {
+    fontSize: 11,
+    color: colors.text.secondary,
+    marginTop: 1,
+  },
   statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingVertical: 5,
     borderRadius: 12,
+    gap: 4,
   },
-  statusText: { color: '#fff', fontSize: 12, fontWeight: '600' },
-  bookTitle: { fontSize: 16, fontWeight: '700', color: colors.text.primary, marginBottom: 2 },
-  bookAuthor: { fontSize: 13, color: colors.text.secondary, marginBottom: 6 },
-  dates: { marginTop: 4, gap: 2 },
+  statusIcon: { fontSize: 11 },
+  statusText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+  },
+
+  // Livre
+  bookRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.background.primary,
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 12,
+  },
+  bookEmoji: { fontSize: 22, marginRight: 10 },
+  bookInfo: { flex: 1 },
+  bookTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.text.primary,
+  },
+  bookAuthor: {
+    fontSize: 12,
+    color: colors.text.secondary,
+    marginTop: 2,
+  },
+
+  // Dates
+  dates: {
+    gap: 4,
+  },
   dateRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 2,
+    paddingVertical: 3,
   },
-  dateLabel: { fontSize: 12, color: '#888' },
-  dateValue: { fontSize: 12, color: '#333' },
-  dueDate: { color: colors.danger, fontWeight: '600' },
-  returnedDate: { color: colors.success, fontWeight: '600' },
-  actions: { flexDirection: 'row', gap: 8, marginTop: 8 },
+  dateLabel: {
+    fontSize: 11,
+    color: colors.text.secondary,
+    fontWeight: '500',
+  },
+  dateValue: {
+    fontSize: 11,
+    color: colors.text.primary,
+    fontWeight: '600',
+  },
+  dueDate: {
+    color: colors.danger,
+  },
+  returnedDate: {
+    color: colors.success,
+  },
+
+  // Actions
+  actions: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 12,
+  },
+  actionBtn: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 12,
+  },
+  actionBtnText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+  },
   approveBtn: {
     flex: 1,
-    backgroundColor: '#4CAF50',
-    borderRadius: 8,
-    padding: 10,
-    alignItems: 'center',
+    backgroundColor: colors.success,
+    marginTop: 0,
   },
   rejectBtn: {
     flex: 1,
-    backgroundColor: '#f44336',
-    borderRadius: 8,
-    padding: 10,
-    alignItems: 'center',
+    backgroundColor: colors.danger,
+    marginTop: 0,
   },
   handOverBtn: {
-    backgroundColor: '#FF9800',
-    borderRadius: 8,
-    padding: 10,
-    alignItems: 'center',
-    marginTop: 4,
+    backgroundColor: colors.warning,
   },
   confirmReturnBtn: {
-    backgroundColor: '#4CAF50',
-    borderRadius: 8,
-    padding: 10,
-    alignItems: 'center',
-    marginTop: 4,
+    backgroundColor: colors.success,
   },
+
+  // Badge d'attente
   waitingBadge: {
-    backgroundColor: '#E3F2FD',
-    borderRadius: 8,
-    padding: 10,
+    backgroundColor: 'rgba(58, 107, 143, 0.1)',
+    borderRadius: 10,
+    padding: 12,
     alignItems: 'center',
-    marginTop: 4,
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(58, 107, 143, 0.2)',
   },
   waitingText: {
-    color: '#1565C0',
-    fontWeight: '600',
-    fontSize: 14,
+    color: colors.info,
+    fontWeight: '700',
+    fontSize: 12,
+    letterSpacing: 0.3,
   },
-  btnText: { color: '#fff', fontWeight: '600', fontSize: 14 },
 });

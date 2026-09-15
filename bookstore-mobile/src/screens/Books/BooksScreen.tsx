@@ -19,6 +19,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import api from '../../services/api';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../store/auth.store';
+import { colors } from '../../theme/colors';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 32) / 2;
@@ -31,7 +32,7 @@ type RootStackParamList = {
 
 type BooksScreenNavigationProp = StackNavigationProp<RootStackParamList, 'BooksList'>;
 
-// 🔥 Options de genre
+// Options genre
 const GENRES = [
   { label: 'Tous', value: 'TOUS' },
   { label: '📖 Roman', value: 'ROMAN' },
@@ -56,7 +57,7 @@ const GENRES = [
   { label: '📦 Autre', value: 'AUTRE' },
 ];
 
-// 🔥 Options de langue
+// Options langue
 const LANGUAGES = [
   { label: 'Toutes', value: 'TOUTES' },
   { label: '🇫🇷 Français', value: 'FRANCAIS' },
@@ -72,7 +73,7 @@ const LANGUAGES = [
   { label: '📦 Autre', value: 'AUTRE' },
 ];
 
-// 🔥 Labels genres
+// Labels
 const GENRE_LABELS: Record<string, string> = {
   ROMAN: '📖 Roman',
   POESIE: '📝 Poésie',
@@ -126,17 +127,18 @@ export const BooksScreen = () => {
   const fetchBooks = async () => {
     try {
       const response = await api.get('/books', { params: { limit: 100 } });
-      
+
       const booksWithAvailability = response.data.data?.map((book: any) => ({
         ...book,
-        availableQuantity: book.availableQuantity !== undefined 
-          ? book.availableQuantity 
-          : book.copies?.filter((c: any) => c.status === 'AVAILABLE').length || 0,
+        availableQuantity:
+          book.availableQuantity !== undefined
+            ? book.availableQuantity
+            : book.copies?.filter((c: any) => c.status === 'AVAILABLE').length || 0,
         totalQuantity: book.totalCopies || 0,
         genreLabel: GENRE_LABELS[book.genre] || book.genre || 'Non défini',
         languageLabel: LANGUAGE_LABELS[book.language] || book.language || 'Non défini',
       })) || [];
-      
+
       setBooks(booksWithAvailability);
       applyFilters(booksWithAvailability, search, selectedGenre, selectedLanguage);
     } catch (error) {
@@ -154,7 +156,12 @@ export const BooksScreen = () => {
     return unsubscribe;
   }, [navigation]);
 
-  const applyFilters = (booksList: any[], searchText: string, genre: string, language: string) => {
+  const applyFilters = (
+    booksList: any[],
+    searchText: string,
+    genre: string,
+    language: string
+  ) => {
     let filtered = booksList;
 
     if (searchText.trim()) {
@@ -202,7 +209,7 @@ export const BooksScreen = () => {
 
   const renderBook = ({ item }: { item: any }) => {
     const isAvailable = (item.availableQuantity || 0) > 0;
-    
+
     return (
       <TouchableOpacity
         style={styles.card}
@@ -211,14 +218,14 @@ export const BooksScreen = () => {
       >
         <View style={styles.imageContainer}>
           {item.imageUrl ? (
-            <Image 
-              source={{ uri: `http://localhost:3000${item.imageUrl}` }} 
+            <Image
+              source={{ uri: `http://localhost:3000${item.imageUrl}` }}
               style={styles.bookImage}
               resizeMode="cover"
             />
           ) : (
             <View style={styles.placeholderImage}>
-              <Ionicons name="book-outline" size={36} color="#ccc" />
+              <Ionicons name="book-outline" size={36} color={colors.text.light} />
             </View>
           )}
           {!isAvailable && (
@@ -233,20 +240,37 @@ export const BooksScreen = () => {
           )}
         </View>
         <View style={styles.cardContent}>
-          <Text style={styles.bookTitle} numberOfLines={1}>{item.title}</Text>
-          <Text style={styles.bookAuthor} numberOfLines={1}>{item.author}</Text>
+          <Text style={styles.bookTitle} numberOfLines={1}>
+            {item.title}
+          </Text>
+          <Text style={styles.bookAuthor} numberOfLines={1}>
+            {item.author}
+          </Text>
           <View style={styles.availabilityRow}>
-            <View style={[styles.availabilityDot, isAvailable ? styles.availableDot : styles.unavailableDot]} />
-            <Text style={[styles.availabilityText, isAvailable ? styles.availableText : styles.unavailableText]}>
+            <View
+              style={[
+                styles.availabilityDot,
+                isAvailable ? styles.availableDot : styles.unavailableDot,
+              ]}
+            />
+            <Text
+              style={[
+                styles.availabilityText,
+                isAvailable ? styles.availableText : styles.unavailableText,
+              ]}
+            >
               {isAvailable ? `Disponible (${item.availableQuantity})` : 'Indisponible'}
             </Text>
           </View>
           <View style={styles.metaRow}>
-            <Text style={styles.metaText} numberOfLines={1}>{item.genreLabel}</Text>
-            <Text style={styles.metaText} numberOfLines={1}>{item.languageLabel}</Text>
+            <Text style={styles.metaText} numberOfLines={1}>
+              {item.genreLabel}
+            </Text>
           </View>
           {isAdmin && (
-            <Text style={styles.stockText}>📦 {item.availableQuantity}/{item.totalQuantity}</Text>
+            <Text style={styles.stockText}>
+              📦 {item.availableQuantity}/{item.totalQuantity}
+            </Text>
           )}
         </View>
       </TouchableOpacity>
@@ -256,7 +280,7 @@ export const BooksScreen = () => {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#6C63FF" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -264,14 +288,14 @@ export const BooksScreen = () => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        {/* Barre de recherche + Filtre */}
+        {/* Barre de recherche */}
         <View style={styles.searchContainer}>
           <View style={styles.searchWrapper}>
-            <Ionicons name="search-outline" size={20} color="#999" style={styles.searchIcon} />
+            <Ionicons name="search-outline" size={18} color={colors.text.light} style={styles.searchIcon} />
             <TextInput
               style={styles.searchInput}
               placeholder="Rechercher un livre..."
-              placeholderTextColor="#999"
+              placeholderTextColor={colors.text.light}
               value={search}
               onChangeText={handleSearch}
             />
@@ -279,8 +303,9 @@ export const BooksScreen = () => {
           <TouchableOpacity
             style={styles.filterButton}
             onPress={() => setFilterModalVisible(true)}
+            activeOpacity={0.8}
           >
-            <Ionicons name="options-outline" size={24} color="#6C63FF" />
+            <Ionicons name="options-outline" size={22} color={colors.primary} />
             {(selectedGenre !== 'TOUS' || selectedLanguage !== 'TOUTES') && (
               <View style={styles.filterBadge} />
             )}
@@ -289,27 +314,34 @@ export const BooksScreen = () => {
 
         {/* Filtres actifs */}
         {(selectedGenre !== 'TOUS' || selectedLanguage !== 'TOUTES') && (
-          <ScrollView horizontal style={styles.activeFilters} showsHorizontalScrollIndicator={false}>
+          <ScrollView
+            horizontal
+            style={styles.activeFilters}
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.activeFiltersContent}
+          >
             {selectedGenre !== 'TOUS' && (
               <TouchableOpacity
                 style={styles.activeFilterChip}
                 onPress={() => handleGenreChange('TOUS')}
+                activeOpacity={0.8}
               >
                 <Text style={styles.activeFilterText}>
-                  📚 {GENRES.find(g => g.value === selectedGenre)?.label || selectedGenre}
+                  {GENRES.find((g) => g.value === selectedGenre)?.label || selectedGenre}
                 </Text>
-                <Ionicons name="close-circle" size={16} color="#6C63FF" />
+                <Ionicons name="close-circle" size={16} color={colors.primary} />
               </TouchableOpacity>
             )}
             {selectedLanguage !== 'TOUTES' && (
               <TouchableOpacity
                 style={styles.activeFilterChip}
                 onPress={() => handleLanguageChange('TOUTES')}
+                activeOpacity={0.8}
               >
                 <Text style={styles.activeFilterText}>
-                  🌐 {LANGUAGES.find(l => l.value === selectedLanguage)?.label || selectedLanguage}
+                  {LANGUAGES.find((l) => l.value === selectedLanguage)?.label || selectedLanguage}
                 </Text>
-                <Ionicons name="close-circle" size={16} color="#6C63FF" />
+                <Ionicons name="close-circle" size={16} color={colors.primary} />
               </TouchableOpacity>
             )}
           </ScrollView>
@@ -321,28 +353,38 @@ export const BooksScreen = () => {
           renderItem={renderBook}
           numColumns={2}
           contentContainerStyle={styles.list}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchBooks(); }} />}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => {
+                setRefreshing(true);
+                fetchBooks();
+              }}
+              colors={[colors.primary]}
+              tintColor={colors.primary}
+            />
+          }
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <Ionicons name="book-outline" size={48} color="#ddd" />
+              <Ionicons name="book-outline" size={48} color={colors.text.light} />
               <Text style={styles.emptyText}>Aucun livre trouvé</Text>
             </View>
           }
         />
 
-        {/* 🔥 BOUTON FLOTTANT "+" pour Admin/Staff */}
+        {/* Bouton flottant + pour Admin/Staff */}
         {isAdmin && (
           <TouchableOpacity
             style={styles.fab}
             onPress={() => navigation.navigate('AddBook')}
             activeOpacity={0.85}
           >
-            <Ionicons name="add" size={32} color="#fff" />
+            <Ionicons name="add" size={30} color={colors.text.white} />
           </TouchableOpacity>
         )}
       </View>
 
-      {/* Modal de filtres */}
+      {/* Modal Filtres */}
       <Modal
         visible={filterModalVisible}
         transparent
@@ -352,9 +394,12 @@ export const BooksScreen = () => {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>🔍 Filtrer</Text>
+              <View>
+                <Text style={styles.modalTitle}>Filtrer</Text>
+                <Text style={styles.modalSubtitle}>Affinez votre recherche</Text>
+              </View>
               <TouchableOpacity onPress={() => setFilterModalVisible(false)}>
-                <Ionicons name="close" size={24} color="#999" />
+                <Ionicons name="close" size={24} color={colors.text.secondary} />
               </TouchableOpacity>
             </View>
 
@@ -369,6 +414,7 @@ export const BooksScreen = () => {
                       selectedGenre === genre.value && styles.filterChipActive,
                     ]}
                     onPress={() => handleGenreChange(genre.value)}
+                    activeOpacity={0.8}
                   >
                     <Text
                       style={[
@@ -392,6 +438,7 @@ export const BooksScreen = () => {
                       selectedLanguage === lang.value && styles.filterChipActive,
                     ]}
                     onPress={() => handleLanguageChange(lang.value)}
+                    activeOpacity={0.8}
                   >
                     <Text
                       style={[
@@ -407,10 +454,18 @@ export const BooksScreen = () => {
             </ScrollView>
 
             <View style={styles.modalFooter}>
-              <TouchableOpacity style={styles.resetButton} onPress={resetFilters}>
+              <TouchableOpacity
+                style={styles.resetButton}
+                onPress={resetFilters}
+                activeOpacity={0.8}
+              >
                 <Text style={styles.resetButtonText}>Réinitialiser</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.applyButton} onPress={() => setFilterModalVisible(false)}>
+              <TouchableOpacity
+                style={styles.applyButton}
+                onPress={() => setFilterModalVisible(false)}
+                activeOpacity={0.8}
+              >
                 <Text style={styles.applyButtonText}>Appliquer</Text>
               </TouchableOpacity>
             </View>
@@ -422,137 +477,330 @@ export const BooksScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#f8f9fc' },
-  container: { flex: 1, backgroundColor: '#f8f9fc' },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f8f9fc' },
+  safeArea: {
+    flex: 1,
+    backgroundColor: colors.background.primary,
+  },
+  container: {
+    flex: 1,
+    backgroundColor: colors.background.primary,
+  },
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.background.primary,
+  },
+
+  // Recherche
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingTop: 12,
+    paddingBottom: 8,
     gap: 10,
   },
   searchWrapper: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    paddingHorizontal: 12,
+    backgroundColor: colors.background.secondary,
+    borderRadius: 14,
+    paddingHorizontal: 14,
     borderWidth: 1,
-    borderColor: '#f0f0f0',
+    borderColor: colors.border,
   },
   searchIcon: { marginRight: 8 },
-  searchInput: { flex: 1, paddingVertical: 12, fontSize: 15, color: '#1a1a2e' },
+  searchInput: {
+    flex: 1,
+    paddingVertical: 13,
+    fontSize: 14,
+    color: colors.text.primary,
+  },
   filterButton: {
-    padding: 10,
-    backgroundColor: '#fff',
-    borderRadius: 12,
+    padding: 12,
+    backgroundColor: colors.background.secondary,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#f0f0f0',
+    borderColor: colors.border,
     position: 'relative',
   },
   filterBadge: {
     position: 'absolute',
-    top: 4,
-    right: 4,
+    top: 6,
+    right: 6,
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#e94560',
+    backgroundColor: colors.secondary,
   },
-  activeFilters: { paddingHorizontal: 16, paddingBottom: 8 },
+
+  // Filtres actifs
+  activeFilters: {
+    maxHeight: 44,
+  },
+  activeFiltersContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+    gap: 8,
+  },
   activeFilterChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(108, 99, 255, 0.1)',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 16,
-    marginRight: 8,
+    backgroundColor: colors.background.secondary,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(108, 99, 255, 0.2)',
+    borderColor: colors.primary,
+    gap: 6,
   },
-  activeFilterText: { fontSize: 12, color: '#6C63FF', marginRight: 4 },
-  list: { padding: 8, paddingBottom: 100 },
+  activeFilterText: {
+    fontSize: 12,
+    color: colors.primary,
+    fontWeight: '600',
+  },
+
+  // Liste et cartes
+  list: {
+    padding: 8,
+    paddingBottom: 100,
+  },
   card: {
     flex: 1,
     maxWidth: CARD_WIDTH,
     margin: 8,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background.secondary,
     borderRadius: 16,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.06,
     shadowRadius: 8,
     elevation: 3,
   },
-  imageContainer: { width: '100%', height: CARD_WIDTH * 1.3, backgroundColor: '#f5f6fa', position: 'relative' },
-  bookImage: { width: '100%', height: '100%', resizeMode: 'cover' },
-  placeholderImage: { width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center', backgroundColor: '#f5f6fa' },
+  imageContainer: {
+    width: '100%',
+    height: CARD_WIDTH * 1.3,
+    backgroundColor: colors.background.primary,
+    position: 'relative',
+  },
+  bookImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  placeholderImage: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.background.primary,
+  },
   unavailableBadge: {
-    position: 'absolute', top: 8, right: 8,
-    backgroundColor: 'rgba(244,67,54,0.9)',
-    paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8,
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: colors.danger,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
   },
-  unavailableBadgeText: { color: '#fff', fontSize: 10, fontWeight: '600' },
+  unavailableBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '700',
+  },
   lowStockBadge: {
-    position: 'absolute', top: 8, left: 8,
-    backgroundColor: 'rgba(255,152,0,0.9)',
-    paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8,
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    backgroundColor: colors.warning,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
   },
-  lowStockBadgeText: { color: '#fff', fontSize: 10, fontWeight: '600' },
-  cardContent: { padding: 12 },
-  bookTitle: { fontSize: 14, fontWeight: '600', color: '#1a1a2e', marginBottom: 2 },
-  bookAuthor: { fontSize: 12, color: '#888', marginBottom: 4 },
-  availabilityRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
-  availabilityDot: { width: 6, height: 6, borderRadius: 3, marginRight: 6 },
-  availableDot: { backgroundColor: '#4CAF50' },
-  unavailableDot: { backgroundColor: '#f44336' },
-  availabilityText: { fontSize: 11, fontWeight: '500' },
-  availableText: { color: '#4CAF50' },
-  unavailableText: { color: '#f44336' },
-  metaRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 2, gap: 4 },
-  metaText: { fontSize: 9, color: '#999', flex: 1 },
-  stockText: { fontSize: 10, color: '#999', marginTop: 2 },
-  emptyContainer: { alignItems: 'center', paddingVertical: 60 },
-  emptyText: { fontSize: 16, color: '#999', marginTop: 12 },
-  // 🔥 Bouton flottant
+  lowStockBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  cardContent: {
+    padding: 12,
+  },
+  bookTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.text.primary,
+    marginBottom: 2,
+  },
+  bookAuthor: {
+    fontSize: 11,
+    color: colors.text.secondary,
+    marginBottom: 6,
+  },
+  availabilityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  availabilityDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginRight: 6,
+  },
+  availableDot: { backgroundColor: colors.success },
+  unavailableDot: { backgroundColor: colors.danger },
+  availabilityText: {
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  availableText: { color: colors.success },
+  unavailableText: { color: colors.danger },
+  metaRow: {
+    flexDirection: 'row',
+    marginTop: 2,
+  },
+  metaText: {
+    fontSize: 9,
+    color: colors.text.light,
+    flex: 1,
+  },
+  stockText: {
+    fontSize: 10,
+    color: colors.text.light,
+    marginTop: 2,
+    fontWeight: '500',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  emptyText: {
+    fontSize: 15,
+    color: colors.text.secondary,
+    marginTop: 12,
+    fontWeight: '500',
+  },
+
+  // FAB
   fab: {
     position: 'absolute',
     bottom: 24,
     right: 24,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#6C63FF',
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#6C63FF',
+    shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.4,
     shadowRadius: 12,
     elevation: 8,
+    borderWidth: 2,
+    borderColor: colors.secondary,
   },
+
   // Modal
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  modalContent: { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: '80%' },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-  modalTitle: { fontSize: 20, fontWeight: 'bold', color: '#1a1a2e' },
-  filterLabel: { fontSize: 14, fontWeight: '600', color: '#1a1a2e', marginBottom: 8 },
-  filterLabelTop: { marginTop: 16 },
-  filterOptions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 },
-  filterChip: {
-    paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20,
-    backgroundColor: '#f5f5f5', borderWidth: 1, borderColor: 'transparent',
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 61, 40, 0.5)',
+    justifyContent: 'flex-end',
   },
-  filterChipActive: { backgroundColor: 'rgba(108, 99, 255, 0.1)', borderColor: '#6C63FF' },
-  filterChipText: { fontSize: 13, color: '#666' },
-  filterChipTextActive: { color: '#6C63FF', fontWeight: '500' },
-  modalFooter: { flexDirection: 'row', gap: 12, marginTop: 20, paddingTop: 16, borderTopWidth: 1, borderTopColor: '#f0f0f0' },
-  resetButton: { flex: 1, paddingVertical: 14, borderRadius: 12, backgroundColor: '#f5f5f5', alignItems: 'center' },
-  resetButtonText: { fontSize: 15, color: '#666', fontWeight: '500' },
-  applyButton: { flex: 1, paddingVertical: 14, borderRadius: 12, backgroundColor: '#6C63FF', alignItems: 'center' },
-  applyButtonText: { fontSize: 15, color: '#fff', fontWeight: '600' },
+  modalContent: {
+    backgroundColor: colors.background.secondary,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    maxHeight: '85%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.text.primary,
+  },
+  modalSubtitle: {
+    fontSize: 12,
+    color: colors.text.secondary,
+    marginTop: 2,
+  },
+  filterLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.primary,
+    marginBottom: 12,
+    letterSpacing: 0.3,
+  },
+  filterLabelTop: {
+    marginTop: 20,
+  },
+  filterOptions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  filterChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 20,
+    backgroundColor: colors.background.primary,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  filterChipActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  filterChipText: {
+    fontSize: 12,
+    color: colors.text.secondary,
+    fontWeight: '600',
+  },
+  filterChipTextActive: {
+    color: colors.text.white,
+  },
+  modalFooter: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 24,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  resetButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: colors.background.primary,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  resetButtonText: {
+    fontSize: 14,
+    color: colors.text.secondary,
+    fontWeight: '600',
+  },
+  applyButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+  },
+  applyButtonText: {
+    fontSize: 14,
+    color: colors.text.white,
+    fontWeight: '700',
+  },
 });
