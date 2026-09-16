@@ -219,7 +219,7 @@ export const BooksScreen = () => {
         <View style={styles.imageContainer}>
           {item.imageUrl ? (
             <Image
-              source={{ uri: `http://localhost:3000${item.imageUrl}` }}
+              source={{ uri: `https://51-77-244-126.sslip.io${item.imageUrl}` }}
               style={styles.bookImage}
               resizeMode="cover"
             />

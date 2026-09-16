@@ -76,7 +76,7 @@ export const LoginScreen = () => {
     try {
       setGoogleLoading(true);
       const returnUrl = Linking.createURL('auth-callback');
-      const BACKEND_URL = 'http://localhost:3000';
+      const BACKEND_URL = 'https://51-77-244-126.sslip.io';
       const authUrl =
         `https://accounts.google.com/o/oauth2/v2/auth?` +
         `client_id=${GOOGLE_CLIENT_ID}&` +
@@ -103,7 +103,7 @@ export const LoginScreen = () => {
       const name = `Dev ${roleNames[role]}`;
       const email = `dev-${role.toLowerCase()}@bookstore.local`;
 
-      const BACKEND_URL = 'http://localhost:3000';
+      const BACKEND_URL = 'https://51-77-244-126.sslip.io';
       const response = await fetch(`${BACKEND_URL}/api/auth/dev-login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

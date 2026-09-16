@@ -1,34 +1,39 @@
 import { authService } from './auth.service';
 import Constants from 'expo-constants';
+import { Platform } from 'react-native';
 
 const GOOGLE_CLIENT_ID = Constants.expoConfig?.extra?.googleClientId || '';
 
+// URL du backend (production vs dev)
+const BACKEND_URL = Platform.OS === 'web' && typeof window !== 'undefined'
+  ? window.location.origin
+  : (process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000');
+
 export class GoogleAuthService {
   static async login(): Promise<any> {
-    // 🔥 Vérifier si on a déjà un token (retour de Google)
+    // 🔥 Vérifier si on revient de Google (token dans le hash)
     const hash = window.location.hash;
     console.log('📱 Hash:', hash);
-    
+
     if (hash && hash.includes('id_token')) {
       const params = new URLSearchParams(hash.substring(1));
       const googleToken = params.get('id_token');
-      
+
       if (googleToken) {
         console.log('✅ Token trouvé !');
         window.history.pushState('', document.title, window.location.pathname);
-        
+
         const checkResult = await authService.checkGoogleUser(googleToken);
-        console.log('📱 Résultat check:', checkResult);
 
         if (!checkResult.exists || checkResult.needsProfile) {
           return {
             needsProfile: true,
-            googleToken: googleToken,
+            googleToken,
             userData: {
               email: checkResult.email,
               name: checkResult.name,
               avatar: checkResult.avatar,
-            }
+            },
           };
         }
 
@@ -41,22 +46,23 @@ export class GoogleAuthService {
       }
     }
 
-    // 🔥 Pas de token → rediriger vers Google AVEC nonce
-    const redirectUri = 'http://localhost:8081';
+    // 🔥 Redirection vers Google (flux implicit id_token)
+    // ✅ Redirect URI = le frontend lui-même (retour direct)
+    const redirectUri = `${window.location.origin}/`;
     const nonce = Date.now().toString();
-    
-    const authUrl = 
+
+    const authUrl =
       `https://accounts.google.com/o/oauth2/v2/auth?` +
       `client_id=${GOOGLE_CLIENT_ID}&` +
-      `redirect_uri=${redirectUri}&` +
+      `redirect_uri=${encodeURIComponent(redirectUri)}&` +
       `response_type=id_token&` +
-      `scope=openid%20profile%20email&` +
+      `scope=${encodeURIComponent('openid profile email')}&` +
       `prompt=select_account&` +
       `nonce=${nonce}`;
 
-    console.log('🔗 Redirection vers Google avec nonce:', nonce);
+    console.log('🔗 Redirection vers Google, redirectUri:', redirectUri);
     window.location.href = authUrl;
-    
+
     return { needsProfile: false };
   }
 
@@ -67,7 +73,6 @@ export class GoogleAuthService {
     age: number;
     commune: string;
   }) {
-    const result = await authService.completeGoogleProfile(googleToken, data);
-    return result;
+    return await authService.completeGoogleProfile(googleToken, data);
   }
 }

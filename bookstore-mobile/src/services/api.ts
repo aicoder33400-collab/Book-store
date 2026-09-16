@@ -1,22 +1,9 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Platform } from 'react-native';
 
-// 🔥 URL NGROK
-const NGROK_URL = 'https://shudder-oppose-disburse.ngrok-free.dev/api';
+// 🔥 URL de l'API en production
+const API_URL = 'https://51-77-244-126.sslip.io/api';
 
-const getBaseURL = () => {
-  if (Platform.OS === 'web') {
-    return 'http://localhost:3000/api';
-  }
-  if (Platform.OS === 'ios' || Platform.OS === 'android') {
-    // return NGROK_URL;
-    return 'http://localhost:3000/api';
-  }
-  return 'http://localhost:3000/api';
-};
-
-const API_URL = getBaseURL();
 console.log('🔗 API URL:', API_URL);
 
 const api = axios.create({
@@ -46,3 +33,4 @@ api.interceptors.response.use(
 );
 
 export default api;
+
