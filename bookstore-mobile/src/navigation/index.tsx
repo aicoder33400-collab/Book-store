@@ -5,6 +5,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { LoginScreen } from '../screens/Auth/LoginScreen';
 import { CompleteProfileScreen } from '../screens/Auth/CompleteProfileScreen';
+import { CompleteProfileRedirect } from '../screens/Auth/CompleteProfileRedirect';
 import { CallbackScreen } from '../screens/Auth/CallbackScreen';
 import { BooksScreen } from '../screens/Books/BooksScreen';
 import { BookDetailScreen } from '../screens/Books/BookDetailScreen';
@@ -144,6 +145,10 @@ const AppNavigator = () => {
               name="Callback" 
               component={CallbackScreen} 
               options={{ headerShown: false }} 
+            />
+            <Stack.Screen 
+              name="CompleteProfileRedirect" 
+              component={CompleteProfileRedirect} 
             />
             <Stack.Screen 
               name="CompleteProfile" 

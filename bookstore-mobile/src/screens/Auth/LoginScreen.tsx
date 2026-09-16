@@ -15,9 +15,9 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuthStore } from '../../store/auth.store';
 import { RootStackParamList } from '../../types/navigation';
-import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
 import Constants from 'expo-constants';
+import { GoogleAuthService } from '../../services/google-auth.service';
 
 const { width, height } = Dimensions.get('window');
 
@@ -25,15 +25,19 @@ type LoginScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Login'
 
 const GOOGLE_CLIENT_ID = Constants.expoConfig?.extra?.googleClientId || '';
 
-WebBrowser.maybeCompleteAuthSession();
+// URL du backend selon la plateforme
+const BACKEND_URL =
+  Platform.OS === 'web'
+    ? (typeof window !== 'undefined' ? window.location.origin : 'https://51-77-244-126.sslip.io')
+    : (process.env.EXPO_PUBLIC_API_URL || 'https://51-77-244-126.sslip.io');
 
 // 🕌 Palette cohérente
 const C = {
-  bgDark: '#0F3D28',      // Vert très foncé (fond haut)
-  bgMid: '#1B5E3F',       // Vert moyen (fond milieu)
-  bgLight: '#246B49',     // Vert plus clair (fond bas)
-  gold: '#C9A961',        // Or principal
-  goldLight: '#E5C989',   // Or clair
+  bgDark: '#0F3D28',
+  bgMid: '#1B5E3F',
+  bgLight: '#246B49',
+  gold: '#C9A961',
+  goldLight: '#E5C989',
   white: '#FFFFFF',
   whiteSoft: 'rgba(255,255,255,0.7)',
   whiteFaint: 'rgba(255,255,255,0.15)',
@@ -47,7 +51,21 @@ export const LoginScreen = () => {
   const navigation = useNavigation<LoginScreenNavigationProp>();
   const { setUser, setToken } = useAuthStore();
 
+  // 🔥 Gestion du retour OAuth sur WEB : vérifier le hash au montage
   useEffect(() => {
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      const hash = window.location.hash;
+      if (hash && hash.includes('id_token')) {
+        console.log('🔐 Retour OAuth détecté sur web, traitement...');
+        handleGoogleLogin();
+      }
+    }
+  }, []);
+
+  // 🔥 Gestion du deep link sur iOS/Android natif
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+
     const handleDeepLink = async () => {
       const url = await Linking.getInitialURL();
       if (url) handleUrl(url);
@@ -64,10 +82,17 @@ export const LoginScreen = () => {
   const handleUrl = async (url: string) => {
     console.log('🔗 Deep link reçu:', url);
     if (url && url.includes('token=')) {
-      const token = url.split('token=')[1];
+      const token = url.split('token=')[1]?.split('&')[0];
       if (token) {
         console.log('✅ Token reçu via deep link');
+        setToken(token);
         Alert.alert('Connecté !', 'Vous êtes connecté avec succès');
+        navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [{ name: 'Main' }],
+          })
+        );
       }
     }
   };
@@ -75,6 +100,7 @@ export const LoginScreen = () => {
   const handleGoogleLogin = async () => {
     try {
       setGoogleLoading(true);
+<<<<<<< Updated upstream
       const returnUrl = Linking.createURL('auth-callback');
       const BACKEND_URL = 'https://51-77-244-126.sslip.io';
       const authUrl =
@@ -85,13 +111,40 @@ export const LoginScreen = () => {
         `scope=openid%20profile%20email&` +
         `state=${encodeURIComponent(returnUrl)}&` +
         `prompt=select_account`;
+=======
+>>>>>>> Stashed changes
 
-      const result = await WebBrowser.openAuthSessionAsync(authUrl, returnUrl);
-      console.log('📱 Résultat:', result.type);
+      const result = await GoogleAuthService.login();
+      console.log('📱 Résultat Google login:', result);
+
+      if (result?.needsProfile) {
+        navigation.navigate('CompleteProfile', {
+          googleToken: result.googleToken,
+          email: result.userData?.email || '',
+          name: result.userData?.name || '',
+          avatar: result.userData?.avatar || '',
+        });
+      } else if (result?.user && result?.token) {
+        // Connexion réussie directement
+        setUser(result.user);
+        setToken(result.token);
+        navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [{ name: 'Main' }],
+          })
+        );
+      }
+
       setGoogleLoading(false);
     } catch (error: any) {
       console.error('❌ Erreur Google:', error);
-      Alert.alert('Erreur', error.message || 'Impossible de se connecter');
+      if (Platform.OS === 'web') {
+        // Sur web, Alert.alert ne fonctionne pas
+        window.alert(error.message || 'Impossible de se connecter avec Google');
+      } else {
+        Alert.alert('Erreur', error.message || 'Impossible de se connecter avec Google');
+      }
       setGoogleLoading(false);
     }
   };
@@ -103,14 +156,20 @@ export const LoginScreen = () => {
       const name = `Dev ${roleNames[role]}`;
       const email = `dev-${role.toLowerCase()}@bookstore.local`;
 
+<<<<<<< Updated upstream
       const BACKEND_URL = 'https://51-77-244-126.sslip.io';
+=======
+>>>>>>> Stashed changes
       const response = await fetch(`${BACKEND_URL}/api/auth/dev-login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, name, role }),
       });
 
-      if (!response.ok) throw new Error('Erreur backend');
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`Erreur backend (${response.status}): ${errText}`);
+      }
 
       const data = await response.json();
       setUser(data.user);
@@ -124,7 +183,11 @@ export const LoginScreen = () => {
       );
     } catch (error: any) {
       console.error('❌ Erreur Dev Login:', error);
-      Alert.alert('Erreur', 'Impossible de se connecter');
+      if (Platform.OS === 'web') {
+        window.alert(`Impossible de se connecter: ${error.message}`);
+      } else {
+        Alert.alert('Erreur', `Impossible de se connecter: ${error.message}`);
+      }
     } finally {
       setDevLoading(false);
     }
@@ -134,20 +197,16 @@ export const LoginScreen = () => {
     <View style={styles.root}>
       <StatusBar barStyle="light-content" />
 
-      {/* 🕌 Fond dégradé vert plein écran */}
       <LinearGradient
         colors={[C.bgDark, C.bgMid, C.bgLight]}
         style={styles.gradient}
         start={{ x: 0.2, y: 0 }}
         end={{ x: 0.8, y: 1 }}
       >
-        {/* Motif discret : 2 cercles en filigrane */}
         <View style={styles.haloTop} />
         <View style={styles.haloBottom} />
 
-        {/* CONTENU */}
         <View style={styles.content}>
-
           {/* ─── LOGO ─── */}
           <View style={styles.logoSection}>
             <View style={styles.logoRing}>
@@ -243,7 +302,6 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.bgDark },
   gradient: { flex: 1 },
 
-  // Motifs discrets (2 cercles en filigrane or)
   haloTop: {
     position: 'absolute',
     width: width * 0.9,
@@ -265,7 +323,6 @@ const styles = StyleSheet.create({
     left: -width * 0.35,
   },
 
-  // Contenu
   content: {
     flex: 1,
     paddingHorizontal: 28,
@@ -274,7 +331,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
 
-  // ─── Logo ───
   logoSection: {
     alignItems: 'center',
     marginTop: height * 0.06,
@@ -316,7 +372,6 @@ const styles = StyleSheet.create({
     fontWeight: '400',
   },
 
-  // ─── Actions ───
   actions: {
     width: '100%',
     alignItems: 'center',
@@ -358,7 +413,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
 
-  // ─── Dev ───
   devToggle: {
     marginTop: 22,
     paddingVertical: 6,
@@ -395,7 +449,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
 
-  // ─── Footer ───
   footer: {
     alignItems: 'center',
   },
