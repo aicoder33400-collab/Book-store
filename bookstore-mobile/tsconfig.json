@@ -11,9 +11,8 @@
     "allowJs": true,
     "noEmit": true,
     "allowSyntheticDefaultImports": true,
-    "baseUrl": ".",
     "paths": {
-      "*": ["src/*"]
+      "*": ["./src/*"]
     }
   },
   "include": [

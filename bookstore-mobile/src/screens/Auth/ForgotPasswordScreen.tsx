@@ -4,11 +4,15 @@ import {
   ActivityIndicator, Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '../../types/navigation';
 import api from '../../services/api';
 import { colors } from '../../theme/colors';
 
+type NavProp = StackNavigationProp<RootStackParamList, 'ForgotPassword'>;
+
 export const ForgotPasswordScreen = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavProp>();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
@@ -39,7 +43,7 @@ export const ForgotPasswordScreen = () => {
           {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Envoyer le code</Text>}
         </TouchableOpacity>
       ) : (
-        <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('ResetPassword' as never, { email })}>
+        <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('ResetPassword', { email })}>
           <Text style={styles.buttonText}>Entrer le code →</Text>
         </TouchableOpacity>
       )}

@@ -17,4 +17,6 @@ export type RootStackParamList = {
   BookDetail: { bookId: string };
   Register: undefined;
   ForgotPassword: undefined;
+  ResetPassword: { email: string };
+  VerifyEmail: { userId: string; email: string };
 };

@@ -51,7 +51,7 @@ export const LoginScreen = () => {
   const navigation = useNavigation<LoginScreenNavigationProp>();
   const { setUser, setToken } = useAuthStore();
 
-  // 🔥 Gestion du retour OAuth sur WEB : vérifier le hash au montage
+  // 🔥 Retour OAuth sur WEB : détecter le hash au montage
   useEffect(() => {
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
       const hash = window.location.hash;
@@ -62,7 +62,7 @@ export const LoginScreen = () => {
     }
   }, []);
 
-  // 🔥 Gestion du deep link sur iOS/Android natif
+  // 🔥 Deep link natif iOS/Android
   useEffect(() => {
     if (Platform.OS === 'web') return;
 
@@ -100,19 +100,6 @@ export const LoginScreen = () => {
   const handleGoogleLogin = async () => {
     try {
       setGoogleLoading(true);
-<<<<<<< Updated upstream
-      const returnUrl = Linking.createURL('auth-callback');
-      const BACKEND_URL = 'https://51-77-244-126.sslip.io';
-      const authUrl =
-        `https://accounts.google.com/o/oauth2/v2/auth?` +
-        `client_id=${GOOGLE_CLIENT_ID}&` +
-        `redirect_uri=${BACKEND_URL}/api/auth/google/callback&` +
-        `response_type=code&` +
-        `scope=openid%20profile%20email&` +
-        `state=${encodeURIComponent(returnUrl)}&` +
-        `prompt=select_account`;
-=======
->>>>>>> Stashed changes
 
       const result = await GoogleAuthService.login();
       console.log('📱 Résultat Google login:', result);
@@ -125,7 +112,6 @@ export const LoginScreen = () => {
           avatar: result.userData?.avatar || '',
         });
       } else if (result?.user && result?.token) {
-        // Connexion réussie directement
         setUser(result.user);
         setToken(result.token);
         navigation.dispatch(
@@ -140,7 +126,6 @@ export const LoginScreen = () => {
     } catch (error: any) {
       console.error('❌ Erreur Google:', error);
       if (Platform.OS === 'web') {
-        // Sur web, Alert.alert ne fonctionne pas
         window.alert(error.message || 'Impossible de se connecter avec Google');
       } else {
         Alert.alert('Erreur', error.message || 'Impossible de se connecter avec Google');
@@ -156,10 +141,6 @@ export const LoginScreen = () => {
       const name = `Dev ${roleNames[role]}`;
       const email = `dev-${role.toLowerCase()}@bookstore.local`;
 
-<<<<<<< Updated upstream
-      const BACKEND_URL = 'https://51-77-244-126.sslip.io';
-=======
->>>>>>> Stashed changes
       const response = await fetch(`${BACKEND_URL}/api/auth/dev-login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

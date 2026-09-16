@@ -4,12 +4,16 @@ import {
   ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '../../types/navigation';
 import api from '../../services/api';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 
+type NavProp = StackNavigationProp<RootStackParamList, 'Register'>;
+
 export const RegisterScreen = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavProp>();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
