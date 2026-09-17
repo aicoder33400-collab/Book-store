@@ -31,16 +31,16 @@ const BACKEND_URL =
     ? (typeof window !== 'undefined' ? window.location.origin : 'https://51-77-244-126.sslip.io')
     : (process.env.EXPO_PUBLIC_API_URL || 'https://51-77-244-126.sslip.io');
 
+// 🕌 Palette islamique ÉCLAIRCIE
 const C = {
-  bgDark: '#0F3D28',
-  bgMid: '#1B5E3F',
-  bgLight: '#246B49',
-  gold: '#C9A961',
-  goldLight: '#E5C989',
+  bgDark: '#1B5E3F',
+  bgMid: '#2D7A55',
+  bgLight: '#3A8E63',
+  gold: '#E5C989',
+  goldBright: '#F5E4B8',
   white: '#FFFFFF',
-  whiteSoft: 'rgba(255,255,255,0.7)',
-  whiteFaint: 'rgba(255,255,255,0.15)',
-  whiteLine: 'rgba(255,255,255,0.2)',
+  whiteSoft: 'rgba(255,255,255,0.85)',
+  whiteFaint: 'rgba(255,255,255,0.65)',
 };
 
 export const LoginScreen = () => {
@@ -48,11 +48,10 @@ export const LoginScreen = () => {
   const [devLoading, setDevLoading] = useState(false);
   const [showDev, setShowDev] = useState(false);
   const navigation = useNavigation<LoginScreenNavigationProp>();
-
   const setUser = useAuthStore((s) => s.setUser);
   const setToken = useAuthStore((s) => s.setToken);
-  
-  // 🔥 Retour OAuth sur WEB : détecter le hash au montage
+
+  // Retour OAuth sur WEB
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof window === 'undefined') return;
 
@@ -60,16 +59,17 @@ export const LoginScreen = () => {
     if (!hash || !hash.includes('id_token')) return;
 
     console.log('🔐 Retour OAuth détecté sur web, traitement...');
+    setGoogleLoading(true);
 
     const params = new URLSearchParams(hash.substring(1));
     const googleToken = params.get('id_token');
 
     if (!googleToken) {
       console.error('❌ Pas de id_token dans le hash');
+      setGoogleLoading(false);
       return;
     }
 
-    // Nettoyer l'URL immédiatement
     window.history.replaceState({}, document.title, window.location.pathname);
 
     (async () => {
@@ -79,7 +79,6 @@ export const LoginScreen = () => {
 
         if (!checkResult.exists || checkResult.needsProfile) {
           console.log('🚀 Store: needsProfile = true');
-          // 🔥 Le store gère la navigation via AppNavigator
           useAuthStore.getState().setNeedsProfile(true, googleToken, {
             email: checkResult.email || '',
             name: checkResult.name || '',
@@ -109,16 +108,17 @@ export const LoginScreen = () => {
             isProfileComplete: result.user.isProfileComplete ?? true,
           };
 
-          useAuthStore.getState().setUser(user as any);
-          useAuthStore.getState().setToken(result.token);
+          setUser(user as any);
+          setToken(result.token);
         }
       } catch (error: any) {
         console.error('❌ Erreur traitement OAuth:', error);
+        setGoogleLoading(false);
       }
     })();
   }, []);
 
-  // 🔥 Deep link natif iOS/Android
+  // Deep link natif
   useEffect(() => {
     if (Platform.OS === 'web') return;
 
@@ -136,7 +136,6 @@ export const LoginScreen = () => {
   }, []);
 
   const handleUrl = async (url: string) => {
-    console.log('🔗 Deep link reçu:', url);
     if (url && url.includes('token=')) {
       const token = url.split('token=')[1]?.split('&')[0];
       if (token) {
@@ -156,7 +155,6 @@ export const LoginScreen = () => {
     try {
       setGoogleLoading(true);
       await GoogleAuthService.login();
-      // La redirection va décharger la page
     } catch (error: any) {
       console.error('❌ Erreur Google:', error);
       if (Platform.OS === 'web') {
@@ -210,22 +208,26 @@ export const LoginScreen = () => {
 
   return (
     <View style={styles.root}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
+      {/* Fond dégradé éclairci */}
       <LinearGradient
-        colors={[C.bgDark, C.bgMid, C.bgLight]}
+        colors={['#2D7A55', '#1B5E3F', '#14532D']}
         style={styles.gradient}
-        start={{ x: 0.2, y: 0 }}
-        end={{ x: 0.8, y: 1 }}
+        start={{ x: 0.15, y: 0 }}
+        end={{ x: 0.85, y: 1 }}
       >
+        {/* Cercles dorés */}
         <View style={styles.haloTop} />
         <View style={styles.haloBottom} />
+        <View style={styles.haloCenter} />
 
         <View style={styles.content}>
+          {/* Logo */}
           <View style={styles.logoSection}>
             <View style={styles.logoRing}>
               <LinearGradient
-                colors={[C.goldLight, C.gold]}
+                colors={[C.goldBright, C.gold]}
                 style={styles.logoInner}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
@@ -237,6 +239,7 @@ export const LoginScreen = () => {
             <Text style={styles.brandSub}>Bibliothèque de la mosquée</Text>
           </View>
 
+          {/* Actions */}
           <View style={styles.actions}>
             <TouchableOpacity
               style={styles.googleBtn}
@@ -274,7 +277,7 @@ export const LoginScreen = () => {
                     onPress={() => handleDevLogin('ADMIN')}
                     disabled={devLoading}
                   >
-                    <Text style={styles.devBtnText}>👑 Admin</Text>
+                    <Text style={styles.devBtnTextDark}>👑 Admin</Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
@@ -297,20 +300,12 @@ export const LoginScreen = () => {
             )}
           </View>
 
+          {/* Footer */}
           <View style={styles.footer}>
-            <TouchableOpacity
-              style={styles.installLink}
-              onPress={() => {
-                if (Platform.OS === 'web' && typeof window !== 'undefined') {
-                  window.location.href = '/install';
-                }
-              }}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.installLinkText}>📲 Installer l'application</Text>
-            </TouchableOpacity>
-
-            
+            <View style={styles.footerLine} />
+            <Text style={styles.footerText}>
+              En continuant, vous acceptez nos conditions
+            </Text>
           </View>
         </View>
       </LinearGradient>
@@ -319,28 +314,38 @@ export const LoginScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: C.bgDark },
+  root: { flex: 1, backgroundColor: C.bgMid },
   gradient: { flex: 1 },
 
   haloTop: {
     position: 'absolute',
-    width: width * 0.9,
-    height: width * 0.9,
-    borderRadius: width * 0.45,
-    borderWidth: 1,
-    borderColor: 'rgba(201,169,97,0.10)',
-    top: -width * 0.35,
-    right: -width * 0.25,
-  },
-  haloBottom: {
-    position: 'absolute',
     width: width * 1.1,
     height: width * 1.1,
     borderRadius: width * 0.55,
+    borderWidth: 1.5,
+    borderColor: 'rgba(229,201,137,0.18)',
+    top: -width * 0.6,
+    right: -width * 0.3,
+  },
+  haloBottom: {
+    position: 'absolute',
+    width: width * 1.3,
+    height: width * 1.3,
+    borderRadius: width * 0.65,
     borderWidth: 1,
-    borderColor: 'rgba(201,169,97,0.07)',
-    bottom: -width * 0.5,
-    left: -width * 0.35,
+    borderColor: 'rgba(229,201,137,0.10)',
+    bottom: -width * 0.7,
+    left: -width * 0.4,
+  },
+  haloCenter: {
+    position: 'absolute',
+    width: width * 0.7,
+    height: width * 0.7,
+    borderRadius: width * 0.35,
+    borderWidth: 1,
+    borderColor: 'rgba(229,201,137,0.08)',
+    top: height * 0.35,
+    left: -width * 0.25,
   },
 
   content: {
@@ -351,45 +356,55 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
 
-  logoSection: { alignItems: 'center', marginTop: height * 0.06 },
+  logoSection: {
+    alignItems: 'center',
+    marginTop: height * 0.06,
+  },
   logoRing: {
-    width: 110,
-    height: 110,
-    borderRadius: 55,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
     borderWidth: 2,
-    borderColor: 'rgba(201,169,97,0.35)',
+    borderColor: 'rgba(229,201,137,0.4)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 22,
+    marginBottom: 24,
+    backgroundColor: 'rgba(229,201,137,0.06)',
   },
   logoInner: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
+    width: 96,
+    height: 96,
+    borderRadius: 48,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: C.gold,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.35,
-    shadowRadius: 14,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
+    elevation: 10,
   },
-  logoEmoji: { fontSize: 46 },
+  logoEmoji: { fontSize: 48 },
   brand: {
-    fontSize: 32,
-    fontWeight: '700',
+    fontSize: 34,
+    fontWeight: '800',
     color: C.white,
-    letterSpacing: 0.8,
-    marginBottom: 6,
+    letterSpacing: 1,
+    marginBottom: 8,
+    textShadowColor: 'rgba(0,0,0,0.15)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 6,
   },
   brandSub: {
     fontSize: 13,
-    color: C.whiteSoft,
-    letterSpacing: 1.2,
-    fontWeight: '400',
+    color: C.whiteFaint,
+    letterSpacing: 1.4,
+    fontWeight: '500',
   },
 
-  actions: { width: '100%', alignItems: 'center' },
+  actions: {
+    width: '100%',
+    alignItems: 'center',
+  },
   googleBtn: {
     width: '100%',
     maxWidth: 380,
@@ -398,40 +413,55 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: C.white,
     borderRadius: 50,
-    paddingVertical: 16,
+    paddingVertical: 17,
     paddingHorizontal: 24,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    elevation: 6,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.2,
+    shadowRadius: 24,
+    elevation: 8,
   },
   gIconWrap: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     backgroundColor: '#F1F3F4',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
   },
-  gIcon: { fontSize: 16, fontWeight: 'bold', color: '#4285F4' },
+  gIcon: {
+    fontSize: 17,
+    fontWeight: 'bold',
+    color: '#4285F4',
+  },
   gText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
     color: C.bgDark,
     letterSpacing: 0.2,
   },
 
-  devToggle: { marginTop: 22, paddingVertical: 6, paddingHorizontal: 12 },
+  devToggle: {
+    marginTop: 24,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
   devToggleText: {
     fontSize: 12,
-    color: 'rgba(255,255,255,0.35)',
+    color: 'rgba(255,255,255,0.45)',
     letterSpacing: 0.5,
     textDecorationLine: 'underline',
   },
-  devPanel: { marginTop: 14, width: '100%', maxWidth: 380 },
-  devRow: { flexDirection: 'row', gap: 8 },
+  devPanel: {
+    marginTop: 14,
+    width: '100%',
+    maxWidth: 380,
+  },
+  devRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
   devBtn: {
     flex: 1,
     paddingVertical: 12,
@@ -439,40 +469,36 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
+    borderColor: 'rgba(255,255,255,0.2)',
   },
   devBtnText: {
     color: C.white,
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
+    letterSpacing: 0.3,
+  },
+  devBtnTextDark: {
+    color: C.bgDark,
+    fontSize: 12,
+    fontWeight: '700',
     letterSpacing: 0.3,
   },
 
-  footer: { alignItems: 'center' },
+  footer: {
+    alignItems: 'center',
+  },
   footerLine: {
     width: 40,
     height: 2,
     backgroundColor: C.gold,
     borderRadius: 1,
-    marginBottom: 12,
-    opacity: 0.5,
+    marginBottom: 14,
+    opacity: 0.6,
   },
-    footerText: {
+  footerText: {
     fontSize: 11,
-    color: 'rgba(255,255,255,0.35)',
+    color: 'rgba(255,255,255,0.45)',
     letterSpacing: 0.4,
     textAlign: 'center',
-  },
-  installLink: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    marginBottom: 12,
-  },
-  installLinkText: {
-    fontSize: 13,
-    color: 'rgba(201,169,97,0.9)',
-    fontWeight: '600',
-    letterSpacing: 0.4,
-    textDecorationLine: 'underline',
   },
 });

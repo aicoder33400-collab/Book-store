@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
   Platform,
   StatusBar,
   Dimensions,
+  Animated,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -23,11 +24,10 @@ const { width, height } = Dimensions.get('window');
 
 // 🕌 Palette islamique CLAIRE
 const C = {
-  bgTop: '#F5FBF7',
-  bgMid: '#E8F2EC',
-  bgBottom: '#DDEBE2',
+  bgTop: '#FAFDFB',
+  bgMid: '#F0F7F3',
+  bgBottom: '#E3EFE7',
   primary: '#1B5E3F',
-  primaryLight: '#2D7A55',
   gold: '#C9A961',
   goldLight: '#E5C989',
   textDark: '#0F3D28',
@@ -60,6 +60,25 @@ export const CompleteProfileScreen = () => {
     ageGroup?: string;
     commune?: string;
   }>({});
+
+  // 🎬 Animation fade in
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(20)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: Platform.OS !== 'web',
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 600,
+        useNativeDriver: Platform.OS !== 'web',
+      }),
+    ]).start();
+  }, []);
 
   const validate = () => {
     const newErrors: typeof errors = {};
@@ -132,8 +151,6 @@ export const CompleteProfileScreen = () => {
         commune: commune.trim(),
       };
 
-      console.log('📤 Envoi des données:', payload);
-
       const result = await GoogleAuthService.completeProfile(googleToken, payload);
 
       if (result.success) {
@@ -164,7 +181,6 @@ export const CompleteProfileScreen = () => {
         setToken(result.token);
       }
     } catch (error: any) {
-      console.error('❌ Erreur complète:', error);
       const msg =
         error.response?.data?.error ||
         'Erreur lors de l\'inscription. Veuillez réessayer.';
@@ -190,13 +206,13 @@ export const CompleteProfileScreen = () => {
         end={{ x: 0.85, y: 1 }}
       />
 
-      {/* Cercles dorés en filigrane */}
+      {/* Motifs dorés — plus visibles */}
       <View style={styles.decorCircleTopRight} />
+      <View style={styles.decorCircleTopRightInner} />
       <View style={styles.decorCircleMidLeft} />
-      <View style={styles.decorCircleBottomLeft} />
-
-      {/* Arc décoratif arche islamique */}
+      <View style={styles.decorCircleBottomRight} />
       <View style={styles.decorArc} />
+      <View style={styles.decorArc2} />
 
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -219,162 +235,172 @@ export const CompleteProfileScreen = () => {
           alwaysBounceHorizontal={false}
           alwaysBounceVertical={false}
         >
-          {/* ═══ HEADER ═══ */}
-          <View style={styles.header}>
-            <Text style={styles.title}>Bienvenue !</Text>
-            <Text style={styles.subtitle}>
-              Plus qu'une étape pour rejoindre la bibliothèque
-            </Text>
-
-            {userEmail ? (
-              <View style={styles.emailBadge}>
-                <Text style={styles.emailBadgeText}>📧 {userEmail}</Text>
-              </View>
-            ) : null}
-          </View>
-
-          {/* ═══ FORMULAIRE ═══ */}
-          <View style={styles.form}>
-            {/* Prénom */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>
-                Prénom <Text style={styles.required}>*</Text>
+          {/* 🎬 Contenu avec fade in */}
+          <Animated.View
+            style={{
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }],
+            }}
+          >
+            {/* HEADER */}
+            <View style={styles.header}>
+              <Text style={styles.title}>Bienvenue !</Text>
+              <Text style={styles.subtitle}>
+                Plus qu'une étape pour rejoindre la bibliothèque
               </Text>
-              <TextInput
-                style={[styles.input, errors.firstName && styles.inputError]}
-                placeholder="Votre prénom"
-                placeholderTextColor={C.textLight}
-                value={firstName}
-                onChangeText={(text) => {
-                  setFirstName(text);
-                  if (errors.firstName) setErrors({ ...errors, firstName: undefined });
-                }}
-                autoCapitalize="words"
-                autoCorrect={false}
-              />
-              {errors.firstName && <Text style={styles.errorText}>{errors.firstName}</Text>}
+
+              {userEmail ? (
+                <View style={styles.emailBadge}>
+                  <Text style={styles.emailBadgeText}>📧 {userEmail}</Text>
+                </View>
+              ) : null}
             </View>
 
-            {/* Nom */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>
-                Nom <Text style={styles.required}>*</Text>
-              </Text>
-              <TextInput
-                style={[styles.input, errors.lastName && styles.inputError]}
-                placeholder="Votre nom"
-                placeholderTextColor={C.textLight}
-                value={lastName}
-                onChangeText={(text) => {
-                  setLastName(text);
-                  if (errors.lastName) setErrors({ ...errors, lastName: undefined });
-                }}
-                autoCapitalize="words"
-                autoCorrect={false}
-              />
-              {errors.lastName && <Text style={styles.errorText}>{errors.lastName}</Text>}
-            </View>
-
-            {/* Téléphone */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>
-                Téléphone <Text style={styles.required}>*</Text>
-              </Text>
-              <TextInput
-                style={[styles.input, errors.phone && styles.inputError]}
-                placeholder="06 12 34 56 78"
-                placeholderTextColor={C.textLight}
-                value={phone}
-                onChangeText={(text) => {
-                  setPhone(text);
-                  if (errors.phone) setErrors({ ...errors, phone: undefined });
-                }}
-                keyboardType="phone-pad"
-              />
-              {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
-            </View>
-
-            {/* Tranche d'âge */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>
-                Tranche d'âge <Text style={styles.required}>*</Text>
-              </Text>
-              <View style={styles.ageContainer}>
-                <TouchableOpacity
-                  style={[styles.ageButton, ageGroup === 'minor' && styles.ageButtonSelected]}
-                  onPress={() => {
-                    setAgeGroup('minor');
-                    if (errors.ageGroup) setErrors({ ...errors, ageGroup: undefined });
+            {/* FORMULAIRE */}
+            <View style={styles.form}>
+              {/* Prénom */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>
+                  Prénom <Text style={styles.required}>*</Text>
+                </Text>
+                <TextInput
+                  style={[styles.input, errors.firstName && styles.inputError]}
+                  placeholder="Votre prénom"
+                  placeholderTextColor={C.textLight}
+                  value={firstName}
+                  onChangeText={(text) => {
+                    setFirstName(text);
+                    if (errors.firstName) setErrors({ ...errors, firstName: undefined });
                   }}
-                  activeOpacity={0.85}
-                >
-                  <Text
-                    style={[
-                      styles.ageButtonText,
-                      ageGroup === 'minor' && styles.ageButtonTextSelected,
-                    ]}
-                  >
-                    Moins de 18 ans
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.ageButton, ageGroup === 'major' && styles.ageButtonSelected]}
-                  onPress={() => {
-                    setAgeGroup('major');
-                    if (errors.ageGroup) setErrors({ ...errors, ageGroup: undefined });
-                  }}
-                  activeOpacity={0.85}
-                >
-                  <Text
-                    style={[
-                      styles.ageButtonText,
-                      ageGroup === 'major' && styles.ageButtonTextSelected,
-                    ]}
-                  >
-                    18 ans et plus
-                  </Text>
-                </TouchableOpacity>
+                  autoCapitalize="words"
+                  autoCorrect={false}
+                />
+                {errors.firstName && <Text style={styles.errorText}>{errors.firstName}</Text>}
               </View>
-              {errors.ageGroup && <Text style={styles.errorText}>{errors.ageGroup}</Text>}
-            </View>
 
-            {/* Commune */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>
-                Commune <Text style={styles.required}>*</Text>
+              {/* Nom */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>
+                  Nom <Text style={styles.required}>*</Text>
+                </Text>
+                <TextInput
+                  style={[styles.input, errors.lastName && styles.inputError]}
+                  placeholder="Votre nom"
+                  placeholderTextColor={C.textLight}
+                  value={lastName}
+                  onChangeText={(text) => {
+                    setLastName(text);
+                    if (errors.lastName) setErrors({ ...errors, lastName: undefined });
+                  }}
+                  autoCapitalize="words"
+                  autoCorrect={false}
+                />
+                {errors.lastName && <Text style={styles.errorText}>{errors.lastName}</Text>}
+              </View>
+
+              {/* Téléphone */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>
+                  Téléphone <Text style={styles.required}>*</Text>
+                </Text>
+                <TextInput
+                  style={[styles.input, errors.phone && styles.inputError]}
+                  placeholder="06 12 34 56 78"
+                  placeholderTextColor={C.textLight}
+                  value={phone}
+                  onChangeText={(text) => {
+                    setPhone(text);
+                    if (errors.phone) setErrors({ ...errors, phone: undefined });
+                  }}
+                  keyboardType="phone-pad"
+                />
+                {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
+              </View>
+
+              {/* Tranche d'âge */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>
+                  Tranche d'âge <Text style={styles.required}>*</Text>
+                </Text>
+                <View style={styles.ageContainer}>
+                  <TouchableOpacity
+                    style={[styles.ageButton, ageGroup === 'minor' && styles.ageButtonSelected]}
+                    onPress={() => {
+                      setAgeGroup('minor');
+                      if (errors.ageGroup) setErrors({ ...errors, ageGroup: undefined });
+                    }}
+                    activeOpacity={0.85}
+                  >
+                    <Text
+                      style={[
+                        styles.ageButtonText,
+                        ageGroup === 'minor' && styles.ageButtonTextSelected,
+                      ]}
+                    >
+                      Moins de 18 ans
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.ageButton, ageGroup === 'major' && styles.ageButtonSelected]}
+                    onPress={() => {
+                      setAgeGroup('major');
+                      if (errors.ageGroup) setErrors({ ...errors, ageGroup: undefined });
+                    }}
+                    activeOpacity={0.85}
+                  >
+                    <Text
+                      style={[
+                        styles.ageButtonText,
+                        ageGroup === 'major' && styles.ageButtonTextSelected,
+                      ]}
+                    >
+                      18 ans et plus
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+                {errors.ageGroup && <Text style={styles.errorText}>{errors.ageGroup}</Text>}
+              </View>
+
+              {/* Commune */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>
+                  Commune <Text style={styles.required}>*</Text>
+                </Text>
+                <TextInput
+                  style={[styles.input, errors.commune && styles.inputError]}
+                  placeholder="Votre ville"
+                  placeholderTextColor={C.textLight}
+                  value={commune}
+                  onChangeText={(text) => {
+                    setCommune(text);
+                    if (errors.commune) setErrors({ ...errors, commune: undefined });
+                  }}
+                  autoCapitalize="words"
+                  autoCorrect={false}
+                />
+                {errors.commune && <Text style={styles.errorText}>{errors.commune}</Text>}
+              </View>
+
+              {/* Bouton */}
+              <TouchableOpacity
+                style={[styles.button, loading && styles.buttonDisabled]}
+                onPress={handleSubmit}
+                disabled={loading}
+                activeOpacity={0.85}
+              >
+                {loading ? (
+                  <ActivityIndicator color={C.white} />
+                ) : (
+                  <Text style={styles.buttonText}>Rejoindre la bibliothèque</Text>
+                )}
+              </TouchableOpacity>
+
+              <Text style={styles.footerText}>
+                En continuant, vous acceptez nos conditions d'utilisation
               </Text>
-              <TextInput
-                style={[styles.input, errors.commune && styles.inputError]}
-                placeholder="Votre ville"
-                placeholderTextColor={C.textLight}
-                value={commune}
-                onChangeText={(text) => {
-                  setCommune(text);
-                  if (errors.commune) setErrors({ ...errors, commune: undefined });
-                }}
-                autoCapitalize="words"
-                autoCorrect={false}
-              />
-              {errors.commune && <Text style={styles.errorText}>{errors.commune}</Text>}
             </View>
-
-            {/* Bouton */}
-            <TouchableOpacity
-              style={[styles.button, loading && styles.buttonDisabled]}
-              onPress={handleSubmit}
-              disabled={loading}
-              activeOpacity={0.85}
-            >
-              {loading ? (
-                <ActivityIndicator color={C.white} />
-              ) : (
-                <Text style={styles.buttonText}>Rejoindre la bibliothèque</Text>
-              )}
-            </TouchableOpacity>
-
-           
-          </View>
+          </Animated.View>
         </ScrollView>
       </KeyboardAvoidingView>
     </View>
@@ -388,54 +414,72 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   keyboardView: { flex: 1 },
-  scroll: {
-    flex: 1,
-    width: '100%',
-    maxWidth: '100%',
-  },
+  scroll: { flex: 1, width: '100%', maxWidth: '100%' },
 
-  // ═══ DÉCORS DE FOND ═══
+  // ═══ DÉCORS ═══
   decorCircleTopRight: {
     position: 'absolute',
-    width: width * 1.4,
-    height: width * 1.4,
-    borderRadius: width * 0.7,
+    width: width * 1.5,
+    height: width * 1.5,
+    borderRadius: width * 0.75,
+    borderWidth: 2,
+    borderColor: 'rgba(201,169,97,0.22)',
+    top: -width * 0.95,
+    right: -width * 0.65,
+  },
+  decorCircleTopRightInner: {
+    position: 'absolute',
+    width: width * 0.9,
+    height: width * 0.9,
+    borderRadius: width * 0.45,
     borderWidth: 1.5,
-    borderColor: 'rgba(201,169,97,0.20)',
-    top: -width * 0.9,
-    right: -width * 0.6,
+    borderColor: 'rgba(201,169,97,0.15)',
+    top: -width * 0.5,
+    right: -width * 0.35,
   },
   decorCircleMidLeft: {
     position: 'absolute',
-    width: width * 0.7,
-    height: width * 0.7,
-    borderRadius: width * 0.35,
-    borderWidth: 1,
-    borderColor: 'rgba(201,169,97,0.14)',
+    width: width * 0.8,
+    height: width * 0.8,
+    borderRadius: width * 0.4,
+    borderWidth: 1.5,
+    borderColor: 'rgba(201,169,97,0.16)',
     top: height * 0.35,
-    left: -width * 0.3,
+    left: -width * 0.4,
   },
-  decorCircleBottomLeft: {
+  decorCircleBottomRight: {
     position: 'absolute',
-    width: width * 1.1,
-    height: width * 1.1,
-    borderRadius: width * 0.55,
-    borderWidth: 1,
-    borderColor: 'rgba(27,94,63,0.07)',
-    bottom: -width * 0.6,
-    left: -width * 0.35,
+    width: width * 1.2,
+    height: width * 1.2,
+    borderRadius: width * 0.6,
+    borderWidth: 1.5,
+    borderColor: 'rgba(27,94,63,0.08)',
+    bottom: -width * 0.7,
+    right: -width * 0.4,
   },
   decorArc: {
     position: 'absolute',
-    width: width * 0.8,
-    height: width * 0.4,
-    borderTopLeftRadius: width * 0.4,
-    borderTopRightRadius: width * 0.4,
-    borderWidth: 1.5,
+    width: width * 0.85,
+    height: width * 0.42,
+    borderTopLeftRadius: width * 0.42,
+    borderTopRightRadius: width * 0.42,
+    borderWidth: 2,
     borderBottomWidth: 0,
-    borderColor: 'rgba(201,169,97,0.16)',
-    top: width * 0.45,
-    right: -width * 0.25,
+    borderColor: 'rgba(201,169,97,0.18)',
+    top: width * 0.4,
+    right: -width * 0.3,
+  },
+  decorArc2: {
+    position: 'absolute',
+    width: width * 0.5,
+    height: width * 0.25,
+    borderTopLeftRadius: width * 0.25,
+    borderTopRightRadius: width * 0.25,
+    borderWidth: 1,
+    borderBottomWidth: 0,
+    borderColor: 'rgba(201,169,97,0.12)',
+    top: width * 0.5,
+    left: -width * 0.15,
   },
 
   // Contenu
@@ -448,10 +492,7 @@ const styles = StyleSheet.create({
   },
 
   // HEADER
-  header: {
-    alignItems: 'center',
-    marginBottom: 32,
-  },
+  header: { alignItems: 'center', marginBottom: 32 },
   title: {
     fontSize: 32,
     fontWeight: '800',
@@ -469,7 +510,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   emailBadge: {
-    backgroundColor: 'rgba(255,255,255,0.9)',
+    backgroundColor: 'rgba(255,255,255,0.95)',
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 12,
@@ -481,11 +522,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
   },
-  emailBadgeText: {
-    fontSize: 13,
-    color: C.textDark,
-    fontWeight: '600',
-  },
+  emailBadgeText: { fontSize: 13, color: C.textDark, fontWeight: '600' },
 
   // FORMULAIRE
   form: { flex: 1 },
@@ -499,7 +536,7 @@ const styles = StyleSheet.create({
   },
   required: { color: C.gold, fontSize: 15 },
   input: {
-    backgroundColor: 'rgba(255,255,255,0.95)',
+    backgroundColor: 'rgba(255,255,255,0.98)',
     borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: 15,
@@ -513,10 +550,7 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 1,
   },
-  inputError: {
-    borderColor: C.danger,
-    borderWidth: 1.5,
-  },
+  inputError: { borderColor: C.danger, borderWidth: 1.5 },
   errorText: {
     fontSize: 12,
     color: C.danger,
@@ -525,13 +559,10 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
 
-  ageContainer: {
-    flexDirection: 'row',
-    gap: 12,
-  },
+  ageContainer: { flexDirection: 'row', gap: 12 },
   ageButton: {
     flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.95)',
+    backgroundColor: 'rgba(255,255,255,0.98)',
     borderRadius: 14,
     paddingVertical: 18,
     alignItems: 'center',
@@ -555,12 +586,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
   },
-  ageButtonTextSelected: {
-    color: C.textDark,
-    fontWeight: '800',
-  },
+  ageButtonTextSelected: { color: C.textDark, fontWeight: '800' },
 
-  // Bouton
   button: {
     backgroundColor: C.primary,
     borderRadius: 50,
