@@ -187,241 +187,269 @@ export const CompleteProfileScreen = () => {
     }
   };
 
-  return (
+    return (
     <View style={styles.root}>
       <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
 
+      {/* ═══ FOND DÉCORÉ ═══ */}
       <LinearGradient
-        colors={[C.bgTop, C.bgBottom]}
-        style={styles.gradient}
-        start={{ x: 0.2, y: 0 }}
-        end={{ x: 0.8, y: 1 }}
+        colors={['#F5FBF7', '#E8F2EC', '#DDEBE2']}
+        style={StyleSheet.absoluteFillObject}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      />
+
+      {/* Cercles dorés en filigrane */}
+      <View style={styles.decorCircle1} />
+      <View style={styles.decorCircle2} />
+      <View style={styles.decorCircle3} />
+
+      {/* Arc décoratif haut droite */}
+      <View style={styles.decorArc} />
+
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.keyboardView}
       >
-        {/* Motif doré discret (cercle en filigrane) */}
-        <View style={styles.haloTop} />
-
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          style={styles.keyboardView}
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={[
+            styles.scrollContent,
+            {
+              paddingTop: insets.top + 40,
+              paddingBottom: insets.bottom + 60,
+            },
+          ]}
+          showsVerticalScrollIndicator={false}
+          showsHorizontalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          bounces={false}
+          overScrollMode="never"
+          alwaysBounceHorizontal={false}
+          alwaysBounceVertical={false}
         >
-          <ScrollView
-            style={styles.scroll}
-            contentContainerStyle={[
-              styles.scrollContent,
-              {
-                paddingTop: insets.top + 32,
-                paddingBottom: insets.bottom + 60,
-              },
-            ]}
-            showsVerticalScrollIndicator={false}
-            showsHorizontalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-            bounces={false}
-            overScrollMode="never"
-            horizontal={false}
-            alwaysBounceHorizontal={false}
-            alwaysBounceVertical={false}
-          >
-            {/* ═══ HEADER ═══ */}
-            <View style={styles.header}>
-              <Text style={styles.title}>Bienvenue !</Text>
-              <Text style={styles.subtitle}>
-                Plus qu'une étape pour rejoindre la bibliothèque
-              </Text>
+          {/* ═══ HEADER ═══ */}
+          <View style={styles.header}>
+            <Text style={styles.title}>Bienvenue !</Text>
+            <Text style={styles.subtitle}>
+              Plus qu'une étape pour rejoindre la bibliothèque
+            </Text>
 
-              {userEmail ? (
-                <View style={styles.emailBadge}>
-                  <Text style={styles.emailBadgeText}>📧 {userEmail}</Text>
-                </View>
-              ) : null}
+            {userEmail ? (
+              <View style={styles.emailBadge}>
+                <Text style={styles.emailBadgeText}>📧 {userEmail}</Text>
+              </View>
+            ) : null}
+          </View>
+
+          {/* ═══ FORMULAIRE ═══ */}
+          <View style={styles.form}>
+            {/* Prénom */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>
+                Prénom <Text style={styles.required}>*</Text>
+              </Text>
+              <TextInput
+                style={[styles.input, errors.firstName && styles.inputError]}
+                placeholder="Votre prénom"
+                placeholderTextColor={C.textLight}
+                value={firstName}
+                onChangeText={(text) => {
+                  setFirstName(text);
+                  if (errors.firstName) setErrors({ ...errors, firstName: undefined });
+                }}
+                autoCapitalize="words"
+                autoCorrect={false}
+              />
+              {errors.firstName && <Text style={styles.errorText}>{errors.firstName}</Text>}
             </View>
 
-            {/* ═══ FORMULAIRE ═══ */}
-            <View style={styles.form}>
-              {/* Prénom */}
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>
-                  Prénom <Text style={styles.required}>*</Text>
-                </Text>
-                <TextInput
-                  style={[styles.input, errors.firstName && styles.inputError]}
-                  placeholder="Votre prénom"
-                  placeholderTextColor={C.textLight}
-                  value={firstName}
-                  onChangeText={(text) => {
-                    setFirstName(text);
-                    if (errors.firstName) setErrors({ ...errors, firstName: undefined });
-                  }}
-                  autoCapitalize="words"
-                  autoCorrect={false}
-                />
-                {errors.firstName && (
-                  <Text style={styles.errorText}>{errors.firstName}</Text>
-                )}
-              </View>
-
-              {/* Nom */}
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>
-                  Nom <Text style={styles.required}>*</Text>
-                </Text>
-                <TextInput
-                  style={[styles.input, errors.lastName && styles.inputError]}
-                  placeholder="Votre nom"
-                  placeholderTextColor={C.textLight}
-                  value={lastName}
-                  onChangeText={(text) => {
-                    setLastName(text);
-                    if (errors.lastName) setErrors({ ...errors, lastName: undefined });
-                  }}
-                  autoCapitalize="words"
-                  autoCorrect={false}
-                />
-                {errors.lastName && (
-                  <Text style={styles.errorText}>{errors.lastName}</Text>
-                )}
-              </View>
-
-              {/* Téléphone */}
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>
-                  Téléphone <Text style={styles.required}>*</Text>
-                </Text>
-                <TextInput
-                  style={[styles.input, errors.phone && styles.inputError]}
-                  placeholder="06 12 34 56 78"
-                  placeholderTextColor={C.textLight}
-                  value={phone}
-                  onChangeText={(text) => {
-                    setPhone(text);
-                    if (errors.phone) setErrors({ ...errors, phone: undefined });
-                  }}
-                  keyboardType="phone-pad"
-                />
-                {errors.phone && (
-                  <Text style={styles.errorText}>{errors.phone}</Text>
-                )}
-              </View>
-
-              {/* Tranche d'âge — sans icônes */}
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>
-                  Tranche d'âge <Text style={styles.required}>*</Text>
-                </Text>
-                <View style={styles.ageContainer}>
-                  <TouchableOpacity
-                    style={[
-                      styles.ageButton,
-                      ageGroup === 'minor' && styles.ageButtonSelected,
-                    ]}
-                    onPress={() => {
-                      setAgeGroup('minor');
-                      if (errors.ageGroup) setErrors({ ...errors, ageGroup: undefined });
-                    }}
-                    activeOpacity={0.85}
-                  >
-                    <Text
-                      style={[
-                        styles.ageButtonText,
-                        ageGroup === 'minor' && styles.ageButtonTextSelected,
-                      ]}
-                    >
-                      Moins de 18 ans
-                    </Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[
-                      styles.ageButton,
-                      ageGroup === 'major' && styles.ageButtonSelected,
-                    ]}
-                    onPress={() => {
-                      setAgeGroup('major');
-                      if (errors.ageGroup) setErrors({ ...errors, ageGroup: undefined });
-                    }}
-                    activeOpacity={0.85}
-                  >
-                    <Text
-                      style={[
-                        styles.ageButtonText,
-                        ageGroup === 'major' && styles.ageButtonTextSelected,
-                      ]}
-                    >
-                      18 ans et plus
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-                {errors.ageGroup && (
-                  <Text style={styles.errorText}>{errors.ageGroup}</Text>
-                )}
-              </View>
-
-              {/* Commune */}
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>
-                  Commune <Text style={styles.required}>*</Text>
-                </Text>
-                <TextInput
-                  style={[styles.input, errors.commune && styles.inputError]}
-                  placeholder="Votre ville"
-                  placeholderTextColor={C.textLight}
-                  value={commune}
-                  onChangeText={(text) => {
-                    setCommune(text);
-                    if (errors.commune) setErrors({ ...errors, commune: undefined });
-                  }}
-                  autoCapitalize="words"
-                  autoCorrect={false}
-                />
-                {errors.commune && (
-                  <Text style={styles.errorText}>{errors.commune}</Text>
-                )}
-              </View>
-
-              {/* Bouton */}
-              <TouchableOpacity
-                style={[styles.button, loading && styles.buttonDisabled]}
-                onPress={handleSubmit}
-                disabled={loading}
-                activeOpacity={0.85}
-              >
-                {loading ? (
-                  <ActivityIndicator color={C.white} />
-                ) : (
-                  <Text style={styles.buttonText}>Rejoindre la bibliothèque</Text>
-                )}
-              </TouchableOpacity>
-
-              <Text style={styles.footerText}>
-                En continuant, vous acceptez nos conditions d'utilisation
+            {/* Nom */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>
+                Nom <Text style={styles.required}>*</Text>
               </Text>
+              <TextInput
+                style={[styles.input, errors.lastName && styles.inputError]}
+                placeholder="Votre nom"
+                placeholderTextColor={C.textLight}
+                value={lastName}
+                onChangeText={(text) => {
+                  setLastName(text);
+                  if (errors.lastName) setErrors({ ...errors, lastName: undefined });
+                }}
+                autoCapitalize="words"
+                autoCorrect={false}
+              />
+              {errors.lastName && <Text style={styles.errorText}>{errors.lastName}</Text>}
             </View>
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </LinearGradient>
+
+            {/* Téléphone */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>
+                Téléphone <Text style={styles.required}>*</Text>
+              </Text>
+              <TextInput
+                style={[styles.input, errors.phone && styles.inputError]}
+                placeholder="06 12 34 56 78"
+                placeholderTextColor={C.textLight}
+                value={phone}
+                onChangeText={(text) => {
+                  setPhone(text);
+                  if (errors.phone) setErrors({ ...errors, phone: undefined });
+                }}
+                keyboardType="phone-pad"
+              />
+              {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
+            </View>
+
+            {/* Tranche d'âge */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>
+                Tranche d'âge <Text style={styles.required}>*</Text>
+              </Text>
+              <View style={styles.ageContainer}>
+                <TouchableOpacity
+                  style={[styles.ageButton, ageGroup === 'minor' && styles.ageButtonSelected]}
+                  onPress={() => {
+                    setAgeGroup('minor');
+                    if (errors.ageGroup) setErrors({ ...errors, ageGroup: undefined });
+                  }}
+                  activeOpacity={0.85}
+                >
+                  <Text
+                    style={[
+                      styles.ageButtonText,
+                      ageGroup === 'minor' && styles.ageButtonTextSelected,
+                    ]}
+                  >
+                    Moins de 18 ans
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.ageButton, ageGroup === 'major' && styles.ageButtonSelected]}
+                  onPress={() => {
+                    setAgeGroup('major');
+                    if (errors.ageGroup) setErrors({ ...errors, ageGroup: undefined });
+                  }}
+                  activeOpacity={0.85}
+                >
+                  <Text
+                    style={[
+                      styles.ageButtonText,
+                      ageGroup === 'major' && styles.ageButtonTextSelected,
+                    ]}
+                  >
+                    18 ans et plus
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              {errors.ageGroup && <Text style={styles.errorText}>{errors.ageGroup}</Text>}
+            </View>
+
+            {/* Commune */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>
+                Commune <Text style={styles.required}>*</Text>
+              </Text>
+              <TextInput
+                style={[styles.input, errors.commune && styles.inputError]}
+                placeholder="Votre ville"
+                placeholderTextColor={C.textLight}
+                value={commune}
+                onChangeText={(text) => {
+                  setCommune(text);
+                  if (errors.commune) setErrors({ ...errors, commune: undefined });
+                }}
+                autoCapitalize="words"
+                autoCorrect={false}
+              />
+              {errors.commune && <Text style={styles.errorText}>{errors.commune}</Text>}
+            </View>
+
+            {/* Bouton */}
+            <TouchableOpacity
+              style={[styles.button, loading && styles.buttonDisabled]}
+              onPress={handleSubmit}
+              disabled={loading}
+              activeOpacity={0.85}
+            >
+              {loading ? (
+                <ActivityIndicator color={C.white} />
+              ) : (
+                <Text style={styles.buttonText}>Rejoindre la bibliothèque</Text>
+              )}
+            </TouchableOpacity>
+
+            <Text style={styles.footerText}>
+              En continuant, vous acceptez nos conditions d'utilisation
+            </Text>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: C.bgTop, overflow: 'hidden'},
-  gradient: { flex: 1 },
+  root: {
+    flex: 1,
+    backgroundColor: C.bgTop,
+    overflow: 'hidden',
+  },
   keyboardView: { flex: 1 },
-  scroll: { flex: 1, width: '100%', maxWidth: '100%'},
-
-  // Motif discret
-  haloTop: {
-    position: 'absolute',
-    width: width * 1.2,
-    height: width * 1.2,
-    borderRadius: width * 0.6,
-    borderWidth: 2,
-    borderColor: 'rgba(201,169,97,0.15)',
-    top: -width * 0.75,
-    right: -width * 0.45,
+  scroll: {
+    flex: 1,
+    width: '100%',
+    maxWidth: '100%',
   },
 
-  // Conteneur
+  // ═══ DÉCORS DE FOND ═══
+  decorCircle1: {
+    position: 'absolute',
+    width: width * 1.3,
+    height: width * 1.3,
+    borderRadius: width * 0.65,
+    borderWidth: 1.5,
+    borderColor: 'rgba(201,169,97,0.18)',
+    top: -width * 0.85,
+    right: -width * 0.5,
+  },
+  decorCircle2: {
+    position: 'absolute',
+    width: width * 0.6,
+    height: width * 0.6,
+    borderRadius: width * 0.3,
+    borderWidth: 1,
+    borderColor: 'rgba(201,169,97,0.12)',
+    top: insetsTop() + 40,
+    left: -width * 0.25,
+  },
+  decorCircle3: {
+    position: 'absolute',
+    width: width * 0.9,
+    height: width * 0.9,
+    borderRadius: width * 0.45,
+    borderWidth: 1,
+    borderColor: 'rgba(27,94,63,0.06)',
+    bottom: -width * 0.45,
+    left: -width * 0.3,
+  },
+  decorArc: {
+    position: 'absolute',
+    width: width * 0.7,
+    height: width * 0.35,
+    borderTopLeftRadius: width * 0.35,
+    borderTopRightRadius: width * 0.35,
+    borderWidth: 1.5,
+    borderBottomWidth: 0,
+    borderColor: 'rgba(201,169,97,0.15)',
+    top: width * 0.35,
+    right: -width * 0.2,
+  },
+
+  // Contenu
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 22,
@@ -430,16 +458,16 @@ const styles = StyleSheet.create({
     width: '100%',
   },
 
-  // ═══ HEADER ═══
+  // HEADER
   header: {
     alignItems: 'center',
-    marginBottom: 28,
+    marginBottom: 32,
   },
   title: {
-    fontSize: 30,
+    fontSize: 32,
     fontWeight: '800',
     color: C.textDark,
-    marginBottom: 8,
+    marginBottom: 10,
     letterSpacing: 0.3,
     textAlign: 'center',
   },
@@ -448,16 +476,21 @@ const styles = StyleSheet.create({
     color: C.textMid,
     textAlign: 'center',
     lineHeight: 20,
-    marginBottom: 16,
-    paddingHorizontal: 12,
+    marginBottom: 18,
+    paddingHorizontal: 16,
   },
   emailBadge: {
-    backgroundColor: C.goldSoft,
+    backgroundColor: 'rgba(255,255,255,0.85)',
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: 'rgba(201,169,97,0.3)',
+    shadowColor: 'rgba(15,61,40,0.06)',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 8,
+    elevation: 2,
   },
   emailBadgeText: {
     fontSize: 13,
@@ -465,7 +498,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  // ═══ FORMULAIRE ═══
+  // FORMULAIRE
   form: { flex: 1 },
   inputGroup: { marginBottom: 18 },
   label: {
@@ -477,22 +510,23 @@ const styles = StyleSheet.create({
   },
   required: { color: C.gold, fontSize: 15 },
   input: {
-    backgroundColor: C.inputBg,
+    backgroundColor: 'rgba(255,255,255,0.95)',
     borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: 15,
     fontSize: 16,
     color: C.textDark,
-    borderWidth: 1.5,
-    borderColor: C.inputBorder,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(201,169,97,0.2)',
+    shadowColor: 'rgba(15,61,40,0.05)',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 6,
     elevation: 1,
   },
   inputError: {
     borderColor: C.danger,
+    borderWidth: 1.5,
   },
   errorText: {
     fontSize: 12,
@@ -502,25 +536,29 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
 
-  // Tranche d'âge — sans icônes
   ageContainer: {
     flexDirection: 'row',
     gap: 12,
   },
   ageButton: {
     flex: 1,
-    backgroundColor: C.inputBg,
+    backgroundColor: 'rgba(255,255,255,0.95)',
     borderRadius: 14,
     paddingVertical: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1.5,
-    borderColor: C.inputBorder,
+    borderWidth: 1,
+    borderColor: 'rgba(201,169,97,0.2)',
+    shadowColor: 'rgba(15,61,40,0.05)',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 6,
+    elevation: 1,
   },
   ageButtonSelected: {
     borderColor: C.gold,
     borderWidth: 2,
-    backgroundColor: 'rgba(201,169,97,0.10)',
+    backgroundColor: 'rgba(201,169,97,0.12)',
   },
   ageButtonText: {
     fontSize: 14,
@@ -541,9 +579,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 12,
     shadowColor: C.primary,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
-    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.28,
+    shadowRadius: 16,
     elevation: 6,
   },
   buttonDisabled: { opacity: 0.6 },
@@ -562,3 +600,8 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
 });
+
+// Helper : insets top (utilise 60 par défaut si insets indisponible en dehors du composant)
+function insetsTop() {
+  return 60;
+}
