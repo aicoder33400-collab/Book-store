@@ -22,23 +22,27 @@ html = html.replace(
   '<title>RMP Maktaba — Bibliothèque</title>'
 );
 
-// 2) Fix zoom mobile : empêcher le zoom utilisateur
+// 2) Fix zoom mobile + fond vert + blocage du scroll au-delà
 html = html.replace(
   /<meta name="viewport"[^>]*>/,
-  '<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, shrink-to-fit=no" />'
-);
-
-// 3) Ajouter les meta tags PWA juste avant </head>
-const pwaTags = `
-    <!-- PWA Meta Tags -->
+  `<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, shrink-to-fit=no" />
     <style>
       html, body, #root {
         background-color: #0F3D28 !important;
         overscroll-behavior: none;
         margin: 0;
         padding: 0;
+        height: 100%;
+        min-height: 100%;
+        overflow: hidden;
+        -webkit-overflow-scrolling: touch;
       }
-    </style>
+    </style>`
+);
+
+// 3) Ajouter les meta tags PWA juste avant </head>
+const pwaTags = `
+    <!-- PWA Meta Tags -->
     <meta name="description" content="Bibliothèque de la mosquée RMP Maktaba" />
     <meta name="theme-color" content="#1B5E3F" />
     <meta name="apple-mobile-web-app-capable" content="yes" />

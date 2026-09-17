@@ -263,10 +263,7 @@ const AuthStack = () => {
             : undefined
         }
         options={{
-          title: 'Compléter votre profil',
-          headerBackTitle: 'Retour',
-          headerStyle: { backgroundColor: colors.primary },
-          headerTintColor: colors.text.white,
+           headerShown: false,
         }}
       />
     </Stack.Navigator>
