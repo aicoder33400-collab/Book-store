@@ -28,7 +28,7 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "scheme": "bookstore",
+    "scheme": "rmpmaktaba",
     "extra": {
       "googleClientId": "702646842121-obbkdc95pni8m8akr6lh7rbsbv8dk8p4.apps.googleusercontent.com",
       "eas": {

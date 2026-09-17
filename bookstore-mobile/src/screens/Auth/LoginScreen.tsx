@@ -18,6 +18,7 @@ import { RootStackParamList } from '../../types/navigation';
 import * as Linking from 'expo-linking';
 import Constants from 'expo-constants';
 import { GoogleAuthService } from '../../services/google-auth.service';
+import { authService } from '../../services/auth.service';
 
 const { width, height } = Dimensions.get('window');
 
@@ -25,13 +26,11 @@ type LoginScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Login'
 
 const GOOGLE_CLIENT_ID = Constants.expoConfig?.extra?.googleClientId || '';
 
-// URL du backend selon la plateforme
 const BACKEND_URL =
   Platform.OS === 'web'
     ? (typeof window !== 'undefined' ? window.location.origin : 'https://51-77-244-126.sslip.io')
     : (process.env.EXPO_PUBLIC_API_URL || 'https://51-77-244-126.sslip.io');
 
-// 🕌 Palette cohérente
 const C = {
   bgDark: '#0F3D28',
   bgMid: '#1B5E3F',
@@ -53,13 +52,84 @@ export const LoginScreen = () => {
 
   // 🔥 Retour OAuth sur WEB : détecter le hash au montage
   useEffect(() => {
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      const hash = window.location.hash;
-      if (hash && hash.includes('id_token')) {
-        console.log('🔐 Retour OAuth détecté sur web, traitement...');
-        handleGoogleLogin();
-      }
+    if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+
+    const hash = window.location.hash;
+    if (!hash || !hash.includes('id_token')) return;
+
+    console.log('🔐 Retour OAuth détecté sur web, traitement...');
+    setGoogleLoading(true);
+
+    const params = new URLSearchParams(hash.substring(1));
+    const googleToken = params.get('id_token');
+
+    if (!googleToken) {
+      console.error('❌ Pas de id_token dans le hash');
+      setGoogleLoading(false);
+      return;
     }
+
+    // Nettoyer l'URL immédiatement
+    window.history.replaceState({}, document.title, window.location.pathname);
+
+    (async () => {
+      try {
+        const checkResult = await authService.checkGoogleUser(googleToken);
+        console.log('📱 Résultat check:', checkResult);
+
+        if (!checkResult.exists || checkResult.needsProfile) {
+          console.log('🚀 Redirection vers CompleteProfile');
+          setTimeout(() => {
+            navigation.navigate('CompleteProfile', {
+              googleToken,
+              email: checkResult.email || '',
+              name: checkResult.name || '',
+              avatar: checkResult.avatar || '',
+            });
+            setGoogleLoading(false);
+          }, 100);
+        } else {
+          console.log('🎯 Connexion directe');
+          const result = await authService.loginWithGoogle(googleToken);
+
+          // 🔥 Normaliser l'objet User pour matcher le type complet
+          const user = {
+            id: result.user.id,
+            name: result.user.name,
+            email: result.user.email,
+            phone: result.user.phone || null,
+            role: result.user.role || 'USER',
+            authProvider: 'google' as const,
+            avatar: result.user.avatar || null,
+            emailVerified: true,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            lastLoginAt: null,
+            googleId: null,
+            firstName: result.user.firstName || null,
+            lastName: result.user.lastName || null,
+            age: result.user.age || null,
+            commune: result.user.commune || null,
+            isProfileComplete: result.user.isProfileComplete ?? true,
+          };
+
+          setUser(user as any);
+          setToken(result.token);
+
+          setTimeout(() => {
+            navigation.dispatch(
+              CommonActions.reset({
+                index: 0,
+                routes: [{ name: 'Main' }],
+              })
+            );
+          }, 100);
+        }
+      } catch (error: any) {
+        console.error('❌ Erreur traitement OAuth:', error);
+        setGoogleLoading(false);
+      }
+    })();
   }, []);
 
   // 🔥 Deep link natif iOS/Android
@@ -84,7 +154,6 @@ export const LoginScreen = () => {
     if (url && url.includes('token=')) {
       const token = url.split('token=')[1]?.split('&')[0];
       if (token) {
-        console.log('✅ Token reçu via deep link');
         setToken(token);
         Alert.alert('Connecté !', 'Vous êtes connecté avec succès');
         navigation.dispatch(
@@ -100,29 +169,8 @@ export const LoginScreen = () => {
   const handleGoogleLogin = async () => {
     try {
       setGoogleLoading(true);
-
-      const result = await GoogleAuthService.login();
-      console.log('📱 Résultat Google login:', result);
-
-      if (result?.needsProfile) {
-        navigation.navigate('CompleteProfile', {
-          googleToken: result.googleToken,
-          email: result.userData?.email || '',
-          name: result.userData?.name || '',
-          avatar: result.userData?.avatar || '',
-        });
-      } else if (result?.user && result?.token) {
-        setUser(result.user);
-        setToken(result.token);
-        navigation.dispatch(
-          CommonActions.reset({
-            index: 0,
-            routes: [{ name: 'Main' }],
-          })
-        );
-      }
-
-      setGoogleLoading(false);
+      await GoogleAuthService.login();
+      // La redirection va décharger la page
     } catch (error: any) {
       console.error('❌ Erreur Google:', error);
       if (Platform.OS === 'web') {
@@ -188,7 +236,6 @@ export const LoginScreen = () => {
         <View style={styles.haloBottom} />
 
         <View style={styles.content}>
-          {/* ─── LOGO ─── */}
           <View style={styles.logoSection}>
             <View style={styles.logoRing}>
               <LinearGradient
@@ -204,7 +251,6 @@ export const LoginScreen = () => {
             <Text style={styles.brandSub}>Bibliothèque de la mosquée</Text>
           </View>
 
-          {/* ─── BOUTON GOOGLE ─── */}
           <View style={styles.actions}>
             <TouchableOpacity
               style={styles.googleBtn}
@@ -224,7 +270,6 @@ export const LoginScreen = () => {
               )}
             </TouchableOpacity>
 
-            {/* Lien dev discret */}
             <TouchableOpacity
               style={styles.devToggle}
               onPress={() => setShowDev(!showDev)}
@@ -266,7 +311,6 @@ export const LoginScreen = () => {
             )}
           </View>
 
-          {/* ─── FOOTER ─── */}
           <View style={styles.footer}>
             <View style={styles.footerLine} />
             <Text style={styles.footerText}>
@@ -312,10 +356,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
 
-  logoSection: {
-    alignItems: 'center',
-    marginTop: height * 0.06,
-  },
+  logoSection: { alignItems: 'center', marginTop: height * 0.06 },
   logoRing: {
     width: 110,
     height: 110,
@@ -353,10 +394,7 @@ const styles = StyleSheet.create({
     fontWeight: '400',
   },
 
-  actions: {
-    width: '100%',
-    alignItems: 'center',
-  },
+  actions: { width: '100%', alignItems: 'center' },
   googleBtn: {
     width: '100%',
     maxWidth: 380,
@@ -382,11 +420,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: 12,
   },
-  gIcon: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#4285F4',
-  },
+  gIcon: { fontSize: 16, fontWeight: 'bold', color: '#4285F4' },
   gText: {
     fontSize: 16,
     fontWeight: '600',
@@ -394,26 +428,15 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
 
-  devToggle: {
-    marginTop: 22,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-  },
+  devToggle: { marginTop: 22, paddingVertical: 6, paddingHorizontal: 12 },
   devToggleText: {
     fontSize: 12,
     color: 'rgba(255,255,255,0.35)',
     letterSpacing: 0.5,
     textDecorationLine: 'underline',
   },
-  devPanel: {
-    marginTop: 14,
-    width: '100%',
-    maxWidth: 380,
-  },
-  devRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
+  devPanel: { marginTop: 14, width: '100%', maxWidth: 380 },
+  devRow: { flexDirection: 'row', gap: 8 },
   devBtn: {
     flex: 1,
     paddingVertical: 12,
@@ -430,9 +453,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
 
-  footer: {
-    alignItems: 'center',
-  },
+  footer: { alignItems: 'center' },
   footerLine: {
     width: 40,
     height: 2,
