@@ -21,22 +21,29 @@ import { GoogleAuthService } from '../../services/google-auth.service';
 
 const { width } = Dimensions.get('window');
 
-// 🕌 Palette islamique lumineuse
+// 🕌 Palette islamique CLAIRE
 const C = {
-  bgDark: '#0F3D28',
-  bgMid: '#1B5E3F',
-  bgLight: '#2D7A55',
+  // Fond : vert très clair / crème
+  bgTop: '#F0F7F2',
+  bgBottom: '#E5F0E8',
+  // Vert émeraude (accents)
+  primary: '#1B5E3F',
+  primaryLight: '#2D7A55',
+  // Or (accent chaud)
   gold: '#C9A961',
   goldLight: '#E5C989',
-  goldSoft: 'rgba(201,169,97,0.15)',
-  white: '#FFFFFF',
-  whiteSoft: 'rgba(255,255,255,0.92)',
-  whiteFaint: 'rgba(255,255,255,0.65)',
-  inputBg: '#FFFFFF',
-  inputBorder: 'rgba(201,169,97,0.25)',
+  goldSoft: 'rgba(201,169,97,0.12)',
+  // Textes
   textDark: '#0F3D28',
   textMid: '#4A6B5A',
-  danger: '#E86B6B',
+  textLight: '#7A9084',
+  white: '#FFFFFF',
+  // Inputs
+  inputBg: '#FFFFFF',
+  inputBorder: '#D9E5DD',
+  inputBorderFocus: '#C9A961',
+  // Erreurs
+  danger: '#B53A3A',
 };
 
 export const CompleteProfileScreen = () => {
@@ -67,7 +74,6 @@ export const CompleteProfileScreen = () => {
     const newErrors: typeof errors = {};
     let isValid = true;
 
-    // Prénom
     if (!firstName.trim()) {
       newErrors.firstName = 'Le prénom est obligatoire';
       isValid = false;
@@ -76,7 +82,6 @@ export const CompleteProfileScreen = () => {
       isValid = false;
     }
 
-    // Nom
     if (!lastName.trim()) {
       newErrors.lastName = 'Le nom est obligatoire';
       isValid = false;
@@ -85,9 +90,7 @@ export const CompleteProfileScreen = () => {
       isValid = false;
     }
 
-    // Téléphone
     const cleanPhone = phone.replace(/[\s\-\.\(\)]/g, '');
-
     if (!cleanPhone) {
       newErrors.phone = 'Le téléphone est obligatoire';
       isValid = false;
@@ -105,13 +108,11 @@ export const CompleteProfileScreen = () => {
       isValid = false;
     }
 
-    // Âge
     if (!ageGroup) {
       newErrors.ageGroup = 'Veuillez sélectionner votre tranche d\'âge';
       isValid = false;
     }
 
-    // Commune
     if (!commune.trim()) {
       newErrors.commune = 'La commune est obligatoire';
       isValid = false;
@@ -188,17 +189,16 @@ export const CompleteProfileScreen = () => {
 
   return (
     <View style={styles.root}>
-      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+      <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
 
       <LinearGradient
-        colors={[C.bgDark, C.bgMid, C.bgLight]}
+        colors={[C.bgTop, C.bgBottom]}
         style={styles.gradient}
-        start={{ x: 0.15, y: 0 }}
-        end={{ x: 0.85, y: 1 }}
+        start={{ x: 0.2, y: 0 }}
+        end={{ x: 0.8, y: 1 }}
       >
-        {/* Motifs décoratifs */}
+        {/* Motif doré discret (cercle en filigrane) */}
         <View style={styles.haloTop} />
-        <View style={styles.haloBottom} />
 
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -210,19 +210,20 @@ export const CompleteProfileScreen = () => {
               styles.scrollContent,
               {
                 paddingTop: insets.top + 32,
-                paddingBottom: insets.bottom + 40,
+                paddingBottom: insets.bottom + 60,
               },
             ]}
             showsVerticalScrollIndicator={false}
+            showsHorizontalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
             bounces={false}
             overScrollMode="never"
+            horizontal={false}
+            alwaysBounceHorizontal={false}
+            alwaysBounceVertical={false}
           >
             {/* ═══ HEADER ═══ */}
             <View style={styles.header}>
-              <View style={styles.iconWrap}>
-                <Text style={styles.iconEmoji}>🕌</Text>
-              </View>
               <Text style={styles.title}>Bienvenue !</Text>
               <Text style={styles.subtitle}>
                 Plus qu'une étape pour rejoindre la bibliothèque
@@ -230,8 +231,7 @@ export const CompleteProfileScreen = () => {
 
               {userEmail ? (
                 <View style={styles.emailBadge}>
-                  <Text style={styles.emailBadgeLabel}>Compte Google</Text>
-                  <Text style={styles.emailBadgeValue}>📧 {userEmail}</Text>
+                  <Text style={styles.emailBadgeText}>📧 {userEmail}</Text>
                 </View>
               ) : null}
             </View>
@@ -245,8 +245,8 @@ export const CompleteProfileScreen = () => {
                 </Text>
                 <TextInput
                   style={[styles.input, errors.firstName && styles.inputError]}
-                  placeholder="Ex : Mouhcine"
-                  placeholderTextColor="#A0AFA6"
+                  placeholder="Votre prénom"
+                  placeholderTextColor={C.textLight}
                   value={firstName}
                   onChangeText={(text) => {
                     setFirstName(text);
@@ -256,7 +256,7 @@ export const CompleteProfileScreen = () => {
                   autoCorrect={false}
                 />
                 {errors.firstName && (
-                  <Text style={styles.errorText}>⚠ {errors.firstName}</Text>
+                  <Text style={styles.errorText}>{errors.firstName}</Text>
                 )}
               </View>
 
@@ -267,8 +267,8 @@ export const CompleteProfileScreen = () => {
                 </Text>
                 <TextInput
                   style={[styles.input, errors.lastName && styles.inputError]}
-                  placeholder="Ex : Ahbaiz"
-                  placeholderTextColor="#A0AFA6"
+                  placeholder="Votre nom"
+                  placeholderTextColor={C.textLight}
                   value={lastName}
                   onChangeText={(text) => {
                     setLastName(text);
@@ -278,7 +278,7 @@ export const CompleteProfileScreen = () => {
                   autoCorrect={false}
                 />
                 {errors.lastName && (
-                  <Text style={styles.errorText}>⚠ {errors.lastName}</Text>
+                  <Text style={styles.errorText}>{errors.lastName}</Text>
                 )}
               </View>
 
@@ -290,7 +290,7 @@ export const CompleteProfileScreen = () => {
                 <TextInput
                   style={[styles.input, errors.phone && styles.inputError]}
                   placeholder="06 12 34 56 78"
-                  placeholderTextColor="#A0AFA6"
+                  placeholderTextColor={C.textLight}
                   value={phone}
                   onChangeText={(text) => {
                     setPhone(text);
@@ -299,11 +299,11 @@ export const CompleteProfileScreen = () => {
                   keyboardType="phone-pad"
                 />
                 {errors.phone && (
-                  <Text style={styles.errorText}>⚠ {errors.phone}</Text>
+                  <Text style={styles.errorText}>{errors.phone}</Text>
                 )}
               </View>
 
-              {/* Tranche d'âge */}
+              {/* Tranche d'âge — sans icônes */}
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>
                   Tranche d'âge <Text style={styles.required}>*</Text>
@@ -320,7 +320,6 @@ export const CompleteProfileScreen = () => {
                     }}
                     activeOpacity={0.85}
                   >
-                    <Text style={styles.ageEmoji}>🧒</Text>
                     <Text
                       style={[
                         styles.ageButtonText,
@@ -329,11 +328,6 @@ export const CompleteProfileScreen = () => {
                     >
                       Moins de 18 ans
                     </Text>
-                    {ageGroup === 'minor' && (
-                      <View style={styles.checkmark}>
-                        <Text style={styles.checkmarkText}>✓</Text>
-                      </View>
-                    )}
                   </TouchableOpacity>
 
                   <TouchableOpacity
@@ -347,7 +341,6 @@ export const CompleteProfileScreen = () => {
                     }}
                     activeOpacity={0.85}
                   >
-                    <Text style={styles.ageEmoji}>👨</Text>
                     <Text
                       style={[
                         styles.ageButtonText,
@@ -356,15 +349,10 @@ export const CompleteProfileScreen = () => {
                     >
                       18 ans et plus
                     </Text>
-                    {ageGroup === 'major' && (
-                      <View style={styles.checkmark}>
-                        <Text style={styles.checkmarkText}>✓</Text>
-                      </View>
-                    )}
                   </TouchableOpacity>
                 </View>
                 {errors.ageGroup && (
-                  <Text style={styles.errorText}>⚠ {errors.ageGroup}</Text>
+                  <Text style={styles.errorText}>{errors.ageGroup}</Text>
                 )}
               </View>
 
@@ -375,8 +363,8 @@ export const CompleteProfileScreen = () => {
                 </Text>
                 <TextInput
                   style={[styles.input, errors.commune && styles.inputError]}
-                  placeholder="Ex : Paris"
-                  placeholderTextColor="#A0AFA6"
+                  placeholder="Votre ville"
+                  placeholderTextColor={C.textLight}
                   value={commune}
                   onChangeText={(text) => {
                     setCommune(text);
@@ -386,7 +374,7 @@ export const CompleteProfileScreen = () => {
                   autoCorrect={false}
                 />
                 {errors.commune && (
-                  <Text style={styles.errorText}>⚠ {errors.commune}</Text>
+                  <Text style={styles.errorText}>{errors.commune}</Text>
                 )}
               </View>
 
@@ -398,7 +386,7 @@ export const CompleteProfileScreen = () => {
                 activeOpacity={0.85}
               >
                 {loading ? (
-                  <ActivityIndicator color={C.bgDark} />
+                  <ActivityIndicator color={C.white} />
                 ) : (
                   <Text style={styles.buttonText}>Rejoindre la bibliothèque</Text>
                 )}
@@ -416,34 +404,24 @@ export const CompleteProfileScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: C.bgDark },
+  root: { flex: 1, backgroundColor: C.bgTop, overflow: 'hidden'},
   gradient: { flex: 1 },
   keyboardView: { flex: 1 },
-  scroll: { flex: 1 },
+  scroll: { flex: 1, width: '100%', maxWidth: '100%'},
 
-  // Motifs
+  // Motif discret
   haloTop: {
-    position: 'absolute',
-    width: width * 1.1,
-    height: width * 1.1,
-    borderRadius: width * 0.55,
-    borderWidth: 1,
-    borderColor: 'rgba(201,169,97,0.10)',
-    top: -width * 0.55,
-    right: -width * 0.35,
-  },
-  haloBottom: {
     position: 'absolute',
     width: width * 1.2,
     height: width * 1.2,
     borderRadius: width * 0.6,
-    borderWidth: 1,
-    borderColor: 'rgba(201,169,97,0.07)',
-    bottom: -width * 0.6,
-    left: -width * 0.4,
+    borderWidth: 2,
+    borderColor: 'rgba(201,169,97,0.15)',
+    top: -width * 0.75,
+    right: -width * 0.45,
   },
 
-  // Conteneur principal
+  // Conteneur
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 22,
@@ -457,31 +435,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 28,
   },
-  iconWrap: {
-    width: 84,
-    height: 84,
-    borderRadius: 42,
-    borderWidth: 2,
-    borderColor: 'rgba(201,169,97,0.5)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-    backgroundColor: 'rgba(201,169,97,0.08)',
-  },
-  iconEmoji: { fontSize: 42 },
   title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: C.white,
-    marginBottom: 6,
+    fontSize: 30,
+    fontWeight: '800',
+    color: C.textDark,
+    marginBottom: 8,
     letterSpacing: 0.3,
+    textAlign: 'center',
   },
   subtitle: {
     fontSize: 14,
-    color: C.whiteFaint,
+    color: C.textMid,
     textAlign: 'center',
     lineHeight: 20,
     marginBottom: 16,
+    paddingHorizontal: 12,
   },
   emailBadge: {
     backgroundColor: C.goldSoft,
@@ -490,33 +458,24 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: 'rgba(201,169,97,0.3)',
-    alignItems: 'center',
   },
-  emailBadgeLabel: {
-    fontSize: 10,
-    color: C.goldLight,
-    letterSpacing: 1,
-    fontWeight: '600',
-    marginBottom: 2,
-    textTransform: 'uppercase',
-  },
-  emailBadgeValue: {
+  emailBadgeText: {
     fontSize: 13,
-    color: C.goldLight,
+    color: C.textDark,
     fontWeight: '600',
   },
 
   // ═══ FORMULAIRE ═══
   form: { flex: 1 },
-  inputGroup: { marginBottom: 16 },
+  inputGroup: { marginBottom: 18 },
   label: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '700',
-    color: C.whiteSoft,
+    color: C.textDark,
     marginBottom: 8,
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
   },
-  required: { color: C.gold, fontSize: 14 },
+  required: { color: C.gold, fontSize: 15 },
   input: {
     backgroundColor: C.inputBg,
     borderRadius: 14,
@@ -525,7 +484,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: C.textDark,
     borderWidth: 1.5,
-    borderColor: 'transparent',
+    borderColor: C.inputBorder,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
   },
   inputError: {
     borderColor: C.danger,
@@ -538,7 +502,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
 
-  // Tranche d'âge
+  // Tranche d'âge — sans icônes
   ageContainer: {
     flexDirection: 'row',
     gap: 12,
@@ -546,75 +510,52 @@ const styles = StyleSheet.create({
   ageButton: {
     flex: 1,
     backgroundColor: C.inputBg,
-    borderRadius: 16,
+    borderRadius: 14,
     paddingVertical: 18,
-    paddingHorizontal: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: 'transparent',
-    position: 'relative',
+    borderWidth: 1.5,
+    borderColor: C.inputBorder,
   },
   ageButtonSelected: {
     borderColor: C.gold,
-    backgroundColor: 'rgba(201,169,97,0.12)',
+    borderWidth: 2,
+    backgroundColor: 'rgba(201,169,97,0.10)',
   },
-  ageEmoji: { fontSize: 26, marginBottom: 4 },
   ageButtonText: {
-    fontSize: 12,
+    fontSize: 14,
     color: C.textMid,
     fontWeight: '600',
     textAlign: 'center',
   },
   ageButtonTextSelected: {
-    color: C.goldLight,
-    fontWeight: '700',
-  },
-  checkmark: {
-    position: 'absolute',
-    top: -8,
-    right: -8,
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    backgroundColor: C.gold,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: C.gold,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.5,
-    shadowRadius: 6,
-    elevation: 4,
-  },
-  checkmarkText: {
-    color: C.bgDark,
-    fontSize: 14,
-    fontWeight: '900',
+    color: C.textDark,
+    fontWeight: '800',
   },
 
   // Bouton
   button: {
-    backgroundColor: C.gold,
+    backgroundColor: C.primary,
     borderRadius: 50,
     paddingVertical: 18,
     alignItems: 'center',
     marginTop: 12,
-    shadowColor: C.gold,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 16,
-    elevation: 8,
+    shadowColor: C.primary,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 14,
+    elevation: 6,
   },
   buttonDisabled: { opacity: 0.6 },
   buttonText: {
-    color: C.bgDark,
+    color: C.white,
     fontSize: 16,
-    fontWeight: '800',
+    fontWeight: '700',
     letterSpacing: 0.4,
   },
   footerText: {
     fontSize: 11,
-    color: 'rgba(255,255,255,0.35)',
+    color: C.textLight,
     textAlign: 'center',
     marginTop: 18,
     marginBottom: 8,
