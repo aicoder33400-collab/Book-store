@@ -25,7 +25,8 @@ export const RoleBasedNavigator = () => {
 export { AppNavigator };
 
 const MainTabs = () => {
-  const { user } = useAuthStore();
+  // 🔥 Sélecteurs Zustand (évite les re-renders manqués)
+  const user = useAuthStore((s) => s.user);
   const isAdmin = user?.role === 'ADMIN';
   const isStaff = user?.role === 'STAFF';
 
@@ -110,7 +111,20 @@ const AdminPlaceholder = () => {
 };
 
 const AppNavigator = () => {
-  const { user, isLoading, needsProfile, googleToken, googleUserData } = useAuthStore();
+  // 🔥 Sélecteurs Zustand individuels (crucial pour la réactivité)
+  const user = useAuthStore((s) => s.user);
+  const isLoading = useAuthStore((s) => s.isLoading);
+  const needsProfile = useAuthStore((s) => s.needsProfile);
+  const googleToken = useAuthStore((s) => s.googleToken);
+  const googleUserData = useAuthStore((s) => s.googleUserData);
+
+  // 🔥 Debug : à retirer après validation
+  console.log('🎨 AppNavigator render:', {
+    user: !!user,
+    isLoading,
+    needsProfile,
+    hasToken: !!googleToken,
+  });
 
   if (isLoading) {
     return (

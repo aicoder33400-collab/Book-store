@@ -48,8 +48,10 @@ export const LoginScreen = () => {
   const [devLoading, setDevLoading] = useState(false);
   const [showDev, setShowDev] = useState(false);
   const navigation = useNavigation<LoginScreenNavigationProp>();
-  const { setUser, setToken } = useAuthStore();
 
+  const setUser = useAuthStore((s) => s.setUser);
+  const setToken = useAuthStore((s) => s.setToken);
+  
   // 🔥 Retour OAuth sur WEB : détecter le hash au montage
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof window === 'undefined') return;
