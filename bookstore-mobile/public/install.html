@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Installer RMP Maktaba</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="/favicon.ico">
+  <meta name="theme-color" content="#1B5E3F">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="RMP Maktaba">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(180deg, #0F3D28 0%, #1B5E3F 50%, #246B49 100%);
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      text-align: center;
+    }
+    .logo {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #E5C989, #C9A961);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 60px;
+      margin-bottom: 24px;
+      box-shadow: 0 8px 32px rgba(201, 169, 97, 0.4);
+    }
+    h1 {
+      font-size: 32px;
+      margin-bottom: 8px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    .subtitle {
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.7);
+      margin-bottom: 40px;
+    }
+    .btn {
+      display: inline-block;
+      padding: 16px 40px;
+      background: linear-gradient(135deg, #E5C989, #C9A961);
+      color: #0F3D28;
+      font-weight: 700;
+      font-size: 17px;
+      border: none;
+      border-radius: 50px;
+      text-decoration: none;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(201, 169, 97, 0.4);
+      transition: transform 0.2s;
+      margin-bottom: 20px;
+    }
+    .btn:hover { transform: translateY(-2px); }
+    .btn.secondary {
+      background: rgba(255, 255, 255, 0.15);
+      color: #fff;
+      box-shadow: none;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    .instructions {
+      max-width: 400px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 24px;
+      margin-top: 20px;
+      text-align: left;
+      font-size: 14px;
+      line-height: 1.6;
+      display: none;
+    }
+    .instructions.show { display: block; }
+    .instructions h2 {
+      font-size: 16px;
+      margin-bottom: 12px;
+      color: #E5C989;
+    }
+    .instructions ol { padding-left: 20px; }
+    .instructions li { margin-bottom: 8px; }
+    .icon-hint {
+      display: inline-block;
+      padding: 2px 8px;
+      background: rgba(229, 201, 137, 0.2);
+      border-radius: 4px;
+      font-size: 12px;
+      color: #E5C989;
+      margin: 0 2px;
+    }
+    .footer {
+      position: fixed;
+      bottom: 20px;
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.4);
+    }
+  </style>
+</head>
+<body>
+  <div class="logo">🕌</div>
+  <h1>RMP Maktaba</h1>
+  <p class="subtitle">Bibliothèque de la mosquée</p>
+
+  <button id="installBtn" class="btn">📲 Installer l'application</button>
+  <a href="/" class="btn secondary">Ouvrir dans le navigateur</a>
+
+  <div id="iosInstructions" class="instructions">
+    <h2>📱 iPhone / iPad</h2>
+    <ol>
+      <li>Ouvrez cette page dans <b>Safari</b></li>
+      <li>Appuyez sur l'icône <span class="icon-hint">↗ Partager</span> en bas</li>
+      <li>Faites défiler et choisissez <b>« Sur l'écran d'accueil »</b></li>
+      <li>Appuyez sur <b>Ajouter</b></li>
+    </ol>
+  </div>
+
+  <div id="androidInstructions" class="instructions">
+    <h2>🤖 Android</h2>
+    <ol>
+      <li>Ouvrez cette page dans <b>Chrome</b></li>
+      <li>Appuyez sur le menu <span class="icon-hint">⋮</span> en haut à droite</li>
+      <li>Choisissez <b>« Installer l'application »</b> ou <b>« Ajouter à l'écran d'accueil »</b></li>
+      <li>Confirmez</li>
+    </ol>
+  </div>
+
+  <p class="footer">Application gratuite • Sans pub • Installable en 2 clics</p>
+
+  <script>
+    // Détection de la plateforme
+    const ua = navigator.userAgent;
+    const isIOS = /iPad|iPhone|iPod/.test(ua);
+    const isAndroid = /Android/.test(ua);
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+                      || window.navigator.standalone === true;
+
+    // Si déjà installée → rediriger vers l'app
+    if (isStandalone) {
+      window.location.href = '/';
+    }
+
+    const installBtn = document.getElementById('installBtn');
+    const iosInst = document.getElementById('iosInstructions');
+    const androidInst = document.getElementById('androidInstructions');
+
+    // Variable pour stocker le prompt d'installation (Android/Chrome)
+    let deferredPrompt = null;
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      console.log('✅ PWA installable');
+    });
+
+    installBtn.addEventListener('click', async () => {
+      // Si on a le prompt natif (Android Chrome)
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log('Installation:', outcome);
+        deferredPrompt = null;
+        if (outcome === 'accepted') {
+          installBtn.textContent = '✅ Installation en cours...';
+        }
+      } else if (isIOS) {
+        // iOS : instructions manuelles
+        iosInst.classList.add('show');
+        androidInst.classList.remove('show');
+      } else if (isAndroid) {
+        // Android sans prompt natif : instructions manuelles
+        androidInst.classList.add('show');
+        iosInst.classList.remove('show');
+      } else {
+        // Desktop
+        alert("Ouvrez cette page depuis votre téléphone pour installer l'app.");
+      }
+    });
+  </script>
+</body>
+</html>
