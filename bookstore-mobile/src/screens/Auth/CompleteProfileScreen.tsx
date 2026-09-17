@@ -10,31 +10,52 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
   StatusBar,
+  Dimensions,
 } from 'react-native';
 import { useNavigation, useRoute, CommonActions } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '../../store/auth.store';
 import { GoogleAuthService } from '../../services/google-auth.service';
+
+const { width } = Dimensions.get('window');
+
+// 🕌 Palette islamique
+const C = {
+  bgDark: '#0F3D28',
+  bgMid: '#1B5E3F',
+  bgLight: '#246B49',
+  gold: '#C9A961',
+  goldLight: '#E5C989',
+  goldSoft: 'rgba(201,169,97,0.15)',
+  white: '#FFFFFF',
+  whiteSoft: 'rgba(255,255,255,0.85)',
+  whiteFaint: 'rgba(255,255,255,0.6)',
+  whiteLine: 'rgba(255,255,255,0.12)',
+  inputBg: 'rgba(255,255,255,0.95)',
+  danger: '#E86B6B',
+  success: '#5BBF8B',
+};
 
 export const CompleteProfileScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  
-  const { completeGoogleProfile } = useAuthStore();
-  
+  const insets = useSafeAreaInsets();
+
+  const completeGoogleProfile = useAuthStore((s) => s.completeGoogleProfile);
+
   const params = route.params as any;
   const googleToken = params?.googleToken || '';
   const userEmail = params?.email || '';
-  
+
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
   const [ageGroup, setAgeGroup] = useState<'major' | 'minor' | null>(null);
   const [commune, setCommune] = useState('');
   const [loading, setLoading] = useState(false);
-  
+
   const [errors, setErrors] = useState<{
     firstName?: string;
     lastName?: string;
@@ -51,7 +72,7 @@ export const CompleteProfileScreen = () => {
       newErrors.firstName = 'Le prénom est obligatoire';
       isValid = false;
     } else if (!/^[a-zA-ZÀ-ÿ\s'-]{2,30}$/.test(firstName.trim())) {
-      newErrors.firstName = 'Prénom invalide (lettres uniquement)';
+      newErrors.firstName = 'Prénom invalide';
       isValid = false;
     }
 
@@ -59,7 +80,7 @@ export const CompleteProfileScreen = () => {
       newErrors.lastName = 'Le nom est obligatoire';
       isValid = false;
     } else if (!/^[a-zA-ZÀ-ÿ\s'-]{2,30}$/.test(lastName.trim())) {
-      newErrors.lastName = 'Nom invalide (lettres uniquement)';
+      newErrors.lastName = 'Nom invalide';
       isValid = false;
     }
 
@@ -72,7 +93,7 @@ export const CompleteProfileScreen = () => {
     }
 
     if (!ageGroup) {
-      newErrors.ageGroup = 'Veuillez sélectionner votre âge';
+      newErrors.ageGroup = 'Veuillez sélectionner votre tranche d\'âge';
       isValid = false;
     }
 
@@ -80,7 +101,7 @@ export const CompleteProfileScreen = () => {
       newErrors.commune = 'La commune est obligatoire';
       isValid = false;
     } else if (commune.trim().length < 2) {
-      newErrors.commune = 'Commune invalide (minimum 2 caractères)';
+      newErrors.commune = 'Commune invalide';
       isValid = false;
     }
 
@@ -93,7 +114,6 @@ export const CompleteProfileScreen = () => {
 
     setLoading(true);
     try {
-      // 🔥 Construction des données avec le bon format
       const payload = {
         firstName: firstName.trim(),
         lastName: lastName.trim(),
@@ -101,13 +121,15 @@ export const CompleteProfileScreen = () => {
         age: ageGroup === 'major' ? 25 : 17,
         commune: commune.trim(),
       };
-      
+
       console.log('📤 Envoi des données:', payload);
-      
+
       const result = await GoogleAuthService.completeProfile(googleToken, payload);
 
       if (result.success) {
-        const { setUser, setToken } = useAuthStore.getState();
+        const setUser = useAuthStore.getState().setUser;
+        const setToken = useAuthStore.getState().setToken;
+
         const user = {
           id: result.user.id,
           name: result.user.name,
@@ -127,102 +149,115 @@ export const CompleteProfileScreen = () => {
           commune: result.user.commune || null,
           isProfileComplete: true,
         };
-        
-        setUser(user);
+
+        setUser(user as any);
         setToken(result.token);
-        
-        navigation.dispatch(
-          CommonActions.reset({
-            index: 0,
-            routes: [{ name: 'Main' }],
-          })
-        );
       }
     } catch (error: any) {
       console.error('❌ Erreur complète:', error);
       console.error('❌ Réponse:', error.response?.data);
-      Alert.alert(
-        'Erreur',
-        error.response?.data?.error || 'Erreur lors de l\'inscription. Veuillez réessayer.'
-      );
+      if (Platform.OS === 'web') {
+        window.alert(error.response?.data?.error || 'Erreur lors de l\'inscription. Veuillez réessayer.');
+      } else {
+        Alert.alert(
+          'Erreur',
+          error.response?.data?.error || 'Erreur lors de l\'inscription. Veuillez réessayer.'
+        );
+      }
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
-      
+    <View style={styles.root}>
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+
       <LinearGradient
-        colors={['#1a1a2e', '#16213e', '#0f3460']}
-        style={styles.container}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
+        colors={[C.bgDark, C.bgMid, C.bgLight]}
+        style={styles.gradient}
+        start={{ x: 0.2, y: 0 }}
+        end={{ x: 0.8, y: 1 }}
       >
-        <View style={styles.circle1} />
-        <View style={styles.circle2} />
-        <View style={styles.circle3} />
+        {/* Motifs décoratifs */}
+        <View style={styles.haloTop} />
+        <View style={styles.haloBottom} />
 
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           style={styles.keyboardView}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
         >
           <ScrollView
-            contentContainerStyle={styles.scrollContent}
+            contentContainerStyle={[
+              styles.scrollContent,
+              { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 40 },
+            ]}
             showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
           >
+            {/* ─── HEADER ─── */}
             <View style={styles.header}>
-              <Text style={styles.title}>Complétez votre profil</Text>
-              <Text style={styles.subtitle}>
-                Nous avons besoin de quelques informations
-              </Text>
-              <View style={styles.emailBadge}>
-                <Text style={styles.emailText}>📧 {userEmail}</Text>
+              <View style={styles.iconWrap}>
+                <Text style={styles.iconEmoji}>🕌</Text>
               </View>
+              <Text style={styles.title}>Bienvenue !</Text>
+              <Text style={styles.subtitle}>
+                Complétez votre profil pour rejoindre la bibliothèque
+              </Text>
+              {userEmail ? (
+                <View style={styles.emailBadge}>
+                  <Text style={styles.emailText}>📧 {userEmail}</Text>
+                </View>
+              ) : null}
             </View>
 
+            {/* ─── FORMULAIRE ─── */}
             <View style={styles.form}>
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Prénom <Text style={styles.required}>*</Text></Text>
+                <Text style={styles.label}>
+                  Prénom <Text style={styles.required}>*</Text>
+                </Text>
                 <TextInput
                   style={[styles.input, errors.firstName && styles.inputError]}
                   placeholder="Votre prénom"
-                  placeholderTextColor="rgba(0,0,0,0.4)"
+                  placeholderTextColor="rgba(0,0,0,0.35)"
                   value={firstName}
                   onChangeText={(text) => {
                     setFirstName(text);
                     setErrors({ ...errors, firstName: undefined });
                   }}
+                  autoCapitalize="words"
                 />
-                {errors.firstName && (
-                  <Text style={styles.errorText}>{errors.firstName}</Text>
-                )}
+                {errors.firstName && <Text style={styles.errorText}>{errors.firstName}</Text>}
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Nom <Text style={styles.required}>*</Text></Text>
+                <Text style={styles.label}>
+                  Nom <Text style={styles.required}>*</Text>
+                </Text>
                 <TextInput
                   style={[styles.input, errors.lastName && styles.inputError]}
                   placeholder="Votre nom"
-                  placeholderTextColor="rgba(0,0,0,0.4)"
+                  placeholderTextColor="rgba(0,0,0,0.35)"
                   value={lastName}
                   onChangeText={(text) => {
                     setLastName(text);
                     setErrors({ ...errors, lastName: undefined });
                   }}
+                  autoCapitalize="words"
                 />
-                {errors.lastName && (
-                  <Text style={styles.errorText}>{errors.lastName}</Text>
-                )}
+                {errors.lastName && <Text style={styles.errorText}>{errors.lastName}</Text>}
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Téléphone <Text style={styles.required}>*</Text></Text>
+                <Text style={styles.label}>
+                  Téléphone <Text style={styles.required}>*</Text>
+                </Text>
                 <TextInput
                   style={[styles.input, errors.phone && styles.inputError]}
                   placeholder="06 12 34 56 78"
-                  placeholderTextColor="rgba(0,0,0,0.4)"
+                  placeholderTextColor="rgba(0,0,0,0.35)"
                   value={phone}
                   onChangeText={(text) => {
                     setPhone(text.replace(/[^0-9]/g, ''));
@@ -230,31 +265,32 @@ export const CompleteProfileScreen = () => {
                   }}
                   keyboardType="phone-pad"
                 />
-                {errors.phone && (
-                  <Text style={styles.errorText}>{errors.phone}</Text>
-                )}
+                {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Âge <Text style={styles.required}>*</Text></Text>
+                <Text style={styles.label}>
+                  Tranche d'âge <Text style={styles.required}>*</Text>
+                </Text>
                 <View style={styles.ageContainer}>
                   <TouchableOpacity
                     style={[
                       styles.ageButton,
-                      ageGroup === 'minor' && styles.ageButtonActive,
-                      ageGroup === 'minor' && styles.ageButtonValid,
+                      ageGroup === 'minor' && styles.ageButtonSelected,
                     ]}
                     onPress={() => {
                       setAgeGroup('minor');
                       setErrors({ ...errors, ageGroup: undefined });
                     }}
+                    activeOpacity={0.8}
                   >
-                    <Text style={[
-                      styles.ageButtonText,
-                      ageGroup === 'minor' && styles.ageButtonTextActive,
-                      ageGroup === 'minor' && styles.ageButtonTextValid,
-                    ]}>
-                      - 18 ans
+                    <Text
+                      style={[
+                        styles.ageButtonText,
+                        ageGroup === 'minor' && styles.ageButtonTextSelected,
+                      ]}
+                    >
+                      Moins de 18 ans
                     </Text>
                     {ageGroup === 'minor' && (
                       <View style={styles.checkmark}>
@@ -262,24 +298,25 @@ export const CompleteProfileScreen = () => {
                       </View>
                     )}
                   </TouchableOpacity>
-                  
+
                   <TouchableOpacity
                     style={[
                       styles.ageButton,
-                      ageGroup === 'major' && styles.ageButtonActive,
-                      ageGroup === 'major' && styles.ageButtonValid,
+                      ageGroup === 'major' && styles.ageButtonSelected,
                     ]}
                     onPress={() => {
                       setAgeGroup('major');
                       setErrors({ ...errors, ageGroup: undefined });
                     }}
+                    activeOpacity={0.8}
                   >
-                    <Text style={[
-                      styles.ageButtonText,
-                      ageGroup === 'major' && styles.ageButtonTextActive,
-                      ageGroup === 'major' && styles.ageButtonTextValid,
-                    ]}>
-                      + 18 ans
+                    <Text
+                      style={[
+                        styles.ageButtonText,
+                        ageGroup === 'major' && styles.ageButtonTextSelected,
+                      ]}
+                    >
+                      18 ans et plus
                     </Text>
                     {ageGroup === 'major' && (
                       <View style={styles.checkmark}>
@@ -288,38 +325,37 @@ export const CompleteProfileScreen = () => {
                     )}
                   </TouchableOpacity>
                 </View>
-                {errors.ageGroup && (
-                  <Text style={styles.errorText}>{errors.ageGroup}</Text>
-                )}
+                {errors.ageGroup && <Text style={styles.errorText}>{errors.ageGroup}</Text>}
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Commune <Text style={styles.required}>*</Text></Text>
+                <Text style={styles.label}>
+                  Commune <Text style={styles.required}>*</Text>
+                </Text>
                 <TextInput
                   style={[styles.input, errors.commune && styles.inputError]}
                   placeholder="Votre ville"
-                  placeholderTextColor="rgba(0,0,0,0.4)"
+                  placeholderTextColor="rgba(0,0,0,0.35)"
                   value={commune}
                   onChangeText={(text) => {
                     setCommune(text);
                     setErrors({ ...errors, commune: undefined });
                   }}
+                  autoCapitalize="words"
                 />
-                {errors.commune && (
-                  <Text style={styles.errorText}>{errors.commune}</Text>
-                )}
+                {errors.commune && <Text style={styles.errorText}>{errors.commune}</Text>}
               </View>
 
               <TouchableOpacity
-                style={styles.button}
+                style={[styles.button, loading && styles.buttonDisabled]}
                 onPress={handleSubmit}
                 disabled={loading}
                 activeOpacity={0.85}
               >
                 {loading ? (
-                  <ActivityIndicator color="#fff" />
+                  <ActivityIndicator color={C.bgDark} />
                 ) : (
-                  <Text style={styles.buttonText}>S'inscrire</Text>
+                  <Text style={styles.buttonText}>Valider mon inscription</Text>
                 )}
               </TouchableOpacity>
 
@@ -330,189 +366,192 @@ export const CompleteProfileScreen = () => {
           </ScrollView>
         </KeyboardAvoidingView>
       </LinearGradient>
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#1a1a2e',
+  root: { flex: 1, backgroundColor: C.bgDark },
+  gradient: { flex: 1 },
+  keyboardView: { flex: 1 },
+
+  haloTop: {
+    position: 'absolute',
+    width: width * 0.9,
+    height: width * 0.9,
+    borderRadius: width * 0.45,
+    borderWidth: 1,
+    borderColor: 'rgba(201,169,97,0.10)',
+    top: -width * 0.35,
+    right: -width * 0.25,
   },
-  container: {
-    flex: 1,
-    paddingHorizontal: 24,
+  haloBottom: {
+    position: 'absolute',
+    width: width * 1.1,
+    height: width * 1.1,
+    borderRadius: width * 0.55,
+    borderWidth: 1,
+    borderColor: 'rgba(201,169,97,0.07)',
+    bottom: -width * 0.5,
+    left: -width * 0.35,
   },
-  keyboardView: {
-    flex: 1,
-  },
+
   scrollContent: {
     flexGrow: 1,
-    paddingTop: 40,
-    paddingBottom: 40,
+    paddingHorizontal: 24,
   },
-  circle1: {
-    position: 'absolute',
-    width: 300,
-    height: 300,
-    borderRadius: 150,
-    backgroundColor: 'rgba(233, 69, 96, 0.1)',
-    top: -150,
-    right: -100,
-  },
-  circle2: {
-    position: 'absolute',
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    backgroundColor: 'rgba(15, 52, 96, 0.3)',
-    bottom: 50,
-    left: -80,
-  },
-  circle3: {
-    position: 'absolute',
-    width: 150,
-    height: 150,
-    borderRadius: 75,
-    backgroundColor: 'rgba(233, 69, 96, 0.05)',
-    bottom: 150,
-    right: -50,
-  },
+
   header: {
-    marginBottom: 30,
+    alignItems: 'center',
+    marginBottom: 32,
   },
+  iconWrap: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 2,
+    borderColor: 'rgba(201,169,97,0.4)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 18,
+  },
+  iconEmoji: { fontSize: 38 },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontSize: 26,
+    fontWeight: '700',
+    color: C.white,
     marginBottom: 8,
+    letterSpacing: 0.4,
   },
   subtitle: {
-    fontSize: 16,
-    color: 'rgba(255,255,255,0.6)',
+    fontSize: 14,
+    color: C.whiteFaint,
+    textAlign: 'center',
     marginBottom: 16,
+    lineHeight: 20,
   },
   emailBadge: {
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: C.goldSoft,
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: 'rgba(201,169,97,0.3)',
   },
   emailText: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.7)',
+    fontSize: 13,
+    color: C.goldLight,
+    fontWeight: '500',
   },
-  form: {
-    flex: 1,
-  },
-  inputGroup: {
-    marginBottom: 18,
-  },
+
+  form: { flex: 1 },
+  inputGroup: { marginBottom: 16 },
   label: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
-    color: 'rgba(255,255,255,0.8)',
-    marginBottom: 6,
+    color: C.whiteSoft,
+    marginBottom: 8,
+    letterSpacing: 0.3,
   },
   required: {
-    color: '#e94560',
-    fontSize: 16,
+    color: C.gold,
+    fontSize: 14,
   },
   input: {
-    backgroundColor: '#f5f5f5',
+    backgroundColor: C.inputBg,
     borderRadius: 14,
-    padding: 16,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
     fontSize: 16,
-    color: '#1a1a2e',
+    color: '#0F3D28',
     borderWidth: 1,
     borderColor: 'rgba(0,0,0,0.05)',
   },
   inputError: {
-    borderColor: '#e94560',
+    borderColor: C.danger,
     borderWidth: 1.5,
   },
   errorText: {
     fontSize: 12,
-    color: '#e94560',
-    marginTop: 4,
+    color: C.danger,
+    marginTop: 5,
     marginLeft: 4,
   },
+
   ageContainer: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 10,
   },
   ageButton: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: C.inputBg,
     borderRadius: 14,
     paddingVertical: 16,
     alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 2,
-    borderColor: 'rgba(0,0,0,0.05)',
+    borderColor: 'transparent',
     position: 'relative',
   },
-  ageButtonActive: {
-    borderColor: '#e94560',
-    borderWidth: 2,
-  },
-  ageButtonValid: {
-    borderColor: '#4CAF50',
-    borderWidth: 2,
-    backgroundColor: 'rgba(76, 175, 80, 0.08)',
+  ageButtonSelected: {
+    borderColor: C.gold,
+    backgroundColor: 'rgba(201,169,97,0.10)',
   },
   ageButtonText: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#666',
     fontWeight: '500',
   },
-  ageButtonTextActive: {
-    color: '#e94560',
-    fontWeight: '600',
-  },
-  ageButtonTextValid: {
-    color: '#4CAF50',
-    fontWeight: '600',
+  ageButtonTextSelected: {
+    color: C.goldLight,
+    fontWeight: '700',
   },
   checkmark: {
     position: 'absolute',
     top: -8,
     right: -8,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: '#4CAF50',
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: C.gold,
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: C.gold,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 6,
+    elevation: 4,
   },
   checkmarkText: {
-    color: '#fff',
-    fontSize: 12,
+    color: C.bgDark,
+    fontSize: 13,
     fontWeight: 'bold',
   },
+
   button: {
-    backgroundColor: '#e94560',
-    borderRadius: 16,
-    paddingVertical: 18,
+    backgroundColor: C.gold,
+    borderRadius: 50,
+    paddingVertical: 17,
     alignItems: 'center',
-    marginTop: 10,
-    shadowColor: '#e94560',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
+    marginTop: 16,
+    shadowColor: C.gold,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.35,
+    shadowRadius: 16,
     elevation: 8,
   },
+  buttonDisabled: { opacity: 0.6 },
   buttonText: {
-    color: '#ffffff',
-    fontSize: 18,
-    fontWeight: '600',
-    letterSpacing: 0.5,
+    color: C.bgDark,
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 0.4,
   },
   footerText: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.25)',
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.3)',
     textAlign: 'center',
     marginTop: 20,
+    letterSpacing: 0.3,
   },
 });
