@@ -18,12 +18,10 @@ import { RootStackParamList } from '../types/navigation';
 const Stack = createStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator();
 
-// 🔥 Exporter RoleBasedNavigator (alias de AppNavigator)
 export const RoleBasedNavigator = () => {
   return <AppNavigator />;
 };
 
-// Exporter aussi AppNavigator
 export { AppNavigator };
 
 const MainTabs = () => {
@@ -73,8 +71,6 @@ const MainTabs = () => {
         }}
       />
       
-      
-      
       <Tab.Screen 
         name="Mon profil" 
         component={ProfileScreen}
@@ -114,7 +110,7 @@ const AdminPlaceholder = () => {
 };
 
 const AppNavigator = () => {
-  const { user, isLoading } = useAuthStore();
+  const { user, isLoading, needsProfile, googleToken, googleUserData } = useAuthStore();
 
   if (isLoading) {
     return (
@@ -125,16 +121,43 @@ const AppNavigator = () => {
     );
   }
 
+  // 🔥 Détermine la route initiale selon l'état
+  let initialRoute: keyof RootStackParamList = 'Login';
+  if (user) {
+    initialRoute = 'Main';
+  } else if (needsProfile && googleToken) {
+    initialRoute = 'CompleteProfile';
+  }
+
   return (
     <NavigationContainer>
       <Stack.Navigator
+        initialRouteName={initialRoute}
         screenOptions={{
           headerStyle: { backgroundColor: colors.primary },
           headerTintColor: colors.text.white,
           headerBackTitle: 'Retour',
         }}
       >
-        {!user ? (
+        {user ? (
+          <>
+            <Stack.Screen 
+              name="Main" 
+              component={MainTabs} 
+              options={{ headerShown: false }} 
+            />
+            <Stack.Screen 
+              name="BookDetail" 
+              component={BookDetailScreen} 
+              options={{ 
+                title: 'Détail du livre',
+                headerStyle: { backgroundColor: colors.primary },
+                headerTintColor: colors.text.white,
+                headerBackTitle: 'Retour',
+              }}
+            />
+          </>
+        ) : (
           <>
             <Stack.Screen 
               name="Login" 
@@ -152,30 +175,22 @@ const AppNavigator = () => {
             />
             <Stack.Screen 
               name="CompleteProfile" 
-              component={CompleteProfileScreen} 
+              component={CompleteProfileScreen}
+              initialParams={
+                needsProfile && googleToken
+                  ? {
+                      googleToken,
+                      email: googleUserData?.email || '',
+                      name: googleUserData?.name || '',
+                      avatar: googleUserData?.avatar || '',
+                    }
+                  : undefined
+              }
               options={{ 
                 title: 'Compléter votre profil',
                 headerBackTitle: 'Retour',
                 headerStyle: { backgroundColor: colors.primary },
                 headerTintColor: colors.text.white,
-              }}
-            />
-          </>
-        ) : (
-          <>
-            <Stack.Screen 
-              name="Main" 
-              component={MainTabs} 
-              options={{ headerShown: false }} 
-            />
-            <Stack.Screen 
-              name="BookDetail" 
-              component={BookDetailScreen} 
-              options={{ 
-                title: 'Détail du livre',
-                headerStyle: { backgroundColor: colors.primary },
-                headerTintColor: colors.text.white,
-                headerBackTitle: 'Retour',
               }}
             />
           </>

@@ -58,14 +58,12 @@ export const LoginScreen = () => {
     if (!hash || !hash.includes('id_token')) return;
 
     console.log('🔐 Retour OAuth détecté sur web, traitement...');
-    setGoogleLoading(true);
 
     const params = new URLSearchParams(hash.substring(1));
     const googleToken = params.get('id_token');
 
     if (!googleToken) {
       console.error('❌ Pas de id_token dans le hash');
-      setGoogleLoading(false);
       return;
     }
 
@@ -78,21 +76,17 @@ export const LoginScreen = () => {
         console.log('📱 Résultat check:', checkResult);
 
         if (!checkResult.exists || checkResult.needsProfile) {
-          console.log('🚀 Redirection vers CompleteProfile');
-          setTimeout(() => {
-            navigation.navigate('CompleteProfile', {
-              googleToken,
-              email: checkResult.email || '',
-              name: checkResult.name || '',
-              avatar: checkResult.avatar || '',
-            });
-            setGoogleLoading(false);
-          }, 100);
+          console.log('🚀 Store: needsProfile = true');
+          // 🔥 Le store gère la navigation via AppNavigator
+          useAuthStore.getState().setNeedsProfile(true, googleToken, {
+            email: checkResult.email || '',
+            name: checkResult.name || '',
+            avatar: checkResult.avatar || '',
+          });
         } else {
           console.log('🎯 Connexion directe');
           const result = await authService.loginWithGoogle(googleToken);
 
-          // 🔥 Normaliser l'objet User pour matcher le type complet
           const user = {
             id: result.user.id,
             name: result.user.name,
@@ -113,21 +107,11 @@ export const LoginScreen = () => {
             isProfileComplete: result.user.isProfileComplete ?? true,
           };
 
-          setUser(user as any);
-          setToken(result.token);
-
-          setTimeout(() => {
-            navigation.dispatch(
-              CommonActions.reset({
-                index: 0,
-                routes: [{ name: 'Main' }],
-              })
-            );
-          }, 100);
+          useAuthStore.getState().setUser(user as any);
+          useAuthStore.getState().setToken(result.token);
         }
       } catch (error: any) {
         console.error('❌ Erreur traitement OAuth:', error);
-        setGoogleLoading(false);
       }
     })();
   }, []);
