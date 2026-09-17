@@ -1,19 +1,36 @@
 #!/usr/bin/env node
+/**
+ * Post-build : injecte les meta tags PWA + Service Worker dans dist/index.html
+ * Usage : node scripts/inject-pwa.js
+ */
+
 const fs = require('fs');
 const path = require('path');
 
 const distIndex = path.join(__dirname, '..', 'dist', 'index.html');
 
 if (!fs.existsSync(distIndex)) {
-  console.error('❌ dist/index.html introuvable. Lance d\'abord expo export');
+  console.error('❌ dist/index.html introuvable. Lance d\'abord `npx expo export --platform web`');
   process.exit(1);
 }
 
 let html = fs.readFileSync(distIndex, 'utf8');
 
-html = html.replace(/<title>.*?<\/title>/, '<title>RMP Maktaba — Bibliothèque</title>');
+// 1) Remplacer le titre
+html = html.replace(
+  /<title>.*?<\/title>/,
+  '<title>RMP Maktaba — Bibliothèque</title>'
+);
 
+// 2) Fix zoom mobile : empêcher le zoom utilisateur
+html = html.replace(
+  /<meta name="viewport"[^>]*>/,
+  '<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, shrink-to-fit=no" />'
+);
+
+// 3) Ajouter les meta tags PWA juste avant </head>
 const pwaTags = `
+    <!-- PWA Meta Tags -->
     <meta name="description" content="Bibliothèque de la mosquée RMP Maktaba" />
     <meta name="theme-color" content="#1B5E3F" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -28,12 +45,13 @@ const pwaTags = `
 
 html = html.replace('</head>', `${pwaTags}</head>`);
 
+// 4) Ajouter le Service Worker avant </body>
 const swScript = `
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('/sw.js')
-            .then((reg) => console.log('✅ SW enregistré:', reg.scope))
+            .then((reg) => console.log('✅ Service Worker enregistré:', reg.scope))
             .catch((err) => console.warn('⚠️ SW échec:', err));
         });
       }

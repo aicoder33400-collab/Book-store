@@ -13,7 +13,7 @@ import {
   StatusBar,
   Dimensions,
 } from 'react-native';
-import { useNavigation, useRoute, CommonActions } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '../../store/auth.store';
@@ -32,18 +32,14 @@ const C = {
   white: '#FFFFFF',
   whiteSoft: 'rgba(255,255,255,0.85)',
   whiteFaint: 'rgba(255,255,255,0.6)',
-  whiteLine: 'rgba(255,255,255,0.12)',
   inputBg: 'rgba(255,255,255,0.95)',
   danger: '#E86B6B',
-  success: '#5BBF8B',
 };
 
 export const CompleteProfileScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const insets = useSafeAreaInsets();
-
-  const completeGoogleProfile = useAuthStore((s) => s.completeGoogleProfile);
 
   const params = route.params as any;
   const googleToken = params?.googleToken || '';
@@ -68,40 +64,59 @@ export const CompleteProfileScreen = () => {
     const newErrors: typeof errors = {};
     let isValid = true;
 
+    // ═══ Prénom ═══
     if (!firstName.trim()) {
       newErrors.firstName = 'Le prénom est obligatoire';
       isValid = false;
     } else if (!/^[a-zA-ZÀ-ÿ\s'-]{2,30}$/.test(firstName.trim())) {
-      newErrors.firstName = 'Prénom invalide';
+      newErrors.firstName = 'Prénom invalide (lettres, 2-30 caractères)';
       isValid = false;
     }
 
+    // ═══ Nom ═══
     if (!lastName.trim()) {
       newErrors.lastName = 'Le nom est obligatoire';
       isValid = false;
     } else if (!/^[a-zA-ZÀ-ÿ\s'-]{2,30}$/.test(lastName.trim())) {
-      newErrors.lastName = 'Nom invalide';
+      newErrors.lastName = 'Nom invalide (lettres, 2-30 caractères)';
       isValid = false;
     }
 
-    if (!phone.trim()) {
+    // ═══ Téléphone ═══
+    const cleanPhone = phone.replace(/[\s\-\.\(\)]/g, '');
+
+    if (!cleanPhone) {
       newErrors.phone = 'Le téléphone est obligatoire';
       isValid = false;
-    } else if (!/^[0-9]{8,15}$/.test(phone.trim())) {
-      newErrors.phone = 'Téléphone invalide (8-15 chiffres)';
+    } else if (!/^[+]?[0-9]{8,15}$/.test(cleanPhone)) {
+      newErrors.phone = 'Numéro invalide (8 à 15 chiffres, + autorisé)';
+      isValid = false;
+    } else if (/^(\d)\1+$/.test(cleanPhone.replace(/^\+/, ''))) {
+      newErrors.phone = 'Numéro invalide';
+      isValid = false;
+    } else if (
+      /^(?:\+33|0)/.test(cleanPhone) &&
+      !/^(?:\+33|0)[1-9][0-9]{8}$/.test(cleanPhone)
+    ) {
+      newErrors.phone = 'Numéro français invalide (10 chiffres attendus)';
       isValid = false;
     }
 
+    // ═══ Tranche d'âge ═══
     if (!ageGroup) {
       newErrors.ageGroup = 'Veuillez sélectionner votre tranche d\'âge';
       isValid = false;
     }
 
+    // ═══ Commune ═══
     if (!commune.trim()) {
       newErrors.commune = 'La commune est obligatoire';
       isValid = false;
     } else if (commune.trim().length < 2) {
-      newErrors.commune = 'Commune invalide';
+      newErrors.commune = 'Commune invalide (minimum 2 caractères)';
+      isValid = false;
+    } else if (!/^[a-zA-ZÀ-ÿ\s'-]{2,50}$/.test(commune.trim())) {
+      newErrors.commune = 'Commune invalide (lettres uniquement)';
       isValid = false;
     }
 
@@ -117,7 +132,7 @@ export const CompleteProfileScreen = () => {
       const payload = {
         firstName: firstName.trim(),
         lastName: lastName.trim(),
-        phone: phone.trim(),
+        phone: phone.replace(/[\s\-\.\(\)]/g, ''),
         age: ageGroup === 'major' ? 25 : 17,
         commune: commune.trim(),
       };
@@ -157,11 +172,15 @@ export const CompleteProfileScreen = () => {
       console.error('❌ Erreur complète:', error);
       console.error('❌ Réponse:', error.response?.data);
       if (Platform.OS === 'web') {
-        window.alert(error.response?.data?.error || 'Erreur lors de l\'inscription. Veuillez réessayer.');
+        window.alert(
+          error.response?.data?.error ||
+            'Erreur lors de l\'inscription. Veuillez réessayer.'
+        );
       } else {
         Alert.alert(
           'Erreur',
-          error.response?.data?.error || 'Erreur lors de l\'inscription. Veuillez réessayer.'
+          error.response?.data?.error ||
+            'Erreur lors de l\'inscription. Veuillez réessayer.'
         );
       }
     } finally {
@@ -179,14 +198,12 @@ export const CompleteProfileScreen = () => {
         start={{ x: 0.2, y: 0 }}
         end={{ x: 0.8, y: 1 }}
       >
-        {/* Motifs décoratifs */}
         <View style={styles.haloTop} />
         <View style={styles.haloBottom} />
 
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           style={styles.keyboardView}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
         >
           <ScrollView
             contentContainerStyle={[
@@ -196,7 +213,7 @@ export const CompleteProfileScreen = () => {
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
-            {/* ─── HEADER ─── */}
+            {/* HEADER */}
             <View style={styles.header}>
               <View style={styles.iconWrap}>
                 <Text style={styles.iconEmoji}>🕌</Text>
@@ -212,7 +229,7 @@ export const CompleteProfileScreen = () => {
               ) : null}
             </View>
 
-            {/* ─── FORMULAIRE ─── */}
+            {/* FORMULAIRE */}
             <View style={styles.form}>
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>
@@ -260,7 +277,7 @@ export const CompleteProfileScreen = () => {
                   placeholderTextColor="rgba(0,0,0,0.35)"
                   value={phone}
                   onChangeText={(text) => {
-                    setPhone(text.replace(/[^0-9]/g, ''));
+                    setPhone(text);
                     setErrors({ ...errors, phone: undefined });
                   }}
                   keyboardType="phone-pad"
