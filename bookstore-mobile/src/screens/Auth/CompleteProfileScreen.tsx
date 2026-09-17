@@ -19,30 +19,21 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '../../store/auth.store';
 import { GoogleAuthService } from '../../services/google-auth.service';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 // 🕌 Palette islamique CLAIRE
 const C = {
-  // Fond : vert très clair / crème
-  bgTop: '#F0F7F2',
-  bgBottom: '#E5F0E8',
-  // Vert émeraude (accents)
+  bgTop: '#F5FBF7',
+  bgMid: '#E8F2EC',
+  bgBottom: '#DDEBE2',
   primary: '#1B5E3F',
   primaryLight: '#2D7A55',
-  // Or (accent chaud)
   gold: '#C9A961',
   goldLight: '#E5C989',
-  goldSoft: 'rgba(201,169,97,0.12)',
-  // Textes
   textDark: '#0F3D28',
   textMid: '#4A6B5A',
   textLight: '#7A9084',
   white: '#FFFFFF',
-  // Inputs
-  inputBg: '#FFFFFF',
-  inputBorder: '#D9E5DD',
-  inputBorderFocus: '#C9A961',
-  // Erreurs
   danger: '#B53A3A',
 };
 
@@ -187,24 +178,24 @@ export const CompleteProfileScreen = () => {
     }
   };
 
-    return (
+  return (
     <View style={styles.root}>
       <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
 
       {/* ═══ FOND DÉCORÉ ═══ */}
       <LinearGradient
-        colors={['#F5FBF7', '#E8F2EC', '#DDEBE2']}
+        colors={[C.bgTop, C.bgMid, C.bgBottom]}
         style={StyleSheet.absoluteFillObject}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
+        start={{ x: 0.15, y: 0 }}
+        end={{ x: 0.85, y: 1 }}
       />
 
       {/* Cercles dorés en filigrane */}
-      <View style={styles.decorCircle1} />
-      <View style={styles.decorCircle2} />
-      <View style={styles.decorCircle3} />
+      <View style={styles.decorCircleTopRight} />
+      <View style={styles.decorCircleMidLeft} />
+      <View style={styles.decorCircleBottomLeft} />
 
-      {/* Arc décoratif haut droite */}
+      {/* Arc décoratif arche islamique */}
       <View style={styles.decorArc} />
 
       <KeyboardAvoidingView
@@ -406,47 +397,47 @@ const styles = StyleSheet.create({
   },
 
   // ═══ DÉCORS DE FOND ═══
-  decorCircle1: {
+  decorCircleTopRight: {
     position: 'absolute',
-    width: width * 1.3,
-    height: width * 1.3,
-    borderRadius: width * 0.65,
+    width: width * 1.4,
+    height: width * 1.4,
+    borderRadius: width * 0.7,
     borderWidth: 1.5,
-    borderColor: 'rgba(201,169,97,0.18)',
-    top: -width * 0.85,
-    right: -width * 0.5,
+    borderColor: 'rgba(201,169,97,0.20)',
+    top: -width * 0.9,
+    right: -width * 0.6,
   },
-  decorCircle2: {
+  decorCircleMidLeft: {
     position: 'absolute',
-    width: width * 0.6,
-    height: width * 0.6,
-    borderRadius: width * 0.3,
+    width: width * 0.7,
+    height: width * 0.7,
+    borderRadius: width * 0.35,
     borderWidth: 1,
-    borderColor: 'rgba(201,169,97,0.12)',
-    top: insetsTop() + 40,
-    left: -width * 0.25,
-  },
-  decorCircle3: {
-    position: 'absolute',
-    width: width * 0.9,
-    height: width * 0.9,
-    borderRadius: width * 0.45,
-    borderWidth: 1,
-    borderColor: 'rgba(27,94,63,0.06)',
-    bottom: -width * 0.45,
+    borderColor: 'rgba(201,169,97,0.14)',
+    top: height * 0.35,
     left: -width * 0.3,
+  },
+  decorCircleBottomLeft: {
+    position: 'absolute',
+    width: width * 1.1,
+    height: width * 1.1,
+    borderRadius: width * 0.55,
+    borderWidth: 1,
+    borderColor: 'rgba(27,94,63,0.07)',
+    bottom: -width * 0.6,
+    left: -width * 0.35,
   },
   decorArc: {
     position: 'absolute',
-    width: width * 0.7,
-    height: width * 0.35,
-    borderTopLeftRadius: width * 0.35,
-    borderTopRightRadius: width * 0.35,
+    width: width * 0.8,
+    height: width * 0.4,
+    borderTopLeftRadius: width * 0.4,
+    borderTopRightRadius: width * 0.4,
     borderWidth: 1.5,
     borderBottomWidth: 0,
-    borderColor: 'rgba(201,169,97,0.15)',
-    top: width * 0.35,
-    right: -width * 0.2,
+    borderColor: 'rgba(201,169,97,0.16)',
+    top: width * 0.45,
+    right: -width * 0.25,
   },
 
   // Contenu
@@ -480,13 +471,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   emailBadge: {
-    backgroundColor: 'rgba(255,255,255,0.85)',
+    backgroundColor: 'rgba(255,255,255,0.9)',
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(201,169,97,0.3)',
-    shadowColor: 'rgba(15,61,40,0.06)',
+    borderColor: 'rgba(201,169,97,0.35)',
+    shadowColor: 'rgba(15,61,40,0.08)',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 1,
     shadowRadius: 8,
@@ -517,8 +508,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: C.textDark,
     borderWidth: 1,
-    borderColor: 'rgba(201,169,97,0.2)',
-    shadowColor: 'rgba(15,61,40,0.05)',
+    borderColor: 'rgba(201,169,97,0.25)',
+    shadowColor: 'rgba(15,61,40,0.06)',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 1,
     shadowRadius: 6,
@@ -548,8 +539,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(201,169,97,0.2)',
-    shadowColor: 'rgba(15,61,40,0.05)',
+    borderColor: 'rgba(201,169,97,0.25)',
+    shadowColor: 'rgba(15,61,40,0.06)',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 1,
     shadowRadius: 6,
@@ -558,7 +549,7 @@ const styles = StyleSheet.create({
   ageButtonSelected: {
     borderColor: C.gold,
     borderWidth: 2,
-    backgroundColor: 'rgba(201,169,97,0.12)',
+    backgroundColor: 'rgba(201,169,97,0.15)',
   },
   ageButtonText: {
     fontSize: 14,
@@ -600,8 +591,3 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
 });
-
-// Helper : insets top (utilise 60 par défaut si insets indisponible en dehors du composant)
-function insetsTop() {
-  return 60;
-}
