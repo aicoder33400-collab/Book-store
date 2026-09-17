@@ -212,6 +212,8 @@ export const CompleteProfileScreen = () => {
             ]}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
+            bounces={false}
+            overScrollMode="never"
           >
             {/* HEADER */}
             <View style={styles.header}>

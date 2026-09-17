@@ -233,7 +233,7 @@ export const BooksScreen = () => {
               <Text style={styles.unavailableBadgeText}>Indisponible</Text>
             </View>
           )}
-          {isAvailable && item.availableQuantity <= 2 && (
+          {isAdmin && isAvailable && item.availableQuantity <= 2 && (
             <View style={styles.lowStockBadge}>
               <Text style={styles.lowStockBadgeText}>Plus que {item.availableQuantity}</Text>
             </View>
@@ -259,7 +259,11 @@ export const BooksScreen = () => {
                 isAvailable ? styles.availableText : styles.unavailableText,
               ]}
             >
-              {isAvailable ? `Disponible (${item.availableQuantity})` : 'Indisponible'}
+              {isAvailable
+                ? isAdmin
+                  ? `Disponible (${item.availableQuantity})`
+                  : 'Disponible'
+                : 'Indisponible'}
             </Text>
           </View>
           <View style={styles.metaRow}>

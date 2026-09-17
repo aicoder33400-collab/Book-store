@@ -300,9 +300,11 @@ export const BookDetailScreen = () => {
               ]}
             >
               {isAvailable
-                ? `Disponible (${book.availableQuantity} exemplaire${
-                    book.availableQuantity > 1 ? 's' : ''
-                  })`
+                ? isAdmin
+                  ? `Disponible (${book.availableQuantity} exemplaire${
+                      book.availableQuantity > 1 ? 's' : ''
+                    })`
+                  : 'Disponible'
                 : 'Indisponible'}
             </Text>
           </View>
