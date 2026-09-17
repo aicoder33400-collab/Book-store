@@ -5,7 +5,7 @@ import { RoleBasedNavigator } from './src/navigation/RoleBasedNavigator';
 import { useAuthStore } from './src/store/auth.store';
 
 export default function App() {
-  const { checkAuth } = useAuthStore();
+  const checkAuth = useAuthStore((s) => s.checkAuth);
 
   useEffect(() => {
     checkAuth();
