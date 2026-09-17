@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   RefreshControl,
   Alert,
+  Platform,
 } from 'react-native';
 import { loanService, Loan } from '../../services/loan.service';
 import { colors } from '../../theme/colors';
@@ -33,6 +34,33 @@ const STATUS_COLORS: Record<string, string> = {
   LATE: '#FF5722',
 };
 
+// 🎯 Helper : confirm cross-platform
+const confirmDialog = (
+  title: string,
+  message: string,
+  onConfirm: () => void,
+  confirmText = 'Confirmer',
+) => {
+  if (Platform.OS === 'web') {
+    const ok = window.confirm(`${title}\n\n${message}`);
+    if (ok) onConfirm();
+  } else {
+    Alert.alert(title, message, [
+      { text: 'Annuler', style: 'cancel' },
+      { text: confirmText, onPress: onConfirm },
+    ]);
+  }
+};
+
+// 🎯 Helper : alert cross-platform
+const showAlert = (title: string, message: string) => {
+  if (Platform.OS === 'web') {
+    window.alert(`${title}\n\n${message}`);
+  } else {
+    Alert.alert(title, message);
+  }
+};
+
 export const MyLoansScreen = () => {
   const [loans, setLoans] = useState<Loan[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,26 +83,24 @@ export const MyLoansScreen = () => {
   }, []);
 
   // 🔥 L'utilisateur demande le retour
-  const handleRequestReturn = async (loanId: string) => {
-    Alert.alert(
+  const handleRequestReturn = (loanId: string) => {
+    confirmDialog(
       'Demander le retour',
       'Voulez-vous signaler que vous souhaitez retourner ce livre ?',
-      [
-        { text: 'Annuler', style: 'cancel' },
-        {
-          text: 'Demander le retour',
-          onPress: async () => {
-            try {
-              await api.put(`/loans/${loanId}/request-return`);
-              Alert.alert('Succès', '📩 Demande de retour envoyée !');
-              fetchLoans();
-            } catch (error: any) {
-              console.error('Erreur:', error.response?.data);
-              Alert.alert('Erreur', error.response?.data?.message || 'Impossible de demander le retour');
-            }
-          }
+      async () => {
+        try {
+          await api.put(`/loans/${loanId}/request-return`);
+          showAlert('✅ Succès', '📩 Demande de retour envoyée !');
+          fetchLoans();
+        } catch (error: any) {
+          console.error('Erreur:', error.response?.data);
+          showAlert(
+            'Erreur',
+            error.response?.data?.message || 'Impossible de demander le retour',
+          );
         }
-      ]
+      },
+      'Demander le retour',
     );
   };
 
@@ -93,30 +119,36 @@ export const MyLoansScreen = () => {
     const isBorrowedOrLate = item.status === 'BORROWED' || item.status === 'LATE';
     const isReturnRequested = item.status === 'RETURN_REQUESTED';
     const canRequestReturn = isBorrowedOrLate && !isReturnRequested;
-    
-    // 🔥 Afficher les dates seulement si le prêt est confirmé (BORROWED, LATE, RETURNED)
-    const showDates = item.status === 'BORROWED' || item.status === 'LATE' || item.status === 'RETURNED';
-    
+    const showDates =
+      item.status === 'BORROWED' ||
+      item.status === 'LATE' ||
+      item.status === 'RETURNED';
+
     return (
       <View style={styles.card}>
         <View style={styles.cardHeader}>
           <Text style={styles.bookTitle}>📖 {item.book?.title || 'Livre'}</Text>
-          <View style={[styles.statusBadge, { backgroundColor: STATUS_COLORS[item.status] || '#999' }]}>
-            <Text style={styles.statusText}>{STATUS_LABELS[item.status] || item.status}</Text>
+          <View
+            style={[
+              styles.statusBadge,
+              { backgroundColor: STATUS_COLORS[item.status] || '#999' },
+            ]}
+          >
+            <Text style={styles.statusText}>
+              {STATUS_LABELS[item.status] || item.status}
+            </Text>
           </View>
         </View>
 
         <Text style={styles.bookAuthor}>✍️ {item.book?.author || ''}</Text>
-        
+
         <View style={styles.dates}>
-          {/* 🔥 Seulement si le prêt est confirmé */}
           {showDates && (
             <>
               <View style={styles.dateRow}>
                 <Text style={styles.dateLabel}>📅 Emprunté le</Text>
                 <Text style={styles.dateValue}>{formatDate(item.borrowedAt)}</Text>
               </View>
-              
               <View style={styles.dateRow}>
                 <Text style={styles.dateLabel}>⏳ À rendre avant</Text>
                 <Text style={[styles.dateValue, styles.dueDate]}>
@@ -125,7 +157,7 @@ export const MyLoansScreen = () => {
               </View>
             </>
           )}
-          
+
           {item.returnedAt && (
             <View style={styles.dateRow}>
               <Text style={styles.dateLabel}>↩️ Retourné le</Text>
@@ -137,7 +169,11 @@ export const MyLoansScreen = () => {
         </View>
 
         {canRequestReturn && (
-          <TouchableOpacity style={styles.requestReturnBtn} onPress={() => handleRequestReturn(item.id)}>
+          <TouchableOpacity
+            style={styles.requestReturnBtn}
+            onPress={() => handleRequestReturn(item.id)}
+            activeOpacity={0.85}
+          >
             <Text style={styles.btnText}>📩 Demander le retour</Text>
           </TouchableOpacity>
         )}
@@ -165,7 +201,15 @@ export const MyLoansScreen = () => {
       keyExtractor={(item) => item.id}
       renderItem={renderLoan}
       contentContainerStyle={styles.list}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchLoans(); }} />}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={() => {
+            setRefreshing(true);
+            fetchLoans();
+          }}
+        />
+      }
       ListEmptyComponent={<Text style={styles.empty}>Aucun emprunt</Text>}
     />
   );
@@ -188,7 +232,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 4,
   },
-  bookTitle: { fontSize: 16, fontWeight: '700', color: colors.text.primary, flex: 1 },
+  bookTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.text.primary,
+    flex: 1,
+  },
   bookAuthor: { fontSize: 13, color: colors.text.secondary, marginBottom: 8 },
   dates: { marginTop: 4, gap: 2 },
   dateRow: {
