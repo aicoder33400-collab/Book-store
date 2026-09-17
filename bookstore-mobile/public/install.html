@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Installer RMP Maktaba</title>
   <link rel="manifest" href="/manifest.json">
   <link rel="icon" href="/favicon.ico">
@@ -11,180 +11,533 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="RMP Maktaba">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: linear-gradient(180deg, #0F3D28 0%, #1B5E3F 50%, #246B49 100%);
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    html, body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+      background: linear-gradient(160deg, #0F3D28 0%, #1B5E3F 50%, #246B49 100%);
       color: #fff;
+      min-height: 100vh;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Motif décoratif */
+    .halo {
+      position: fixed;
+      border-radius: 50%;
+      border: 1px solid rgba(201,169,97,0.15);
+      pointer-events: none;
+    }
+    .halo-1 { width: 340px; height: 340px; top: -120px; right: -100px; }
+    .halo-2 { width: 500px; height: 500px; bottom: -200px; left: -150px; border-color: rgba(201,169,97,0.08); }
+
+    /* Langue en haut à droite */
+    .lang-switch {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      display: flex;
+      gap: 4px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 20px;
+      padding: 3px;
+      z-index: 100;
+      backdrop-filter: blur(10px);
+    }
+    .lang-switch button {
+      background: transparent;
+      border: none;
+      color: rgba(255,255,255,0.6);
+      padding: 6px 12px;
+      border-radius: 16px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+    .lang-switch button.active {
+      background: rgba(201,169,97,0.9);
+      color: #0F3D28;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 60px 24px 40px;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
-      align-items: center;
+    }
+
+    /* Logo */
+    .logo-wrap {
+      display: flex;
       justify-content: center;
-      padding: 24px;
-      text-align: center;
+      margin-bottom: 24px;
     }
     .logo {
-      width: 120px;
-      height: 120px;
+      width: 100px;
+      height: 100px;
       border-radius: 50%;
       background: linear-gradient(135deg, #E5C989, #C9A961);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 60px;
-      margin-bottom: 24px;
-      box-shadow: 0 8px 32px rgba(201, 169, 97, 0.4);
+      font-size: 52px;
+      box-shadow: 0 10px 40px rgba(201,169,97,0.45);
+      border: 3px solid rgba(255,255,255,0.15);
     }
+
     h1 {
-      font-size: 32px;
+      font-size: 30px;
+      font-weight: 800;
+      text-align: center;
       margin-bottom: 8px;
-      font-weight: 700;
       letter-spacing: 0.5px;
     }
     .subtitle {
       font-size: 14px;
-      color: rgba(255, 255, 255, 0.7);
-      margin-bottom: 40px;
+      text-align: center;
+      color: rgba(255,255,255,0.7);
+      margin-bottom: 32px;
+      letter-spacing: 0.3px;
     }
-    .btn {
-      display: inline-block;
-      padding: 16px 40px;
+
+    /* Bouton principal */
+    .install-btn {
+      display: block;
+      width: 100%;
+      padding: 18px;
       background: linear-gradient(135deg, #E5C989, #C9A961);
       color: #0F3D28;
       font-weight: 700;
       font-size: 17px;
       border: none;
       border-radius: 50px;
-      text-decoration: none;
       cursor: pointer;
-      box-shadow: 0 8px 24px rgba(201, 169, 97, 0.4);
+      box-shadow: 0 10px 30px rgba(201,169,97,0.4);
       transition: transform 0.2s;
+      margin-bottom: 12px;
+      font-family: inherit;
+      letter-spacing: 0.3px;
+    }
+    .install-btn:active { transform: scale(0.97); }
+    .install-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .open-btn {
+      display: block;
+      width: 100%;
+      padding: 16px;
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      font-weight: 600;
+      font-size: 15px;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 50px;
+      text-decoration: none;
+      text-align: center;
+      transition: background 0.2s;
+      margin-bottom: 28px;
+    }
+    .open-btn:active { background: rgba(255,255,255,0.2); }
+
+    /* Instructions */
+    .instructions {
+      background: rgba(255,255,255,0.07);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 20px;
+      padding: 24px;
       margin-bottom: 20px;
     }
-    .btn:hover { transform: translateY(-2px); }
-    .btn.secondary {
-      background: rgba(255, 255, 255, 0.15);
-      color: #fff;
-      box-shadow: none;
-      border: 1px solid rgba(255, 255, 255, 0.2);
+    .instructions.hidden { display: none; }
+
+    .inst-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
     }
-    .instructions {
-      max-width: 400px;
-      background: rgba(255, 255, 255, 0.08);
-      border-radius: 16px;
-      padding: 24px;
-      margin-top: 20px;
-      text-align: left;
+    .inst-platform-icon {
+      font-size: 28px;
+    }
+    .inst-title {
+      font-size: 17px;
+      font-weight: 700;
+      color: #E5C989;
+    }
+    .inst-subtitle {
+      font-size: 12px;
+      color: rgba(255,255,255,0.6);
+      margin-top: 2px;
+    }
+
+    .steps {
+      list-style: none;
+      counter-reset: step;
+    }
+    .steps li {
+      counter-increment: step;
+      position: relative;
+      padding: 12px 0 12px 44px;
       font-size: 14px;
-      line-height: 1.6;
-      display: none;
+      line-height: 1.5;
+      color: rgba(255,255,255,0.9);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
     }
-    .instructions.show { display: block; }
-    .instructions h2 {
-      font-size: 16px;
+    .steps li:last-child { border-bottom: none; }
+    .steps li::before {
+      content: counter(step);
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: rgba(201,169,97,0.9);
+      color: #0F3D28;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 13px;
+    }
+    .steps b {
+      color: #E5C989;
+      font-weight: 700;
+    }
+
+    /* Sélecteur de plateforme */
+    .platform-hint {
+      text-align: center;
+      font-size: 12px;
+      color: rgba(255,255,255,0.5);
+      margin-top: 8px;
       margin-bottom: 12px;
-      color: #E5C989;
     }
-    .instructions ol { padding-left: 20px; }
-    .instructions li { margin-bottom: 8px; }
-    .icon-hint {
-      display: inline-block;
-      padding: 2px 8px;
-      background: rgba(229, 201, 137, 0.2);
-      border-radius: 4px;
+    .platform-switch {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .platform-switch button {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: rgba(255,255,255,0.7);
+      padding: 8px 16px;
+      border-radius: 20px;
+      cursor: pointer;
       font-size: 12px;
-      color: #E5C989;
-      margin: 0 2px;
+      font-weight: 600;
+      transition: all 0.2s;
+      font-family: inherit;
     }
+    .platform-switch button.active {
+      background: rgba(201,169,97,0.2);
+      border-color: rgba(201,169,97,0.6);
+      color: #E5C989;
+    }
+
+    /* Footer */
     .footer {
-      position: fixed;
-      bottom: 20px;
+      margin-top: auto;
+      padding-top: 20px;
+      text-align: center;
       font-size: 12px;
-      color: rgba(255, 255, 255, 0.4);
+      color: rgba(255,255,255,0.35);
+      letter-spacing: 0.3px;
+    }
+
+    /* Petite note "déjà installée" */
+    .already-installed {
+      text-align: center;
+      font-size: 13px;
+      color: rgba(255,255,255,0.6);
+      margin-top: 12px;
+    }
+    .already-installed a {
+      color: #E5C989;
+      font-weight: 600;
+      text-decoration: none;
     }
   </style>
 </head>
 <body>
-  <div class="logo">🕌</div>
-  <h1>RMP Maktaba</h1>
-  <p class="subtitle">Bibliothèque de la mosquée</p>
+  <div class="halo halo-1"></div>
+  <div class="halo halo-2"></div>
 
-  <button id="installBtn" class="btn">📲 Installer l'application</button>
-  <a href="/" class="btn secondary">Ouvrir dans le navigateur</a>
-
-  <div id="iosInstructions" class="instructions">
-    <h2>📱 iPhone / iPad</h2>
-    <ol>
-      <li>Ouvrez cette page dans <b>Safari</b></li>
-      <li>Appuyez sur l'icône <span class="icon-hint">↗ Partager</span> en bas</li>
-      <li>Faites défiler et choisissez <b>« Sur l'écran d'accueil »</b></li>
-      <li>Appuyez sur <b>Ajouter</b></li>
-    </ol>
+  <!-- Sélecteur de langue -->
+  <div class="lang-switch">
+    <button data-lang="fr" class="active">🇫🇷 FR</button>
+    <button data-lang="en">🇬🇧 EN</button>
   </div>
 
-  <div id="androidInstructions" class="instructions">
-    <h2>🤖 Android</h2>
-    <ol>
-      <li>Ouvrez cette page dans <b>Chrome</b></li>
-      <li>Appuyez sur le menu <span class="icon-hint">⋮</span> en haut à droite</li>
-      <li>Choisissez <b>« Installer l'application »</b> ou <b>« Ajouter à l'écran d'accueil »</b></li>
-      <li>Confirmez</li>
-    </ol>
-  </div>
+  <div class="container">
+    <!-- Logo -->
+    <div class="logo-wrap">
+      <div class="logo">🕌</div>
+    </div>
 
-  <p class="footer">Application gratuite • Sans pub • Installable en 2 clics</p>
+    <!-- Titre -->
+    <h1 data-i18n="title">RMP Maktaba</h1>
+    <p class="subtitle" data-i18n="subtitle">Bibliothèque de la mosquée</p>
+
+    <!-- Bouton principal -->
+    <button id="installBtn" class="install-btn" data-i18n="installBtn">
+      📲 Installer l'application
+    </button>
+    <a href="/" class="open-btn" data-i18n="openBtn">
+      Ouvrir dans le navigateur
+    </a>
+
+    <!-- Sélecteur de plateforme -->
+    <p class="platform-hint" data-i18n="platformHint">
+      Comment installer sur votre appareil :
+    </p>
+    <div class="platform-switch">
+      <button data-platform="ios">📱 iPhone / iPad</button>
+      <button data-platform="android">🤖 Android</button>
+      <button data-platform="desktop">💻 Ordinateur</button>
+    </div>
+
+    <!-- Instructions iOS -->
+    <div class="instructions hidden" id="inst-ios">
+      <div class="inst-header">
+        <div class="inst-platform-icon">📱</div>
+        <div>
+          <div class="inst-title" data-i18n="iosTitle">Sur iPhone / iPad</div>
+          <div class="inst-subtitle" data-i18n="iosSub">Utilisez Safari</div>
+        </div>
+      </div>
+      <ol class="steps">
+        <li data-i18n-html="iosStep1">Ouvrez cette page dans <b>Safari</b></li>
+        <li data-i18n-html="iosStep2">Appuyez sur <b>Partager</b> (carré avec flèche)</li>
+        <li data-i18n-html="iosStep3">Choisissez <b>« Sur l'écran d'accueil »</b></li>
+        <li data-i18n-html="iosStep4">Appuyez sur <b>Ajouter</b></li>
+      </ol>
+    </div>
+
+    <!-- Instructions Android -->
+    <div class="instructions hidden" id="inst-android">
+      <div class="inst-header">
+        <div class="inst-platform-icon">🤖</div>
+        <div>
+          <div class="inst-title" data-i18n="androidTitle">Sur Android</div>
+          <div class="inst-subtitle" data-i18n="androidSub">Utilisez Chrome</div>
+        </div>
+      </div>
+      <ol class="steps">
+        <li data-i18n-html="androidStep1">Ouvrez cette page dans <b>Chrome</b></li>
+        <li data-i18n-html="androidStep2">Appuyez sur le menu <b>⋮</b> (3 points en haut à droite)</li>
+        <li data-i18n-html="androidStep3">Choisissez <b>« Installer l'application »</b></li>
+        <li data-i18n-html="androidStep4">Appuyez sur <b>Installer</b></li>
+      </ol>
+    </div>
+
+    <!-- Instructions Desktop -->
+    <div class="instructions hidden" id="inst-desktop">
+      <div class="inst-header">
+        <div class="inst-platform-icon">💻</div>
+        <div>
+          <div class="inst-title" data-i18n="desktopTitle">Sur ordinateur</div>
+          <div class="inst-subtitle" data-i18n="desktopSub">Chrome, Edge ou Brave</div>
+        </div>
+      </div>
+      <ol class="steps">
+        <li data-i18n-html="desktopStep1">Cherchez l'icône <b>⊕</b> dans la barre d'adresse</li>
+        <li data-i18n-html="desktopStep2">Ou menu <b>⋮</b> → <b>« Installer RMP Maktaba »</b></li>
+        <li data-i18n-html="desktopStep3">Confirmez l'installation</li>
+      </ol>
+    </div>
+
+    <p class="already-installed" data-i18n-html="alreadyInstalled">
+      Déjà installée ? <a href="/">Ouvrir l'application →</a>
+    </p>
+
+    <div class="footer" data-i18n="footer">
+      Application gratuite • Sans publicité
+    </div>
+  </div>
 
   <script>
-    // Détection de la plateforme
+    // ═══════════════════════════════════════════════════════
+    // TRADUCTIONS
+    // ═══════════════════════════════════════════════════════
+    const TRANSLATIONS = {
+      fr: {
+        title: 'RMP Maktaba',
+        subtitle: 'Bibliothèque de la mosquée',
+        installBtn: "📲 Installer l'application",
+        openBtn: 'Ouvrir dans le navigateur',
+        platformHint: 'Comment installer sur votre appareil :',
+        iosTitle: 'Sur iPhone / iPad',
+        iosSub: 'Utilisez Safari',
+        iosStep1: 'Ouvrez cette page dans <b>Safari</b>',
+        iosStep2: 'Appuyez sur <b>Partager</b> (carré avec flèche)',
+        iosStep3: 'Choisissez <b>« Sur l\'écran d\'accueil »</b>',
+        iosStep4: 'Appuyez sur <b>Ajouter</b>',
+        androidTitle: 'Sur Android',
+        androidSub: 'Utilisez Chrome',
+        androidStep1: 'Ouvrez cette page dans <b>Chrome</b>',
+        androidStep2: 'Appuyez sur le menu <b>⋮</b> (3 points en haut à droite)',
+        androidStep3: 'Choisissez <b>« Installer l\'application »</b>',
+        androidStep4: 'Appuyez sur <b>Installer</b>',
+        desktopTitle: 'Sur ordinateur',
+        desktopSub: 'Chrome, Edge ou Brave',
+        desktopStep1: 'Cherchez l\'icône <b>⊕</b> dans la barre d\'adresse',
+        desktopStep2: 'Ou menu <b>⋮</b> → <b>« Installer RMP Maktaba »</b>',
+        desktopStep3: 'Confirmez l\'installation',
+        alreadyInstalled: 'Déjà installée ? <a href="/">Ouvrir l\'application →</a>',
+        footer: 'Application gratuite • Sans publicité',
+      },
+      en: {
+        title: 'RMP Maktaba',
+        subtitle: 'Mosque Library',
+        installBtn: '📲 Install the app',
+        openBtn: 'Open in browser',
+        platformHint: 'How to install on your device:',
+        iosTitle: 'On iPhone / iPad',
+        iosSub: 'Use Safari',
+        iosStep1: 'Open this page in <b>Safari</b>',
+        iosStep2: 'Tap <b>Share</b> (square with arrow)',
+        iosStep3: 'Choose <b>"Add to Home Screen"</b>',
+        iosStep4: 'Tap <b>Add</b>',
+        androidTitle: 'On Android',
+        androidSub: 'Use Chrome',
+        androidStep1: 'Open this page in <b>Chrome</b>',
+        androidStep2: 'Tap the menu <b>⋮</b> (3 dots, top right)',
+        androidStep3: 'Choose <b>"Install app"</b>',
+        androidStep4: 'Tap <b>Install</b>',
+        desktopTitle: 'On computer',
+        desktopSub: 'Chrome, Edge or Brave',
+        desktopStep1: 'Look for the <b>⊕</b> icon in the address bar',
+        desktopStep2: 'Or menu <b>⋮</b> → <b>"Install RMP Maktaba"</b>',
+        desktopStep3: 'Confirm installation',
+        alreadyInstalled: 'Already installed? <a href="/">Open the app →</a>',
+        footer: 'Free app • No ads',
+      },
+    };
+
+    // ═══════════════════════════════════════════════════════
+    // DÉTECTION AUTO
+    // ═══════════════════════════════════════════════════════
     const ua = navigator.userAgent;
-    const isIOS = /iPad|iPhone|iPod/.test(ua);
+    const isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
     const isAndroid = /Android/.test(ua);
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches
                       || window.navigator.standalone === true;
 
-    // Si déjà installée → rediriger vers l'app
+    // Si déjà installée → ouvrir l'app
     if (isStandalone) {
       window.location.href = '/';
     }
 
-    const installBtn = document.getElementById('installBtn');
-    const iosInst = document.getElementById('iosInstructions');
-    const androidInst = document.getElementById('androidInstructions');
+    // Détection langue
+    const browserLang = (navigator.language || 'fr').toLowerCase();
+    let currentLang = browserLang.startsWith('en') ? 'en' : 'fr';
 
-    // Variable pour stocker le prompt d'installation (Android/Chrome)
+    // Détection plateforme
+    let currentPlatform = 'desktop';
+    if (isIOS) currentPlatform = 'ios';
+    else if (isAndroid) currentPlatform = 'android';
+
+    // ═══════════════════════════════════════════════════════
+    // APPLICATION DES TRADUCTIONS
+    // ═══════════════════════════════════════════════════════
+    function applyTranslations() {
+      const t = TRANSLATIONS[currentLang];
+      document.documentElement.lang = currentLang;
+
+      // Textes simples
+      document.querySelectorAll('[data-i18n]').forEach((el) => {
+        const key = el.getAttribute('data-i18n');
+        if (t[key]) el.textContent = t[key];
+      });
+
+      // Textes avec HTML (bold)
+      document.querySelectorAll('[data-i18n-html]').forEach((el) => {
+        const key = el.getAttribute('data-i18n-html');
+        if (t[key]) el.innerHTML = t[key];
+      });
+
+      // Boutons de langue
+      document.querySelectorAll('.lang-switch button').forEach((btn) => {
+        btn.classList.toggle('active', btn.getAttribute('data-lang') === currentLang);
+      });
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // APPLICATION DE LA PLATEFORME
+    // ═══════════════════════════════════════════════════════
+    function applyPlatform() {
+      // Cacher toutes les instructions
+      document.querySelectorAll('.instructions').forEach((el) => el.classList.add('hidden'));
+      // Montrer celles de la plateforme active
+      const active = document.getElementById('inst-' + currentPlatform);
+      if (active) active.classList.remove('hidden');
+
+      // Boutons plateforme
+      document.querySelectorAll('.platform-switch button').forEach((btn) => {
+        btn.classList.toggle('active', btn.getAttribute('data-platform') === currentPlatform);
+      });
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // ÉVÉNEMENTS
+    // ═══════════════════════════════════════════════════════
+    document.querySelectorAll('.lang-switch button').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        currentLang = btn.getAttribute('data-lang');
+        applyTranslations();
+      });
+    });
+
+    document.querySelectorAll('.platform-switch button').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        currentPlatform = btn.getAttribute('data-platform');
+        applyPlatform();
+      });
+    });
+
+    // Prompt natif PWA (Android Chrome)
     let deferredPrompt = null;
-
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       deferredPrompt = e;
       console.log('✅ PWA installable');
     });
 
-    installBtn.addEventListener('click', async () => {
-      // Si on a le prompt natif (Android Chrome)
+    document.getElementById('installBtn').addEventListener('click', async () => {
+      const t = TRANSLATIONS[currentLang];
       if (deferredPrompt) {
         deferredPrompt.prompt();
         const { outcome } = await deferredPrompt.userChoice;
-        console.log('Installation:', outcome);
-        deferredPrompt = null;
         if (outcome === 'accepted') {
-          installBtn.textContent = '✅ Installation en cours...';
+          document.getElementById('installBtn').textContent = '✅ ' + (currentLang === 'fr' ? 'Installation...' : 'Installing...');
         }
-      } else if (isIOS) {
-        // iOS : instructions manuelles
-        iosInst.classList.add('show');
-        androidInst.classList.remove('show');
-      } else if (isAndroid) {
-        // Android sans prompt natif : instructions manuelles
-        androidInst.classList.add('show');
-        iosInst.classList.remove('show');
+        deferredPrompt = null;
       } else {
-        // Desktop
-        alert("Ouvrez cette page depuis votre téléphone pour installer l'app.");
+        // Fallback : afficher les instructions
+        applyPlatform();
+        // Scroll vers les instructions
+        const active = document.getElementById('inst-' + currentPlatform);
+        if (active) active.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
     });
+
+    // Init
+    applyTranslations();
+    applyPlatform();
   </script>
 </body>
 </html>

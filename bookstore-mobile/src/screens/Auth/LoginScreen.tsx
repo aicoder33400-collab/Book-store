@@ -298,10 +298,19 @@ export const LoginScreen = () => {
           </View>
 
           <View style={styles.footer}>
-            <View style={styles.footerLine} />
-            <Text style={styles.footerText}>
-              En continuant, vous acceptez nos conditions
-            </Text>
+            <TouchableOpacity
+              style={styles.installLink}
+              onPress={() => {
+                if (Platform.OS === 'web' && typeof window !== 'undefined') {
+                  window.location.href = '/install';
+                }
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.installLinkText}>📲 Installer l'application</Text>
+            </TouchableOpacity>
+
+            
           </View>
         </View>
       </LinearGradient>
@@ -448,10 +457,22 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     opacity: 0.5,
   },
-  footerText: {
+    footerText: {
     fontSize: 11,
     color: 'rgba(255,255,255,0.35)',
     letterSpacing: 0.4,
     textAlign: 'center',
+  },
+  installLink: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    marginBottom: 12,
+  },
+  installLinkText: {
+    fontSize: 13,
+    color: 'rgba(201,169,97,0.9)',
+    fontWeight: '600',
+    letterSpacing: 0.4,
+    textDecorationLine: 'underline',
   },
 });

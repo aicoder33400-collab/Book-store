@@ -373,9 +373,7 @@ export const CompleteProfileScreen = () => {
               )}
             </TouchableOpacity>
 
-            <Text style={styles.footerText}>
-              En continuant, vous acceptez nos conditions d'utilisation
-            </Text>
+           
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
