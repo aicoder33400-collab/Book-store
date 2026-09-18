@@ -60,15 +60,14 @@ export const CompleteProfileScreen = () => {
     commune?: string;
   }>({});
 
-  // 📐 Calcul dynamique de la taille des éléments selon la hauteur écran
-  // Sur petits écrans : compact. Sur grands écrans : plus d'espace.
+  // 📐 Responsive : taille adaptée à la hauteur écran
   const compact = height < 700;
-  const inputPaddingV = compact ? 10 : 13;
+  const inputPaddingV = compact ? 11 : 14;
   const inputFontSize = compact ? 14 : 15;
   const labelFontSize = compact ? 11 : 12;
-  const groupMargin = compact ? 8 : 12;
-  const sectionGap = compact ? 10 : 16;
-  const buttonPaddingV = compact ? 13 : 16;
+  const fieldGap = compact ? 14 : 18;    // espace entre champs (équilibré)
+  const buttonGapTop = compact ? 18 : 24; // espace avant le bouton
+  const buttonPaddingV = compact ? 14 : 16;
 
   // 🎬 Animation fade-in
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -216,26 +215,23 @@ export const CompleteProfileScreen = () => {
       <View style={styles.ringTopRight} />
       <View style={styles.ringBottomLeft} />
 
-      {/* ═══ CONTENU RESPONSIVE ═══ */}
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        {/* ScrollView UNIQUEMENT en cas de clavier ouvert sur petit écran */}
         <ScrollView
           style={styles.scroll}
           contentContainerStyle={[
             styles.scrollContent,
             {
-              paddingTop: insets.top + (compact ? 12 : 24),
-              paddingBottom: insets.bottom + (compact ? 12 : 24),
+              paddingTop: insets.top + (compact ? 16 : 28),
+              paddingBottom: insets.bottom + (compact ? 16 : 28),
             },
           ]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           bounces={false}
           overScrollMode="auto"
-          scrollEnabled={Platform.OS === 'web' ? true : true}
         >
           <Animated.View
             style={[
@@ -247,7 +243,7 @@ export const CompleteProfileScreen = () => {
             ]}
           >
             {/* ═══ HEADER ═══ */}
-            <View style={styles.header}>
+            <View style={[styles.header, { marginBottom: compact ? 20 : 28 }]}>
               {userEmail ? (
                 <Text style={styles.emailText} numberOfLines={1}>
                   📧 {userEmail}
@@ -256,7 +252,7 @@ export const CompleteProfileScreen = () => {
               <Text
                 style={[
                   styles.subtitle,
-                  { fontSize: compact ? 16 : 18 },
+                  { fontSize: compact ? 17 : 19 },
                 ]}
               >
                 Complétez votre profil
@@ -265,8 +261,8 @@ export const CompleteProfileScreen = () => {
 
             {/* ═══ FORMULAIRE ═══ */}
             <View style={styles.form}>
-              {/* Prénom + Nom */}
-              <View style={[styles.row, { marginBottom: groupMargin }]}>
+              {/* Prénom + Nom sur 2 colonnes */}
+              <View style={[styles.row, { marginBottom: fieldGap }]}>
                 <View style={styles.col}>
                   <Text style={[styles.label, { fontSize: labelFontSize }]}>
                     Prénom <Text style={styles.required}>*</Text>
@@ -315,7 +311,7 @@ export const CompleteProfileScreen = () => {
               </View>
 
               {/* Téléphone */}
-              <View style={[styles.inputGroup, { marginBottom: groupMargin }]}>
+              <View style={[styles.inputGroup, { marginBottom: fieldGap }]}>
                 <Text style={[styles.label, { fontSize: labelFontSize }]}>
                   Téléphone <Text style={styles.required}>*</Text>
                 </Text>
@@ -338,7 +334,7 @@ export const CompleteProfileScreen = () => {
               </View>
 
               {/* Tranche d'âge */}
-              <View style={[styles.inputGroup, { marginBottom: groupMargin }]}>
+              <View style={[styles.inputGroup, { marginBottom: fieldGap }]}>
                 <Text style={[styles.label, { fontSize: labelFontSize }]}>
                   Tranche d'âge <Text style={styles.required}>*</Text>
                 </Text>
@@ -393,7 +389,7 @@ export const CompleteProfileScreen = () => {
               </View>
 
               {/* Commune */}
-              <View style={[styles.inputGroup, { marginBottom: sectionGap }]}>
+              <View style={[styles.inputGroup, { marginBottom: buttonGapTop }]}>
                 <Text style={[styles.label, { fontSize: labelFontSize }]}>
                   Commune <Text style={styles.required}>*</Text>
                 </Text>
@@ -415,9 +411,6 @@ export const CompleteProfileScreen = () => {
                 />
                 {errors.commune && <Text style={styles.errorText}>{errors.commune}</Text>}
               </View>
-
-              {/* Espace flexible (pousse le bouton en bas si place) */}
-              <View style={styles.spacer} />
 
               {/* Bouton */}
               <TouchableOpacity
@@ -492,19 +485,18 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    justifyContent: 'space-between',
+    justifyContent: 'center',   // ← contenu centré verticalement
   },
 
   // Header
   header: {
     alignItems: 'center',
-    marginBottom: 16,
   },
   emailText: {
     fontSize: 12,
     color: C.textMid,
     fontWeight: '600',
-    marginBottom: 8,
+    marginBottom: 10,
     paddingHorizontal: 12,
     paddingVertical: 6,
     backgroundColor: 'rgba(255,255,255,0.85)',
@@ -520,9 +512,7 @@ const styles = StyleSheet.create({
   },
 
   // Form
-  form: {
-    flex: 1,
-  },
+  form: {},
   row: {
     flexDirection: 'row',
     gap: 10,
@@ -534,7 +524,7 @@ const styles = StyleSheet.create({
   label: {
     fontWeight: '700',
     color: C.textDark,
-    marginBottom: 4,
+    marginBottom: 5,
     letterSpacing: 0.2,
   },
   required: { color: C.gold, fontSize: 13 },
@@ -584,18 +574,11 @@ const styles = StyleSheet.create({
   },
   ageButtonTextSelected: { color: C.textDark, fontWeight: '800' },
 
-  // Spacer pour pousser le bouton
-  spacer: {
-    flex: 1,
-    minHeight: 8,
-  },
-
   // Bouton
   button: {
     backgroundColor: C.primary,
     borderRadius: 40,
     alignItems: 'center',
-    marginTop: 8,
     shadowColor: C.primary,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.28,
