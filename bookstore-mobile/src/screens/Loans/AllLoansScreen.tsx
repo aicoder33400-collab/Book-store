@@ -300,16 +300,6 @@ export const AllLoansScreen = () => {
         </View>
       )}
 
-      {/* 🔥 Alerte si approuvé sans créneau */}
-      {item.status === 'APPROVED' && !item.pickupDate && (
-        <View style={styles.noPickupWarning}>
-          <Text style={styles.noPickupText}>
-            ⏳ L'utilisateur n'a pas encore choisi de créneau
-          </Text>
-        </View>
-      )}
-
-      {/* Actions */}
 
       {/* Actions */}
       {item.status === 'REQUESTED' && (
@@ -331,7 +321,7 @@ export const AllLoansScreen = () => {
         </View>
       )}
 
-      {item.status === 'APPROVED' && (
+      {item.status === 'APPROVED' && item.pickupDate && item.pickupPrayer && (
         <TouchableOpacity
           style={[styles.actionBtn, styles.handOverBtn]}
           onPress={() => handleHandOver(item.id)}
@@ -340,6 +330,14 @@ export const AllLoansScreen = () => {
           <Text style={styles.actionBtnText}>📦 Remettre le livre</Text>
         </TouchableOpacity>
       )}
+
+      {item.status === 'APPROVED' && (!item.pickupDate || !item.pickupPrayer) && (
+        <View style={styles.noPickupWarning}>
+          <Text style={styles.noPickupText}>
+            ⏳ En attente du créneau choisi par l'utilisateur
+          </Text>
+        </View>
+      )}     
 
       {item.status === 'RETURN_REQUESTED' && (
         <TouchableOpacity

@@ -38,11 +38,11 @@ export class BookController {
       return res.status(404).json(ApiResponse.error('Livre non trouvé'));
     }
     
-    const availableCopies = book.copies?.filter((c) => c.status === 'AVAILABLE').length || 0;
+    const availableQuantity = book.copies?.filter((c) => c.status === 'AVAILABLE').length || 0;
     
     return res.json(ApiResponse.success({
       ...book,
-      availableCopies,
+      availableQuantity,
     }));
   });
 
