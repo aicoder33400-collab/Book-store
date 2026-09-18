@@ -391,6 +391,58 @@ export class LoanService {
     };
   }
 
+    // 🔥 Utilisateur choisit un créneau de retrait (rendez-vous)
+  async setPickupSlot(loanId: string, userId: string, pickupDate: Date, pickupPrayer: 'DOHR' | 'ASR' | 'MAGHREB') {
+    const loan = await prisma.loan.findUnique({
+      where: { id: loanId },
+    });
+
+    if (!loan) {
+      throw new AppError('Emprunt introuvable', 404);
+    }
+
+    // Vérifier que l'emprunt appartient bien à l'utilisateur
+    if (loan.userId !== userId) {
+      throw new AppError('Non autorisé', 403);
+    }
+
+    // Vérifier que le statut permet de choisir un créneau
+    if (loan.status !== 'APPROVED') {
+      throw new AppError('Vous ne pouvez choisir un créneau que pour un emprunt approuvé', 400);
+    }
+
+    // Vérifier que la date est dans le futur (aujourd'hui ou plus tard)
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    if (pickupDate < now) {
+      throw new AppError('La date choisie doit être dans le futur', 400);
+    }
+
+    // Vérifier que la date est dans les 7 prochains jours
+    const maxDate = new Date();
+    maxDate.setDate(maxDate.getDate() + 7);
+    maxDate.setHours(23, 59, 59, 999);
+    if (pickupDate > maxDate) {
+      throw new AppError('La date doit être dans les 7 prochains jours', 400);
+    }
+
+    return await prisma.loan.update({
+      where: { id: loanId },
+      data: {
+        pickupDate,
+        pickupPrayer,
+      },
+      include: {
+        user: true,
+        copy: {
+          include: {
+            book: true,
+          },
+        },
+      },
+    });
+  }
+  
   async handOverBook(loanId: string) {
     const loan = await prisma.loan.findUnique({
       where: { id: loanId },

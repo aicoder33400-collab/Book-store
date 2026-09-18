@@ -23,14 +23,13 @@
     "typeRoots": [
       "./node_modules/@types",
       "./src/types"
-    ],
-    "ignoreDeprecations": "6.0"
+    ]
   },
   "include": [
     "src/**/*.ts",
     "src/types/**/*.d.ts"
   ],
-  "exclude": ["node_modules", "dist"],
+  "exclude": ["node_modules", "dist", "legacy"],
   "ts-node": {
     "compilerOptions": {
       "module": "commonjs"

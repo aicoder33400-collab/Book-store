@@ -25,6 +25,13 @@ router.put(
   loanController.requestReturn
 );
 
+// 🔥 USER choisit un créneau de retrait
+router.put(
+  '/:id/set-pickup',
+  AuthMiddleware.restrictTo('ADMIN', 'STAFF', 'USER'),
+  loanController.setPickupSlot
+);
+
 // 🔥 ADMIN/STAFF confirme le retour
 router.put(
   '/:id/confirm-return',

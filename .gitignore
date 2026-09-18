@@ -29,3 +29,40 @@ Thumbs.db
 .vscode/
 .idea/
 client_id.txt
+
+# Build artifacts
+bookstore-backend/dist/
+bookstore-backend/tsconfig.tsbuildinfo
+bookstore-mobile/dist/
+bookstore-mobile/.expo/
+*.tsbuildinfo
+
+# Node
+node_modules/
+
+# Environment
+.env
+.env.local
+
+# Build
+dist/
+*.tsbuildinfo
+
+# Logs
+*.log
+combined.log
+error.log
+
+# Tests scripts
+race-*.sh
+race-*.log
+test-*.sh
+test-*.log
+test-*.txt
+
+# Node
+node_modules/
+
+# Env
+.env
+.env.local

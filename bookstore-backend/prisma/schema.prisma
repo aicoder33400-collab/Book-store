@@ -23,6 +23,12 @@ enum LoanStatus {
   LATE
 }
 
+enum PrayerSlot {
+  DOHR
+  ASR
+  MAGHREB
+}
+
 enum CopyStatus {
   AVAILABLE
   BORROWED
@@ -136,6 +142,10 @@ model Loan {
   dueDate           DateTime
   returnedAt        DateTime?
   status            LoanStatus   @default(BORROWED)
+  
+  pickupDate        DateTime?
+  pickupPrayer      PrayerSlot?
+
   
   user              User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   copy              Copy         @relation(fields: [copyId], references: [id], onDelete: Cascade)

@@ -128,4 +128,23 @@ export class LoanController {
       ApiResponse.success(null, 'Loan deleted successfully')
     );
   });
+
+    // 🔥 Utilisateur choisit un créneau de retrait
+  setPickupSlot = catchAsync(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const userId = (req as any).user.id;
+    const { pickupDate, pickupPrayer } = req.body;
+
+    const loan = await loanService.setPickupSlot(
+      id,
+      userId,
+      new Date(pickupDate),
+      pickupPrayer
+    );
+
+    res.status(200).json(
+      ApiResponse.success(loan, 'Créneau de retrait enregistré')
+    );
+  });
+  
 }

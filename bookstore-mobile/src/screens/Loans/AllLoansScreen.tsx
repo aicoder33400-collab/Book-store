@@ -44,6 +44,12 @@ const STATUS_COLORS: Record<string, string> = {
   LATE: '#B53A3A',
 };
 
+const PRAYER_LABELS: Record<string, string> = {
+  DOHR: '🕐 Dohr',
+  ASR: '🕓 Asr',
+  MAGHREB: '🌅 Maghreb',
+};
+
 type FilterType = 'ALL' | 'REQUESTED' | 'APPROVED' | 'BORROWED' | 'RETURN_REQUESTED' | 'RETURNED';
 
 export const AllLoansScreen = () => {
@@ -251,6 +257,32 @@ export const AllLoansScreen = () => {
           </View>
         )}
       </View>
+
+      {/* 🔥 Créneau de retrait */}
+      {item.pickupDate && item.pickupPrayer && (
+        <View style={styles.pickupBox}>
+          <Text style={styles.pickupTitle}>📅 Rendez-vous de retrait</Text>
+          <Text style={styles.pickupText}>
+            {new Date(item.pickupDate).toLocaleDateString('fr-FR', {
+              weekday: 'long',
+              day: '2-digit',
+              month: 'long',
+            })}{' '}
+            — {PRAYER_LABELS[item.pickupPrayer] || item.pickupPrayer}
+          </Text>
+        </View>
+      )}
+
+      {/* 🔥 Alerte si approuvé sans créneau */}
+      {item.status === 'APPROVED' && !item.pickupDate && (
+        <View style={styles.noPickupWarning}>
+          <Text style={styles.noPickupText}>
+            ⏳ L'utilisateur n'a pas encore choisi de créneau
+          </Text>
+        </View>
+      )}
+
+      {/* Actions */}
 
       {/* Actions */}
       {item.status === 'REQUESTED' && (
@@ -608,5 +640,40 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontSize: 12,
     letterSpacing: 0.3,
+  },
+  pickupBox: {
+    backgroundColor: 'rgba(74, 144, 217, 0.08)',
+    borderRadius: 10,
+    padding: 12,
+    marginTop: 12,
+    borderLeftWidth: 3,
+    borderLeftColor: '#4A90D9',
+  },
+  pickupTitle: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#4A90D9',
+    marginBottom: 4,
+    letterSpacing: 0.3,
+  },
+  pickupText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.text.primary,
+    textTransform: 'capitalize',
+  },
+  noPickupWarning: {
+    backgroundColor: 'rgba(245, 166, 35, 0.1)',
+    borderRadius: 10,
+    padding: 10,
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(245, 166, 35, 0.3)',
+    alignItems: 'center',
+  },
+  noPickupText: {
+    fontSize: 12,
+    color: '#D4853A',
+    fontWeight: '600',
   },
 });
