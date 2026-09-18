@@ -344,10 +344,7 @@ export const LoginScreen = () => {
             )}
           </View>
 
-          {/* ═══ FOOTER ═══ */}
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>بسم الله الرحمن الرحيم</Text>
-          </View>
+          
         </Animated.View>
       </LinearGradient>
     </View>
