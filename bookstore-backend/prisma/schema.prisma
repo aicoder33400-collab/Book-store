@@ -146,6 +146,9 @@ model Loan {
   pickupDate        DateTime?
   pickupPrayer      PrayerSlot?
 
+  returnPickupDate     DateTime?
+  returnPickupPrayer   PrayerSlot?
+
   
   user              User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   copy              Copy         @relation(fields: [copyId], references: [id], onDelete: Cascade)

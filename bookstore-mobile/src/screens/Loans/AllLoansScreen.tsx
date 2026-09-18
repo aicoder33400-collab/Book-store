@@ -244,12 +244,17 @@ export const AllLoansScreen = () => {
             </View>
           )}
 
-        <View style={styles.dateRow}>
-          <Text style={styles.dateLabel}>⏳ À rendre avant</Text>
-          <Text style={[styles.dateValue, styles.dueDate]}>
-            {formatDate(item.dueDate)}
-          </Text>
-        </View>
+        {(item.status === 'BORROWED' ||
+          item.status === 'LATE' ||
+          item.status === 'RETURN_REQUESTED' ||
+          item.status === 'RETURNED') && (
+          <View style={styles.dateRow}>
+            <Text style={styles.dateLabel}>⏳ À rendre avant</Text>
+            <Text style={[styles.dateValue, styles.dueDate]}>
+              {formatDate(item.dueDate)}
+            </Text>
+          </View>
+        )}
 
         {item.returnedAt && (
           <View style={styles.dateRow}>
@@ -270,9 +275,27 @@ export const AllLoansScreen = () => {
               weekday: 'long',
               day: '2-digit',
               month: 'long',
-              timeZone: 'UTC',  // 🔥 Fix timezone
+              timeZone: 'UTC',
             })}{' '}
             — {PRAYER_LABELS[item.pickupPrayer] || item.pickupPrayer}
+          </Text>
+        </View>
+      )}
+
+      {/* 🔥 Créneau de retour */}
+      {item.returnPickupDate && item.returnPickupPrayer && (
+        <View style={[styles.pickupBox, { borderLeftColor: colors.success, backgroundColor: 'rgba(45, 122, 85, 0.08)' }]}>
+          <Text style={[styles.pickupTitle, { color: colors.success }]}>
+            📅 Rendez-vous de retour
+          </Text>
+          <Text style={styles.pickupText}>
+            {new Date(item.returnPickupDate).toLocaleDateString('fr-FR', {
+              weekday: 'long',
+              day: '2-digit',
+              month: 'long',
+              timeZone: 'UTC',
+            })}{' '}
+            — {PRAYER_LABELS[item.returnPickupPrayer] || item.returnPickupPrayer}
           </Text>
         </View>
       )}

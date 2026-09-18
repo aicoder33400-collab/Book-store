@@ -32,6 +32,12 @@ router.put(
   loanController.setPickupSlot
 );
 
+router.put(
+  '/:id/set-return-pickup',
+  AuthMiddleware.restrictTo('ADMIN', 'STAFF', 'USER'),
+  loanController.setReturnPickupSlot
+);
+
 // 🔥 ADMIN/STAFF confirme le retour
 router.put(
   '/:id/confirm-return',

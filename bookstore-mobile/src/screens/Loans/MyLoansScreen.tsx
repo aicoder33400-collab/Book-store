@@ -70,18 +70,27 @@ const showAlert = (title: string, message: string) => {
 // 🎯 Génère les 7 prochains jours
 const getNext7Days = () => {
   const days = [];
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const now = new Date();
+  // 🔥 Utiliser le décalage horaire LOCAL pour construire les dates
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const day = now.getDate();
 
   for (let i = 0; i < 7; i++) {
-    const date = new Date(today);
-    date.setDate(date.getDate() + i);
+    // Construire en local
+    const localDate = new Date(year, month, day + i);
+
+    // Récupérer les composants locaux
+    const y = localDate.getFullYear();
+    const m = String(localDate.getMonth() + 1).padStart(2, '0');
+    const d = String(localDate.getDate()).padStart(2, '0');
+
     days.push({
-      date,
-      iso: date.toISOString().split('T')[0],
-      dayNum: date.getDate(),
-      dayName: date.toLocaleDateString('fr-FR', { weekday: 'short' }).slice(0, 3),
-      monthName: date.toLocaleDateString('fr-FR', { month: 'short' }).slice(0, 3),
+      date: localDate,
+      iso: `${y}-${m}-${d}`, // Format YYYY-MM-DD en local
+      dayNum: localDate.getDate(),
+      dayName: localDate.toLocaleDateString('fr-FR', { weekday: 'short' }).slice(0, 3),
+      monthName: localDate.toLocaleDateString('fr-FR', { month: 'short' }).slice(0, 3),
       isToday: i === 0,
       isTomorrow: i === 1,
     });
@@ -100,6 +109,9 @@ export const MyLoansScreen = () => {
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [selectedPrayer, setSelectedPrayer] = useState<PrayerSlot | null>(null);
   const [saving, setSaving] = useState(false);
+
+  const [returnModalVisible, setReturnModalVisible] = useState(false);
+  const [selectedReturnLoan, setSelectedReturnLoan] = useState<Loan | null>(null);
 
   const days = getNext7Days();
 
@@ -156,24 +168,52 @@ export const MyLoansScreen = () => {
   };
 
   // 🔥 Demander le retour
-  const handleRequestReturn = (loanId: string) => {
-    confirmDialog(
-      'Demander le retour',
-      'Voulez-vous signaler que vous souhaitez retourner ce livre ?',
-      async () => {
-        try {
-          await loanService.requestReturn(loanId);
-          showAlert('✅ Succès', '📩 Demande de retour envoyée !');
-          fetchLoans();
-        } catch (error: any) {
-          showAlert(
-            'Erreur',
-            error.response?.data?.message || 'Impossible de demander le retour',
-          );
-        }
-      },
-      'Demander le retour',
-    );
+  // const handleRequestReturn = (loanId: string) => {
+  //   confirmDialog(
+  //     'Demander le retour',
+  //     'Voulez-vous signaler que vous souhaitez retourner ce livre ?',
+  //     async () => {
+  //       try {
+  //         await loanService.requestReturn(loanId);
+  //         showAlert('✅ Succès', '📩 Demande de retour envoyée !');
+  //         fetchLoans();
+  //       } catch (error: any) {
+  //         showAlert(
+  //           'Erreur',
+  //           error.response?.data?.message || 'Impossible de demander le retour',
+  //         );
+  //       }
+  //     },
+  //     'Demander le retour',
+  //   );
+  // };
+
+  const openReturnModal = (loan: Loan) => {
+    setSelectedReturnLoan(loan);
+    setSelectedDay(loan.returnPickupDate ? String(loan.returnPickupDate).split('T')[0] : null);
+    setSelectedPrayer((loan.returnPickupPrayer as PrayerSlot) || null);
+    setReturnModalVisible(true);
+  };
+
+  const handleConfirmReturn = async () => {
+    if (!selectedDay || !selectedPrayer) {
+      showAlert('Erreur', 'Veuillez choisir un jour et une prière');
+      return;
+    }
+    if (!selectedReturnLoan) return;
+
+    setSaving(true);
+    try {
+      const dateWithNoon = `${selectedDay}T12:00:00.000Z`;
+      await loanService.setReturnPickupSlot(selectedReturnLoan.id, dateWithNoon, selectedPrayer);
+      setReturnModalVisible(false);
+      setSaving(false);
+      showAlert('✅ Succès', '📩 Demande de retour envoyée !');
+      fetchLoans();
+    } catch (error: any) {
+      setSaving(false);
+      showAlert('Erreur', error.response?.data?.message || 'Erreur');
+    }
   };
 
   const formatDate = (dateString?: string | null) => {
@@ -189,25 +229,31 @@ export const MyLoansScreen = () => {
 
   const formatPickupDate = (dateString?: string | null) => {
     if (!dateString) return '—';
-    // 🔥 Fix timezone : forcer le fuseau UTC pour éviter le décalage
     const date = new Date(dateString);
-    return date.toLocaleDateString('fr-FR', {
+    // 🔥 Forcer UTC pour l'affichage (car on stocke à midi UTC)
+    const y = date.getUTCFullYear();
+    const m = date.getUTCMonth();
+    const d = date.getUTCDate();
+    const utcDate = new Date(Date.UTC(y, m, d, 12, 0, 0));
+    return utcDate.toLocaleDateString('fr-FR', {
       weekday: 'long',
       day: '2-digit',
       month: 'long',
-      timeZone: 'UTC',  // ← force UTC pour éviter le décalage
+      timeZone: 'UTC',
     });
   };
 
+  // 🔥 Carte d'un emprunt
   const renderLoan = ({ item }: { item: Loan }) => {
     const isBorrowedOrLate = item.status === 'BORROWED' || item.status === 'LATE';
-    const isReturnRequested = item.status === 'RETURN_REQUESTED';
-    const canRequestReturn = isBorrowedOrLate && !isReturnRequested;
-    const showDates =
-      item.status === 'BORROWED' || item.status === 'LATE' || item.status === 'RETURNED';
-
-    const isApproved = item.status === 'APPROVED';
-    const hasPickup = !!(item.pickupDate && item.pickupPrayer);
+  const isReturnRequested = item.status === 'RETURN_REQUESTED';
+  const canRequestReturn = isBorrowedOrLate && !isReturnRequested;
+  const showDates =
+    item.status === 'BORROWED' || item.status === 'LATE' || item.status === 'RETURNED';
+  const isApproved = item.status === 'APPROVED';
+  const hasPickup = !!(item.pickupDate && item.pickupPrayer);
+  // 🔥 Le créneau est modifiable UNIQUEMENT si statut = APPROVED
+  const canEditPickup = isApproved;
 
     return (
       <View style={styles.card}>
@@ -249,18 +295,18 @@ export const MyLoansScreen = () => {
           )}
         </View>
 
-        {/* 🔥 Créneau de retrait */}
-        {isApproved && hasPickup && (
+        {/* 🔥 Créneau de retrait — visible si en cours ou plus */}
+        {hasPickup && (
           <View style={styles.pickupInfo}>
-            <Text style={styles.pickupInfoTitle}>📅 Rendez-vous confirmé</Text>
+            <Text style={styles.pickupInfoTitle}>📅 Rendez-vous de retrait</Text>
             <Text style={styles.pickupInfoText}>
               {formatPickupDate(item.pickupDate)} — {PRAYER_LABELS[item.pickupPrayer!] || item.pickupPrayer}
             </Text>
           </View>
         )}
 
-        {/* Bouton choisir/modifier créneau */}
-        {isApproved && (
+        {/* 🔥 Bouton choisir/modifier créneau — UNIQUEMENT si APPROVED */}
+        {canEditPickup && (
           <TouchableOpacity
             style={[styles.requestReturnBtn, styles.pickupBtn]}
             onPress={() => openPickupModal(item)}
@@ -283,7 +329,7 @@ export const MyLoansScreen = () => {
         {canRequestReturn && (
           <TouchableOpacity
             style={styles.requestReturnBtn}
-            onPress={() => handleRequestReturn(item.id)}
+            onPress={() => openReturnModal(item)}
             activeOpacity={0.85}
           >
             <Text style={styles.btnText}>📩 Demander le retour</Text>
@@ -420,6 +466,109 @@ export const MyLoansScreen = () => {
               <TouchableOpacity
                 style={[styles.saveBtn, saving && styles.saveBtnDisabled]}
                 onPress={handleConfirmPickup}
+                disabled={saving}
+              >
+                <Text style={styles.saveBtnText}>{saving ? '...' : 'Confirmer'}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* 🔥 MODALE DE CHOIX DE CRÉNEAU DE RETOUR */}
+      <Modal visible={returnModalVisible} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <View>
+                <Text style={styles.modalTitle}>Choisir un créneau de retour</Text>
+                <Text style={styles.modalSubtitle}>Pour prévenir de votre passage</Text>
+              </View>
+              <TouchableOpacity onPress={() => setReturnModalVisible(false)}>
+                <Text style={styles.modalClose}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <Text style={styles.sectionLabel}>📅 Choisissez un jour</Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.daysRow}
+              >
+                {days.map((day) => {
+                  const isSelected = selectedDay === day.iso;
+                  return (
+                    <TouchableOpacity
+                      key={day.iso}
+                      style={[styles.dayCard, isSelected && styles.dayCardSelected]}
+                      onPress={() => setSelectedDay(day.iso)}
+                      activeOpacity={0.85}
+                    >
+                      <Text style={[styles.dayName, isSelected && styles.dayNameSelected]}>
+                        {day.dayName}
+                      </Text>
+                      <Text style={[styles.dayNum, isSelected && styles.dayNumSelected]}>
+                        {day.dayNum}
+                      </Text>
+                      <Text style={[styles.dayMonth, isSelected && styles.dayMonthSelected]}>
+                        {day.monthName}
+                      </Text>
+                      {day.isToday && (
+                        <View style={styles.todayBadge}>
+                          <Text style={styles.todayBadgeText}>Auj.</Text>
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+
+              <Text style={[styles.sectionLabel, { marginTop: 24 }]}>
+                🕌 Choisissez la prière
+              </Text>
+              <View style={styles.prayersGrid}>
+                {(['DOHR', 'ASR', 'MAGHREB'] as const).map((prayer) => {
+                  const isSelected = selectedPrayer === prayer;
+                  return (
+                    <TouchableOpacity
+                      key={prayer}
+                      style={[styles.prayerCard, isSelected && styles.prayerCardSelected]}
+                      onPress={() => setSelectedPrayer(prayer)}
+                      activeOpacity={0.85}
+                    >
+                      <Text style={styles.prayerEmoji}>
+                        {prayer === 'DOHR' ? '🕐' : prayer === 'ASR' ? '🕓' : '🌅'}
+                      </Text>
+                      <Text style={[styles.prayerText, isSelected && styles.prayerTextSelected]}>
+                        {prayer === 'DOHR' ? 'Dohr' : prayer === 'ASR' ? 'Asr' : 'Maghreb'}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              {selectedDay && selectedPrayer && (
+                <View style={styles.summaryBox}>
+                  <Text style={styles.summaryTitle}>📌 Votre rendez-vous de retour</Text>
+                  <Text style={styles.summaryText}>
+                    {formatPickupDate(selectedDay)} à la prière{' '}
+                    {selectedPrayer === 'DOHR' ? 'Dohr' : selectedPrayer === 'ASR' ? 'Asr' : 'Maghreb'}
+                  </Text>
+                </View>
+              )}
+            </ScrollView>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.cancelBtn}
+                onPress={() => setReturnModalVisible(false)}
+              >
+                <Text style={styles.cancelBtnText}>Annuler</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.saveBtn, saving && styles.saveBtnDisabled]}
+                onPress={handleConfirmReturn}
                 disabled={saving}
               >
                 <Text style={styles.saveBtnText}>{saving ? '...' : 'Confirmer'}</Text>

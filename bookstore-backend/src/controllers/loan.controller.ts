@@ -147,4 +147,18 @@ export class LoanController {
     );
   });
   
+  setReturnPickupSlot = catchAsync(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const userId = (req as any).user.id;
+    const { returnPickupDate, returnPickupPrayer } = req.body;
+
+    const loan = await loanService.setReturnPickupSlot(
+      id,
+      userId,
+      new Date(returnPickupDate),
+      returnPickupPrayer
+    );
+
+    res.status(200).json(ApiResponse.success(loan, 'Créneau de retour enregistré'));
+  });
 }

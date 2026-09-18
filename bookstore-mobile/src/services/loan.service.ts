@@ -21,6 +21,8 @@ export interface Loan {
   status: LoanStatus;
   pickupDate?: string | null;
   pickupPrayer?: PrayerSlot | null;
+  returnPickupDate?: string | null;
+  returnPickupPrayer?: PrayerSlot | null;
   user?: {
     id: string;
     name: string;
@@ -105,6 +107,19 @@ export const loanService = {
     });
     return response.data.data;
   },
+
+  setReturnPickupSlot: async (
+    loanId: string,
+    returnPickupDate: string,
+    returnPickupPrayer: PrayerSlot,
+  ) => {
+    const response = await api.put(`/loans/${loanId}/set-return-pickup`, {
+      returnPickupDate,
+      returnPickupPrayer,
+    });
+    return response.data.data;
+  },
+
 
   approveRequest: async (loanId: string) => {
     const response = await api.put(`/loans/${loanId}/approve`);

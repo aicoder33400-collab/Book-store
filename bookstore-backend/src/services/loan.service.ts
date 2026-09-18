@@ -443,6 +443,41 @@ export class LoanService {
     });
   }
   
+
+    // 🔥 Utilisateur choisit un créneau de retour
+  async setReturnPickupSlot(
+    loanId: string,
+    userId: string,
+    returnPickupDate: Date,
+    returnPickupPrayer: 'DOHR' | 'ASR' | 'MAGHREB'
+  ) {
+    const loan = await prisma.loan.findUnique({ where: { id: loanId } });
+
+    if (!loan) throw new AppError('Emprunt introuvable', 404);
+    if (loan.userId !== userId) throw new AppError('Non autorisé', 403);
+    if (loan.status !== 'BORROWED' && loan.status !== 'LATE') {
+      throw new AppError('Vous ne pouvez choisir un créneau de retour que pour un livre emprunté', 400);
+    }
+
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    if (returnPickupDate < now) {
+      throw new AppError('La date doit être dans le futur', 400);
+    }
+
+    return await prisma.loan.update({
+      where: { id: loanId },
+      data: {
+        returnPickupDate,
+        returnPickupPrayer,
+        status: 'RETURN_REQUESTED',
+      },
+      include: {
+        user: true,
+        copy: { include: { book: true } },
+      },
+    });
+  }
   async handOverBook(loanId: string) {
     const loan = await prisma.loan.findUnique({
       where: { id: loanId },
