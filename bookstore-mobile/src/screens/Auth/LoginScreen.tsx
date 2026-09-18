@@ -10,6 +10,7 @@ import {
   Platform,
   Dimensions,
   Animated,
+  Easing,
 } from 'react-native';
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -32,17 +33,21 @@ const BACKEND_URL =
     ? (typeof window !== 'undefined' ? window.location.origin : 'https://51-77-244-126.sslip.io')
     : (process.env.EXPO_PUBLIC_API_URL || 'https://51-77-244-126.sslip.io');
 
-// 🕌 Palette islamique LUMINEUSE
+// 🕌 Palette islamique CLAIRE
 const C = {
-  bgTop: '#3FA476',
-  bgMid: '#2D8F5F',
-  bgBottom: '#1B6E45',
-  gold: '#F0D98A',
+  bgTop: '#F5FBF7',
+  bgMid: '#E8F3EC',
+  bgBottom: '#DCEAE0',
+  primary: '#1B5E3F',
+  primaryMid: '#2D8F5F',
+  primaryDark: '#1B6E45',
+  gold: '#C9A961',
   goldBright: '#FAEDC4',
-  goldDeep: '#C9A961',
+  goldDeep: '#B8955A',
+  textDark: '#0F3D28',
+  textMid: '#4A6B5A',
+  textLight: '#7A9084',
   white: '#FFFFFF',
-  whiteSoft: 'rgba(255,255,255,0.92)',
-  whiteFaint: 'rgba(255,255,255,0.7)',
 };
 
 export const LoginScreen = () => {
@@ -56,9 +61,16 @@ export const LoginScreen = () => {
   // 🎬 Animations fade-in
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
-  const scaleAnim = useRef(new Animated.Value(0.95)).current;
+  const scaleAnim = useRef(new Animated.Value(0.9)).current;
+
+  // 🎬 Animations continues (islamiques)
+  const rotateAnim = useRef(new Animated.Value(0)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const floatAnim1 = useRef(new Animated.Value(0)).current;
+  const floatAnim2 = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    // Animation d'entrée
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
@@ -76,7 +88,85 @@ export const LoginScreen = () => {
         useNativeDriver: Platform.OS !== 'web',
       }),
     ]).start();
+
+    // Rotation lente continue (anneau extérieur)
+    Animated.loop(
+      Animated.timing(rotateAnim, {
+        toValue: 1,
+        duration: 60000,
+        easing: Easing.linear,
+        useNativeDriver: Platform.OS !== 'web',
+      })
+    ).start();
+
+    // Pulse de l'anneau
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.08,
+          duration: 2500,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: Platform.OS !== 'web',
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 2500,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: Platform.OS !== 'web',
+        }),
+      ])
+    ).start();
+
+    // Flottement des étoiles
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(floatAnim1, {
+          toValue: 1,
+          duration: 4000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: Platform.OS !== 'web',
+        }),
+        Animated.timing(floatAnim1, {
+          toValue: 0,
+          duration: 4000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: Platform.OS !== 'web',
+        }),
+      ])
+    ).start();
+
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(floatAnim2, {
+          toValue: 1,
+          duration: 5000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: Platform.OS !== 'web',
+        }),
+        Animated.timing(floatAnim2, {
+          toValue: 0,
+          duration: 5000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: Platform.OS !== 'web',
+        }),
+      ])
+    ).start();
   }, []);
+
+  const rotate = rotateAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
+
+  const floatY1 = floatAnim1.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -12],
+  });
+
+  const floatY2 = floatAnim2.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -18],
+  });
 
   // Retour OAuth sur WEB
   useEffect(() => {
@@ -233,218 +323,272 @@ export const LoginScreen = () => {
 
   return (
     <View style={styles.root}>
-      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+      <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
 
+      {/* Fond dégradé clair */}
       <LinearGradient
         colors={[C.bgTop, C.bgMid, C.bgBottom]}
         style={styles.gradient}
-        start={{ x: 0.1, y: 0 }}
-        end={{ x: 0.9, y: 1 }}
+        start={{ x: 0.15, y: 0 }}
+        end={{ x: 0.85, y: 1 }}
+      />
+
+      {/* ═══ MOTIF POINTILLÉ ═══ */}
+      <View style={styles.patternDots} />
+
+      {/* ═══ ARC ISLAMIQUE (mihrab) ═══ */}
+      <View style={styles.arch} />
+
+      {/* ═══ ANNEAUX (un rotatif + un pulsant) ═══ */}
+      <Animated.View
+        style={[
+          styles.ringRotating,
+          { transform: [{ rotate }] },
+        ]}
+      />
+      <Animated.View
+        style={[
+          styles.ringPulsing,
+          { transform: [{ scale: pulseAnim }] },
+        ]}
+      />
+      <View style={styles.ringStatic1} />
+      <View style={styles.ringStatic2} />
+
+      {/* ═══ ÉTOILES FLOTTANTES ═══ */}
+      <Animated.View
+        style={[styles.starTopRight, { transform: [{ translateY: floatY1 }] }]}
       >
-        {/* ═══ MOTIFS DÉCORATIFS ═══ */}
-        <View style={styles.ringTopOuter} />
-        <View style={styles.ringTopInner} />
-        <View style={styles.ringBottomOuter} />
-        <View style={styles.ringCenter} />
-        <View style={styles.archTopLeft} />
-        <View style={styles.archBottomRight} />
-        <View style={styles.starTopRight} />
-        <View style={styles.starBottomLeft} />
+        <Text style={styles.starText}>✦</Text>
+      </Animated.View>
+      <Animated.View
+        style={[styles.starBottomLeft, { transform: [{ translateY: floatY2 }] }]}
+      >
+        <Text style={styles.starText}>✦</Text>
+      </Animated.View>
 
-        {/* ═══ CONTENU AVEC FADE-IN ═══ */}
-        <Animated.View
-          style={[
-            styles.content,
-            {
-              opacity: fadeAnim,
-              transform: [{ translateY: slideAnim }],
-            },
-          ]}
-        >
-          {/* ═══ HEADER avec Basmala en haut ═══ */}
-          <View style={styles.header}>
-            {/* ﷽ Basmala dorée en haut */}
-            <Animated.View
-              style={[
-                styles.basmala,
-                { transform: [{ scale: scaleAnim }] },
-              ]}
-            >
-              <Text style={styles.basmalaText}>﷽</Text>
-            </Animated.View>
+      {/* ═══ LIVRE EN FILIGRANE (bas) ═══ */}
+      <View style={styles.bookBg}>
+        <Text style={styles.bookBgText}>📖</Text>
+      </View>
 
-            <View style={styles.dividerTop}>
-              <View style={styles.dividerLine} />
-              <View style={styles.dividerDiamond} />
-              <View style={styles.dividerLine} />
-            </View>
+      {/* ═══ CONTENU ═══ */}
+      <Animated.View
+        style={[
+          styles.content,
+          {
+            opacity: fadeAnim,
+            transform: [{ translateY: slideAnim }],
+          },
+        ]}
+      >
+        {/* HEADER avec Basmala */}
+        <View style={styles.header}>
+          <Animated.View
+            style={[
+              styles.basmala,
+              { transform: [{ scale: scaleAnim }] },
+            ]}
+          >
+            <Text style={styles.basmalaText}>﷽</Text>
+          </Animated.View>
 
-            <Text style={styles.brand}>RMP Maktaba</Text>
-            <Text style={styles.brandSub}>Bibliothèque de la mosquée</Text>
+          <View style={styles.dividerTop}>
+            <View style={styles.dividerLine} />
+            <View style={styles.dividerDiamond} />
+            <View style={styles.dividerLine} />
           </View>
 
-          {/* ═══ ACTIONS ═══ */}
-          <View style={styles.actions}>
-            <TouchableOpacity
-              style={styles.googleBtn}
-              onPress={handleGoogleLogin}
-              disabled={googleLoading}
-              activeOpacity={0.9}
-            >
-              {googleLoading ? (
-                <ActivityIndicator color={C.bgMid} size="small" />
-              ) : (
-                <>
-                  <View style={styles.gIconWrap}>
-                    <Text style={styles.gIcon}>G</Text>
-                  </View>
-                  <Text style={styles.gText}>Continuer avec Google</Text>
-                </>
-              )}
-            </TouchableOpacity>
+          <Text style={styles.brand}>RMP Maktaba</Text>
+          <Text style={styles.brandSub}>Bibliothèque de la mosquée</Text>
+        </View>
 
-            <TouchableOpacity
-              style={styles.devToggle}
-              onPress={() => setShowDev(!showDev)}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.devToggleText}>
-                {showDev ? 'Masquer' : 'Mode développeur'}
-              </Text>
-            </TouchableOpacity>
-
-            {showDev && (
-              <View style={styles.devPanel}>
-                <View style={styles.devRow}>
-                  <TouchableOpacity
-                    style={[styles.devBtn, { backgroundColor: C.gold }]}
-                    onPress={() => handleDevLogin('ADMIN')}
-                    disabled={devLoading}
-                  >
-                    <Text style={styles.devBtnTextDark}>👑 Admin</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[styles.devBtn, { backgroundColor: '#4A8F6E' }]}
-                    onPress={() => handleDevLogin('STAFF')}
-                    disabled={devLoading}
-                  >
-                    <Text style={styles.devBtnText}>📋 Staff</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[styles.devBtn, { backgroundColor: C.bgBottom }]}
-                    onPress={() => handleDevLogin('USER')}
-                    disabled={devLoading}
-                  >
-                    <Text style={styles.devBtnText}>👤 User</Text>
-                  </TouchableOpacity>
+        {/* ACTIONS */}
+        <View style={styles.actions}>
+          <TouchableOpacity
+            style={styles.googleBtn}
+            onPress={handleGoogleLogin}
+            disabled={googleLoading}
+            activeOpacity={0.9}
+          >
+            {googleLoading ? (
+              <ActivityIndicator color={C.primary} size="small" />
+            ) : (
+              <>
+                <View style={styles.gIconWrap}>
+                  <Text style={styles.gIcon}>G</Text>
                 </View>
-              </View>
+                <Text style={styles.gText}>Continuer avec Google</Text>
+              </>
             )}
-          </View>
+          </TouchableOpacity>
 
-          
-        </Animated.View>
-      </LinearGradient>
+          <TouchableOpacity
+            style={styles.devToggle}
+            onPress={() => setShowDev(!showDev)}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.devToggleText}>
+              {showDev ? 'Masquer' : 'Mode développeur'}
+            </Text>
+          </TouchableOpacity>
+
+          {showDev && (
+            <View style={styles.devPanel}>
+              <View style={styles.devRow}>
+                <TouchableOpacity
+                  style={[styles.devBtn, { backgroundColor: C.primary }]}
+                  onPress={() => handleDevLogin('ADMIN')}
+                  disabled={devLoading}
+                >
+                  <Text style={styles.devBtnTextLight}>👑 Admin</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.devBtn, { backgroundColor: C.primaryMid }]}
+                  onPress={() => handleDevLogin('STAFF')}
+                  disabled={devLoading}
+                >
+                  <Text style={styles.devBtnTextLight}>📋 Staff</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.devBtn, { backgroundColor: C.primaryDark }]}
+                  onPress={() => handleDevLogin('USER')}
+                  disabled={devLoading}
+                >
+                  <Text style={styles.devBtnTextLight}>👤 User</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+        </View>
+
+        {/* FOOTER */}
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>بسم الله الرحمن الرحيم</Text>
+        </View>
+      </Animated.View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: C.bgMid },
-  gradient: { flex: 1 },
-
-  // ═══ DÉCORS ISLAMIQUES ═══
-  ringTopOuter: {
-    position: 'absolute',
-    width: width * 1.4,
-    height: width * 1.4,
-    borderRadius: width * 0.7,
-    borderWidth: 1.5,
-    borderColor: 'rgba(250,237,196,0.20)',
-    top: -width * 0.8,
-    right: -width * 0.55,
+  root: {
+    flex: 1,
+    backgroundColor: C.bgTop,
+    overflow: 'hidden',
   },
-  ringTopInner: {
+  gradient: {
+    ...StyleSheet.absoluteFillObject,
+  },
+
+  // ═══ MOTIF POINTILLÉ ═══
+  patternDots: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    opacity: 0.4,
+    // Points simulés par des cercles discrets en grid
+    // (React Native ne supporte pas background-image)
+  },
+
+  // ═══ ARC ISLAMIQUE (mihrab) ═══
+  arch: {
+    position: 'absolute',
+    top: -60,
+    left: -70,
+    width: width * 0.55,
+    height: width * 0.7,
+    borderTopLeftRadius: width * 0.28,
+    borderTopRightRadius: width * 0.28,
+    borderWidth: 1.5,
+    borderBottomWidth: 0,
+    borderColor: 'rgba(201,169,97,0.22)',
+    opacity: 0.9,
+  },
+
+  // ═══ ANNEAUX ═══
+  ringRotating: {
+    position: 'absolute',
+    width: width * 1.5,
+    height: width * 1.5,
+    borderRadius: width * 0.75,
+    borderWidth: 1.5,
+    borderColor: 'rgba(201,169,97,0.15)',
+    borderStyle: 'dashed',
+    bottom: -width * 0.85,
+    left: -width * 0.6,
+  },
+  ringPulsing: {
     position: 'absolute',
     width: width * 0.95,
     height: width * 0.95,
     borderRadius: width * 0.475,
-    borderWidth: 1,
-    borderColor: 'rgba(250,237,196,0.28)',
-    top: -width * 0.5,
+    borderWidth: 1.5,
+    borderColor: 'rgba(201,169,97,0.35)',
+    top: -width * 0.45,
     right: -width * 0.3,
+    shadowColor: C.gold,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.4,
+    shadowRadius: 30,
   },
-  ringBottomOuter: {
+  ringStatic1: {
     position: 'absolute',
     width: width * 1.3,
     height: width * 1.3,
     borderRadius: width * 0.65,
-    borderWidth: 1.5,
-    borderColor: 'rgba(250,237,196,0.12)',
-    bottom: -width * 0.75,
-    left: -width * 0.5,
+    borderWidth: 1,
+    borderColor: 'rgba(201,169,97,0.10)',
+    top: -width * 0.65,
+    right: -width * 0.5,
   },
-  ringCenter: {
+  ringStatic2: {
     position: 'absolute',
     width: width * 0.6,
     height: width * 0.6,
     borderRadius: width * 0.3,
     borderWidth: 1,
-    borderColor: 'rgba(250,237,196,0.10)',
-    top: height * 0.35,
-    left: -width * 0.3,
+    borderColor: 'rgba(27,94,63,0.08)',
+    top: height * 0.4,
+    left: -width * 0.28,
   },
-  archTopLeft: {
-    position: 'absolute',
-    width: width * 0.9,
-    height: width * 0.45,
-    borderTopLeftRadius: width * 0.45,
-    borderTopRightRadius: width * 0.45,
-    borderWidth: 1.5,
-    borderBottomWidth: 0,
-    borderColor: 'rgba(250,237,196,0.18)',
-    top: -width * 0.15,
-    left: -width * 0.35,
-    transform: [{ rotate: '-15deg' }],
-  },
-  archBottomRight: {
-    position: 'absolute',
-    width: width * 1.1,
-    height: width * 0.55,
-    borderTopLeftRadius: width * 0.55,
-    borderTopRightRadius: width * 0.55,
-    borderWidth: 1,
-    borderBottomWidth: 0,
-    borderColor: 'rgba(250,237,196,0.10)',
-    bottom: -width * 0.1,
-    right: -width * 0.4,
-    transform: [{ rotate: '160deg' }],
-  },
+
+  // ═══ ÉTOILES ═══
   starTopRight: {
     position: 'absolute',
-    width: width * 0.35,
-    height: width * 0.35,
-    borderRadius: width * 0.175,
-    borderWidth: 1.5,
-    borderColor: 'rgba(250,237,196,0.20)',
-    borderStyle: 'dashed',
     top: height * 0.18,
     right: width * 0.08,
-    transform: [{ rotate: '45deg' }],
   },
   starBottomLeft: {
     position: 'absolute',
-    width: width * 0.25,
-    height: width * 0.25,
-    borderRadius: width * 0.125,
-    borderWidth: 1,
-    borderColor: 'rgba(250,237,196,0.15)',
-    borderStyle: 'dashed',
     bottom: height * 0.25,
     left: width * 0.05,
-    transform: [{ rotate: '22deg' }],
+  },
+  starText: {
+    fontSize: 26,
+    color: C.gold,
+    opacity: 0.55,
+    textShadowColor: 'rgba(201,169,97,0.5)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 12,
+  },
+
+  // ═══ LIVRE EN FILIGRANE ═══
+  bookBg: {
+    position: 'absolute',
+    bottom: -20,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    opacity: 0.05,
+  },
+  bookBgText: {
+    fontSize: 180,
+    color: C.primary,
   },
 
   // ═══ CONTENU ═══
@@ -462,14 +606,13 @@ const styles = StyleSheet.create({
     marginTop: height * 0.06,
   },
 
-  // ﷽ Basmala en haut
   basmala: {
     marginBottom: 20,
   },
   basmalaText: {
     fontSize: 64,
-    color: C.goldBright,
-    textShadowColor: 'rgba(250,237,196,0.6)',
+    color: C.gold,
+    textShadowColor: 'rgba(201,169,97,0.5)',
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 20,
     fontWeight: '400',
@@ -484,35 +627,36 @@ const styles = StyleSheet.create({
   dividerLine: {
     width: 40,
     height: 1,
-    backgroundColor: 'rgba(250,237,196,0.5)',
+    backgroundColor: 'rgba(201,169,97,0.6)',
   },
   dividerDiamond: {
-    width: 6,
-    height: 6,
-    backgroundColor: C.goldBright,
+    width: 7,
+    height: 7,
+    backgroundColor: C.gold,
     transform: [{ rotate: '45deg' }],
-    shadowColor: C.goldBright,
+    shadowColor: C.gold,
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 6,
+    shadowOpacity: 0.9,
+    shadowRadius: 8,
     elevation: 3,
   },
 
   brand: {
     fontSize: 38,
     fontWeight: '800',
-    color: C.white,
+    color: C.textDark,
     letterSpacing: 1.2,
     marginBottom: 10,
-    textShadowColor: 'rgba(0,0,0,0.20)',
+    textShadowColor: 'rgba(27,94,63,0.10)',
     textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 8,
+    textShadowRadius: 10,
   },
   brandSub: {
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.85)',
-    letterSpacing: 1.5,
-    fontWeight: '500',
+    fontSize: 12,
+    color: C.textMid,
+    letterSpacing: 1.8,
+    fontWeight: '600',
+    textTransform: 'uppercase',
   },
 
   // ═══ ACTIONS ═══
@@ -530,11 +674,13 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     paddingVertical: 17,
     paddingHorizontal: 24,
-    shadowColor: '#000',
+    shadowColor: C.primary,
     shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.22,
+    shadowOpacity: 0.15,
     shadowRadius: 28,
     elevation: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(27,94,63,0.06)',
   },
   gIconWrap: {
     width: 30,
@@ -553,7 +699,7 @@ const styles = StyleSheet.create({
   gText: {
     fontSize: 16,
     fontWeight: '700',
-    color: C.bgBottom,
+    color: C.textDark,
     letterSpacing: 0.2,
   },
 
@@ -564,7 +710,7 @@ const styles = StyleSheet.create({
   },
   devToggleText: {
     fontSize: 12,
-    color: 'rgba(255,255,255,0.55)',
+    color: 'rgba(15,61,40,0.45)',
     letterSpacing: 0.5,
     textDecorationLine: 'underline',
   },
@@ -584,16 +730,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.25)',
+    borderColor: 'rgba(27,94,63,0.20)',
   },
-  devBtnText: {
+  devBtnTextLight: {
     color: C.white,
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 0.3,
-  },
-  devBtnTextDark: {
-    color: C.bgBottom,
     fontSize: 12,
     fontWeight: '700',
     letterSpacing: 0.3,
@@ -606,7 +746,7 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 14,
-    color: 'rgba(250,237,196,0.55)',
+    color: 'rgba(201,169,97,0.65)',
     letterSpacing: 1.5,
     fontWeight: '500',
   },
