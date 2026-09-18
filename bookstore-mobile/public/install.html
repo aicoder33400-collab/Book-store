@@ -22,69 +22,146 @@
 
     html, body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-      background: linear-gradient(160deg, #0F3D28 0%, #1B5E3F 40%, #2D8F5F 70%, #1B6E45 100%);
+      background: linear-gradient(170deg, #F5FBF7 0%, #E8F3EC 40%, #DCEAE0 70%, #E8F3EC 100%);
       background-attachment: fixed;
-      color: #fff;
+      color: #0F3D28;
       min-height: 100vh;
       overflow-x: hidden;
       -webkit-font-smoothing: antialiased;
       position: relative;
     }
 
-    /* ═══ MOTIFS GÉOMÉTRIQUES ISLAMIQUES ═══ */
-    .pattern-bg {
+    /* ═══ FOND DÉCORATIF ISLAMIQUE ═══ */
+
+    /* Motif géométrique pointillé (subtile) */
+    .pattern-dots {
       position: fixed;
       inset: 0;
       pointer-events: none;
-      opacity: 0.08;
+      opacity: 0.35;
       background-image:
-        radial-gradient(circle at 25% 25%, #FAEDC4 1.5px, transparent 1.5px),
-        radial-gradient(circle at 75% 75%, #FAEDC4 1.5px, transparent 1.5px);
-      background-size: 60px 60px;
+        radial-gradient(circle at 20% 20%, rgba(27,94,63,0.12) 1px, transparent 1.5px),
+        radial-gradient(circle at 80% 80%, rgba(201,169,97,0.15) 1px, transparent 1.5px);
+      background-size: 48px 48px;
       z-index: 0;
     }
 
-    /* Étoiles filantes décoratives (en filigrane) */
-    .star-shape {
-      position: fixed;
-      pointer-events: none;
-      opacity: 0.10;
-      color: #FAEDC4;
-      font-size: 100px;
-      z-index: 0;
-    }
-    .star-shape.s1 { top: 8%; left: 5%; transform: rotate(15deg); font-size: 80px; }
-    .star-shape.s2 { bottom: 12%; right: 5%; transform: rotate(-25deg); font-size: 110px; }
-
-    /* Anneaux lumineux */
+    /* Anneaux concentriques islamiques */
     .ring {
       position: fixed;
       border-radius: 50%;
-      border: 1.5px solid rgba(250,237,196,0.15);
+      border: 1.5px solid rgba(201,169,97,0.18);
       pointer-events: none;
       z-index: 0;
     }
     .ring-1 {
-      width: 380px; height: 380px;
-      top: -140px; right: -120px;
-      border-color: rgba(250,237,196,0.20);
-      box-shadow: 0 0 80px rgba(250,237,196,0.15);
+      width: 420px; height: 420px;
+      top: -160px; right: -120px;
+      border-color: rgba(201,169,97,0.22);
+      box-shadow: 0 0 60px rgba(201,169,97,0.12);
     }
     .ring-2 {
-      width: 260px; height: 260px;
-      top: -60px; right: -30px;
-      border-color: rgba(250,237,196,0.28);
-      animation: pulse 4s ease-in-out infinite;
+      width: 280px; height: 280px;
+      top: -80px; right: -40px;
+      border-color: rgba(201,169,97,0.30);
+      animation: pulse 5s ease-in-out infinite;
     }
     .ring-3 {
-      width: 500px; height: 500px;
-      bottom: -260px; left: -180px;
-      border-color: rgba(250,237,196,0.10);
+      width: 550px; height: 550px;
+      bottom: -280px; left: -200px;
+      border-color: rgba(27,94,63,0.10);
+      border-style: dashed;
+      animation: rotate 60s linear infinite;
+    }
+    .ring-4 {
+      width: 400px; height: 400px;
+      bottom: -180px; left: -120px;
+      border-color: rgba(201,169,97,0.15);
     }
 
     @keyframes pulse {
       0%, 100% { transform: scale(1); opacity: 1; }
-      50% { transform: scale(1.08); opacity: 0.6; }
+      50% { transform: scale(1.06); opacity: 0.7; }
+    }
+    @keyframes rotate {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    /* Arc islamique (mihrab) en haut à gauche */
+    .arch {
+      position: fixed;
+      top: -40px;
+      left: -60px;
+      width: 200px;
+      height: 240px;
+      border: 1.5px solid rgba(201,169,97,0.22);
+      border-bottom: none;
+      border-radius: 100px 100px 0 0;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.8;
+    }
+    .arch::after {
+      content: '';
+      position: absolute;
+      inset: 20px 20px 0 20px;
+      border: 1px solid rgba(201,169,97,0.15);
+      border-bottom: none;
+      border-radius: 80px 80px 0 0;
+    }
+
+    /* ═══ ÉTOILES ISLAMIQUES FLOTTANTES ═══ */
+    .star {
+      position: fixed;
+      pointer-events: none;
+      color: #C9A961;
+      opacity: 0.25;
+      z-index: 0;
+      animation: float 8s ease-in-out infinite;
+    }
+    .star-1 {
+      top: 12%; left: 8%;
+      font-size: 28px;
+      animation-delay: 0s;
+    }
+    .star-2 {
+      top: 25%; right: 6%;
+      font-size: 20px;
+      animation-delay: -2s;
+    }
+    .star-3 {
+      bottom: 20%; left: 12%;
+      font-size: 24px;
+      animation-delay: -4s;
+    }
+    .star-4 {
+      bottom: 12%; right: 10%;
+      font-size: 32px;
+      animation-delay: -6s;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.25; }
+      50% { transform: translateY(-12px) rotate(15deg); opacity: 0.5; }
+    }
+
+    /* ═══ LIVRE ANIMÉ (en filigrane bas de page) ═══ */
+    .book-bg {
+      position: fixed;
+      bottom: 5%;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 140px;
+      color: #1B5E3F;
+      opacity: 0.04;
+      z-index: 0;
+      pointer-events: none;
+      animation: bookFloat 12s ease-in-out infinite;
+    }
+    @keyframes bookFloat {
+      0%, 100% { transform: translateX(-50%) translateY(0); }
+      50% { transform: translateX(-50%) translateY(-20px); }
     }
 
     /* ═══ LANGUE ═══ */
@@ -94,17 +171,18 @@
       right: 16px;
       display: flex;
       gap: 2px;
-      background: rgba(255,255,255,0.10);
-      border: 1px solid rgba(255,255,255,0.18);
+      background: rgba(255,255,255,0.85);
+      border: 1px solid rgba(27,94,63,0.15);
       border-radius: 20px;
       padding: 3px;
       z-index: 100;
-      backdrop-filter: blur(12px);
+      backdrop-filter: blur(14px);
+      box-shadow: 0 4px 16px rgba(15,61,40,0.08);
     }
     .lang-switch button {
       background: transparent;
       border: none;
-      color: rgba(255,255,255,0.65);
+      color: rgba(15,61,40,0.55);
       padding: 6px 12px;
       border-radius: 16px;
       cursor: pointer;
@@ -115,9 +193,9 @@
       letter-spacing: 0.3px;
     }
     .lang-switch button.active {
-      background: linear-gradient(135deg, #FAEDC4, #F0D98A);
-      color: #1B6E45;
-      box-shadow: 0 2px 8px rgba(250,237,196,0.4);
+      background: linear-gradient(135deg, #1B5E3F, #2D8F5F);
+      color: #FAEDC4;
+      box-shadow: 0 2px 8px rgba(27,94,63,0.3);
     }
 
     /* ═══ CONTAINER ═══ */
@@ -126,17 +204,17 @@
       z-index: 1;
       max-width: 460px;
       margin: 0 auto;
-      padding: 60px 24px 40px;
+      padding: 64px 24px 40px;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
-      animation: fadeUp 0.7s ease-out;
+      animation: fadeUp 0.8s ease-out;
     }
 
     @keyframes fadeUp {
       from {
         opacity: 0;
-        transform: translateY(20px);
+        transform: translateY(24px);
       }
       to {
         opacity: 1;
@@ -147,39 +225,38 @@
     /* Basmala décorative */
     .basmala {
       text-align: center;
-      font-size: 36px;
-      color: #FAEDC4;
+      font-size: 40px;
+      color: #C9A961;
       text-shadow:
-        0 0 20px rgba(250,237,196,0.6),
-        0 0 40px rgba(250,237,196,0.3);
+        0 0 20px rgba(201,169,97,0.4),
+        0 0 40px rgba(201,169,97,0.2);
       margin-bottom: 16px;
       letter-spacing: 2px;
-      animation: fadeIn 1s ease-out;
+      animation: fadeIn 1.2s ease-out;
     }
 
     @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
+      from { opacity: 0; transform: scale(0.9); }
+      to { opacity: 1; transform: scale(1); }
     }
 
     /* Titre */
     h1 {
-      font-size: 32px;
+      font-size: 34px;
       font-weight: 800;
       text-align: center;
       margin-bottom: 8px;
       letter-spacing: 1px;
-      text-shadow:
-        0 2px 10px rgba(0,0,0,0.2),
-        0 0 30px rgba(250,237,196,0.2);
+      color: #0F3D28;
+      text-shadow: 0 2px 12px rgba(27,94,63,0.1);
     }
     .subtitle {
-      font-size: 13px;
+      font-size: 12px;
       text-align: center;
-      color: rgba(255,255,255,0.85);
-      margin-bottom: 24px;
-      letter-spacing: 1.6px;
-      font-weight: 500;
+      color: #4A6B5A;
+      margin-bottom: 26px;
+      letter-spacing: 2px;
+      font-weight: 600;
       text-transform: uppercase;
     }
 
@@ -188,22 +265,27 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 10px;
-      margin-bottom: 32px;
+      gap: 12px;
+      margin-bottom: 34px;
     }
     .divider-line {
       width: 50px;
       height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(250,237,196,0.6), transparent);
+      background: linear-gradient(90deg, transparent, rgba(201,169,97,0.7), transparent);
     }
     .divider-diamond {
       width: 7px;
       height: 7px;
-      background: #FAEDC4;
+      background: #C9A961;
       transform: rotate(45deg);
       box-shadow:
-        0 0 10px rgba(250,237,196,0.9),
-        0 0 20px rgba(250,237,196,0.5);
+        0 0 10px rgba(201,169,97,0.8),
+        0 0 20px rgba(201,169,97,0.4);
+      animation: spin 6s linear infinite;
+    }
+    @keyframes spin {
+      from { transform: rotate(45deg); }
+      to { transform: rotate(405deg); }
     }
 
     /* ═══ BOUTON PRINCIPAL ═══ */
@@ -211,16 +293,16 @@
       display: block;
       width: 100%;
       padding: 19px;
-      background: linear-gradient(135deg, #FAEDC4 0%, #F0D98A 50%, #E5C989 100%);
-      color: #1B6E45;
+      background: linear-gradient(135deg, #1B5E3F 0%, #2D8F5F 50%, #1B6E45 100%);
+      color: #FAEDC4;
       font-weight: 800;
       font-size: 16px;
       border: none;
       border-radius: 50px;
       cursor: pointer;
       box-shadow:
-        0 12px 32px rgba(250,237,196,0.35),
-        0 0 60px rgba(250,237,196,0.15);
+        0 12px 32px rgba(27,94,63,0.30),
+        0 0 60px rgba(27,94,63,0.15);
       transition: transform 0.2s, box-shadow 0.2s;
       margin-bottom: 28px;
       font-family: inherit;
@@ -235,15 +317,15 @@
       left: -100%;
       width: 100%;
       height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-      transition: left 0.5s;
+      background: linear-gradient(90deg, transparent, rgba(250,237,196,0.3), transparent);
+      transition: left 0.6s;
     }
     .install-btn:hover::before {
       left: 100%;
     }
     .install-btn:active {
       transform: scale(0.97);
-      box-shadow: 0 8px 20px rgba(250,237,196,0.5);
+      box-shadow: 0 8px 20px rgba(27,94,63,0.4);
     }
     .install-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
@@ -251,9 +333,9 @@
     .platform-hint {
       text-align: center;
       font-size: 10px;
-      color: rgba(255,255,255,0.55);
+      color: rgba(15,61,40,0.55);
       margin-bottom: 12px;
-      letter-spacing: 1.2px;
+      letter-spacing: 1.4px;
       text-transform: uppercase;
       font-weight: 700;
     }
@@ -265,9 +347,9 @@
       flex-wrap: wrap;
     }
     .platform-switch button {
-      background: rgba(255,255,255,0.08);
-      border: 1px solid rgba(255,255,255,0.16);
-      color: rgba(255,255,255,0.75);
+      background: rgba(255,255,255,0.75);
+      border: 1px solid rgba(27,94,63,0.15);
+      color: rgba(15,61,40,0.7);
       padding: 8px 14px;
       border-radius: 20px;
       cursor: pointer;
@@ -276,28 +358,29 @@
       transition: all 0.25s;
       font-family: inherit;
       letter-spacing: 0.2px;
+      backdrop-filter: blur(10px);
     }
     .platform-switch button:hover {
-      background: rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.95);
     }
     .platform-switch button.active {
-      background: rgba(250,237,196,0.22);
-      border-color: rgba(250,237,196,0.7);
-      color: #FAEDC4;
-      box-shadow: 0 4px 16px rgba(250,237,196,0.25);
+      background: linear-gradient(135deg, rgba(27,94,63,0.10), rgba(45,143,95,0.15));
+      border-color: rgba(27,94,63,0.5);
+      color: #1B5E3F;
+      box-shadow: 0 4px 16px rgba(27,94,63,0.15);
     }
 
     /* ═══ INSTRUCTIONS ═══ */
     .instructions {
-      background: rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.85);
       backdrop-filter: blur(16px);
-      border: 1px solid rgba(255,255,255,0.14);
+      border: 1px solid rgba(27,94,63,0.10);
       border-radius: 22px;
       padding: 22px;
       margin-bottom: 16px;
       box-shadow:
-        0 10px 40px rgba(0,0,0,0.15),
-        inset 0 1px 0 rgba(255,255,255,0.06);
+        0 10px 40px rgba(15,61,40,0.08),
+        inset 0 1px 0 rgba(255,255,255,0.9);
       animation: fadeUp 0.4s ease-out;
     }
     .instructions.hidden { display: none; }
@@ -310,17 +393,17 @@
     }
     .inst-platform-icon {
       font-size: 26px;
-      filter: drop-shadow(0 2px 6px rgba(250,237,196,0.3));
+      filter: drop-shadow(0 2px 6px rgba(201,169,97,0.3));
     }
     .inst-title {
       font-size: 16px;
       font-weight: 800;
-      color: #FAEDC4;
+      color: #1B5E3F;
       letter-spacing: 0.4px;
     }
     .inst-subtitle {
       font-size: 11px;
-      color: rgba(255,255,255,0.6);
+      color: rgba(15,61,40,0.55);
       margin-top: 3px;
       letter-spacing: 0.4px;
     }
@@ -335,8 +418,8 @@
       padding: 12px 0 12px 46px;
       font-size: 13.5px;
       line-height: 1.5;
-      color: rgba(255,255,255,0.92);
-      border-bottom: 1px solid rgba(255,255,255,0.06);
+      color: rgba(15,61,40,0.85);
+      border-bottom: 1px solid rgba(27,94,63,0.08);
     }
     .steps li:last-child { border-bottom: none; padding-bottom: 0; }
     .steps li:first-child { padding-top: 0; }
@@ -349,21 +432,21 @@
       width: 28px;
       height: 28px;
       border-radius: 50%;
-      background: linear-gradient(135deg, #FAEDC4, #F0D98A);
-      color: #1B6E45;
+      background: linear-gradient(135deg, #1B5E3F, #2D8F5F);
+      color: #FAEDC4;
       display: flex;
       align-items: center;
       justify-content: center;
       font-weight: 800;
       font-size: 13px;
       box-shadow:
-        0 4px 12px rgba(250,237,196,0.35),
-        0 0 20px rgba(250,237,196,0.15);
+        0 4px 12px rgba(27,94,63,0.25),
+        0 0 20px rgba(27,94,63,0.10);
     }
     .steps li:first-child::before { top: calc(50% - 6px); }
     .steps b {
-      color: #FAEDC4;
-      font-weight: 700;
+      color: #1B5E3F;
+      font-weight: 800;
     }
 
     /* ═══ FOOTER ═══ */
@@ -372,19 +455,32 @@
       padding-top: 24px;
       text-align: center;
       font-size: 11px;
-      color: rgba(255,255,255,0.4);
+      color: rgba(15,61,40,0.4);
       letter-spacing: 0.8px;
     }
   </style>
 </head>
 <body>
   <!-- Fond décoratif -->
-  <div class="pattern-bg"></div>
-  <div class="star-shape s1">✦</div>
-  <div class="star-shape s2">✦</div>
+  <div class="pattern-dots"></div>
+
+  <!-- Arc islamique (mihrab) -->
+  <div class="arch"></div>
+
+  <!-- Anneaux -->
   <div class="ring ring-1"></div>
   <div class="ring ring-2"></div>
   <div class="ring ring-3"></div>
+  <div class="ring ring-4"></div>
+
+  <!-- Étoiles flottantes -->
+  <div class="star star-1">✦</div>
+  <div class="star star-2">✦</div>
+  <div class="star star-3">✦</div>
+  <div class="star star-4">✦</div>
+
+  <!-- Livre animé en filigrane -->
+  <div class="book-bg">📖</div>
 
   <!-- Sélecteur de langue -->
   <div class="lang-switch">
@@ -545,7 +641,7 @@
       window.location.href = '/';
     }
 
-    // 🔥 LANGUE PAR DÉFAUT = FRANÇAIS (au lieu de navigator.language)
+    // 🔥 LANGUE PAR DÉFAUT = FRANÇAIS
     let currentLang = 'fr';
 
     // Détection plateforme
