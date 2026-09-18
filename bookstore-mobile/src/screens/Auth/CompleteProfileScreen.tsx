@@ -12,7 +12,6 @@ import {
   StatusBar,
   Dimensions,
   Animated,
-  KeyboardAvoidingView,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -20,7 +19,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '../../store/auth.store';
 import { GoogleAuthService } from '../../services/google-auth.service';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
 // 🕌 Palette islamique CLAIRE
 const C = {
@@ -28,10 +27,8 @@ const C = {
   bgMid: '#F0F7F3',
   bgBottom: '#E3EFE7',
   primary: '#1B5E3F',
-  primarySoft: 'rgba(27,94,63,0.08)',
   gold: '#C9A961',
   goldLight: '#E5C989',
-  goldBright: '#FAEDC4',
   textDark: '#0F3D28',
   textMid: '#4A6B5A',
   textLight: '#7A9084',
@@ -65,18 +62,18 @@ export const CompleteProfileScreen = () => {
 
   // 🎬 Animation fade-in
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(24)).current;
+  const slideAnim = useRef(new Animated.Value(20)).current;
 
   useEffect(() => {
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
-        duration: 700,
+        duration: 600,
         useNativeDriver: Platform.OS !== 'web',
       }),
       Animated.timing(slideAnim, {
         toValue: 0,
-        duration: 700,
+        duration: 600,
         useNativeDriver: Platform.OS !== 'web',
       }),
     ]).start();
@@ -87,27 +84,27 @@ export const CompleteProfileScreen = () => {
     let isValid = true;
 
     if (!firstName.trim()) {
-      newErrors.firstName = 'Le prénom est obligatoire';
+      newErrors.firstName = 'Prénom obligatoire';
       isValid = false;
     } else if (!/^[a-zA-ZÀ-ÿ\s'-]{2,30}$/.test(firstName.trim())) {
-      newErrors.firstName = 'Prénom invalide (lettres, 2-30 caractères)';
+      newErrors.firstName = 'Prénom invalide';
       isValid = false;
     }
 
     if (!lastName.trim()) {
-      newErrors.lastName = 'Le nom est obligatoire';
+      newErrors.lastName = 'Nom obligatoire';
       isValid = false;
     } else if (!/^[a-zA-ZÀ-ÿ\s'-]{2,30}$/.test(lastName.trim())) {
-      newErrors.lastName = 'Nom invalide (lettres, 2-30 caractères)';
+      newErrors.lastName = 'Nom invalide';
       isValid = false;
     }
 
     const cleanPhone = phone.replace(/[\s\-\.\(\)]/g, '');
     if (!cleanPhone) {
-      newErrors.phone = 'Le téléphone est obligatoire';
+      newErrors.phone = 'Téléphone obligatoire';
       isValid = false;
     } else if (!/^[+]?[0-9]{8,15}$/.test(cleanPhone)) {
-      newErrors.phone = 'Numéro invalide (8 à 15 chiffres, + autorisé)';
+      newErrors.phone = 'Numéro invalide';
       isValid = false;
     } else if (/^(\d)\1+$/.test(cleanPhone.replace(/^\+/, ''))) {
       newErrors.phone = 'Numéro invalide';
@@ -116,23 +113,20 @@ export const CompleteProfileScreen = () => {
       /^(?:\+33|0)/.test(cleanPhone) &&
       !/^(?:\+33|0)[1-9][0-9]{8}$/.test(cleanPhone)
     ) {
-      newErrors.phone = 'Numéro français invalide (10 chiffres attendus)';
+      newErrors.phone = 'Numéro FR invalide (10 chiffres)';
       isValid = false;
     }
 
     if (!ageGroup) {
-      newErrors.ageGroup = 'Veuillez sélectionner votre tranche d\'âge';
+      newErrors.ageGroup = 'Choisissez votre âge';
       isValid = false;
     }
 
     if (!commune.trim()) {
-      newErrors.commune = 'La commune est obligatoire';
-      isValid = false;
-    } else if (commune.trim().length < 2) {
-      newErrors.commune = 'Commune invalide (minimum 2 caractères)';
+      newErrors.commune = 'Commune obligatoire';
       isValid = false;
     } else if (!/^[a-zA-ZÀ-ÿ\s'-]{2,50}$/.test(commune.trim())) {
-      newErrors.commune = 'Commune invalide (lettres uniquement)';
+      newErrors.commune = 'Commune invalide';
       isValid = false;
     }
 
@@ -200,7 +194,7 @@ export const CompleteProfileScreen = () => {
     <View style={styles.root}>
       <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
 
-      {/* ═══ FOND DÉCORÉ ═══ */}
+      {/* Fond décoré */}
       <LinearGradient
         colors={[C.bgTop, C.bgMid, C.bgBottom]}
         style={StyleSheet.absoluteFillObject}
@@ -208,22 +202,17 @@ export const CompleteProfileScreen = () => {
         end={{ x: 0.85, y: 1 }}
       />
 
-      {/* Motifs islamiques (anneaux + arcs) */}
-      <View style={styles.ringTopRightOuter} />
-      <View style={styles.ringTopRightInner} />
+      {/* Motifs dorés discrets */}
+      <View style={styles.ringTopRight} />
       <View style={styles.ringBottomLeft} />
-      <View style={styles.ringMidLeft} />
-      <View style={styles.archTopLeft} />
-      <View style={styles.archBottomRight} />
-      <View style={styles.starTopRight} />
 
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={[
           styles.scrollContent,
           {
-            paddingTop: insets.top + 24,
-            paddingBottom: insets.bottom + 40,
+            paddingTop: insets.top + 16,
+            paddingBottom: insets.bottom + 20,
           },
         ]}
         showsVerticalScrollIndicator={false}
@@ -231,7 +220,6 @@ export const CompleteProfileScreen = () => {
         bounces={true}
         overScrollMode="auto"
         nestedScrollEnabled={true}
-        contentInsetAdjustmentBehavior="automatic"
       >
         <Animated.View
           style={{
@@ -239,68 +227,57 @@ export const CompleteProfileScreen = () => {
             transform: [{ translateY: slideAnim }],
           }}
         >
-          {/* ═══ HEADER ═══ */}
+          {/* ═══ Mini header ═══ */}
           <View style={styles.header}>
-            <Text style={styles.basmala}>﷽</Text>
-
-            <View style={styles.divider}>
-              <View style={styles.dividerLine} />
-              <View style={styles.dividerDiamond} />
-              <View style={styles.dividerLine} />
-            </View>
-
-            <Text style={styles.title}>Bienvenue !</Text>
-            <Text style={styles.subtitle}>
-              Plus qu'une étape pour rejoindre la bibliothèque
-            </Text>
-
             {userEmail ? (
-              <View style={styles.emailBadge}>
-                <Text style={styles.emailBadgeText}>📧 {userEmail}</Text>
-              </View>
+              <Text style={styles.emailText} numberOfLines={1}>
+                📧 {userEmail}
+              </Text>
             ) : null}
+            <Text style={styles.subtitle}>Complétez votre profil</Text>
           </View>
 
-          {/* ═══ FORMULAIRE ═══ */}
+          {/* ═══ FORMULAIRE COMPACT ═══ */}
           <View style={styles.form}>
-            {/* Prénom */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>
-                Prénom <Text style={styles.required}>*</Text>
-              </Text>
-              <TextInput
-                style={[styles.input, errors.firstName && styles.inputError]}
-                placeholder="Votre prénom"
-                placeholderTextColor={C.textLight}
-                value={firstName}
-                onChangeText={(text) => {
-                  setFirstName(text);
-                  if (errors.firstName) setErrors({ ...errors, firstName: undefined });
-                }}
-                autoCapitalize="words"
-                autoCorrect={false}
-              />
-              {errors.firstName && <Text style={styles.errorText}>{errors.firstName}</Text>}
-            </View>
+            {/* Prénom + Nom sur 2 colonnes */}
+            <View style={styles.row}>
+              <View style={styles.col}>
+                <Text style={styles.label}>
+                  Prénom <Text style={styles.required}>*</Text>
+                </Text>
+                <TextInput
+                  style={[styles.input, errors.firstName && styles.inputError]}
+                  placeholder="Prénom"
+                  placeholderTextColor={C.textLight}
+                  value={firstName}
+                  onChangeText={(text) => {
+                    setFirstName(text);
+                    if (errors.firstName) setErrors({ ...errors, firstName: undefined });
+                  }}
+                  autoCapitalize="words"
+                  autoCorrect={false}
+                />
+                {errors.firstName && <Text style={styles.errorText}>{errors.firstName}</Text>}
+              </View>
 
-            {/* Nom */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>
-                Nom <Text style={styles.required}>*</Text>
-              </Text>
-              <TextInput
-                style={[styles.input, errors.lastName && styles.inputError]}
-                placeholder="Votre nom"
-                placeholderTextColor={C.textLight}
-                value={lastName}
-                onChangeText={(text) => {
-                  setLastName(text);
-                  if (errors.lastName) setErrors({ ...errors, lastName: undefined });
-                }}
-                autoCapitalize="words"
-                autoCorrect={false}
-              />
-              {errors.lastName && <Text style={styles.errorText}>{errors.lastName}</Text>}
+              <View style={styles.col}>
+                <Text style={styles.label}>
+                  Nom <Text style={styles.required}>*</Text>
+                </Text>
+                <TextInput
+                  style={[styles.input, errors.lastName && styles.inputError]}
+                  placeholder="Nom"
+                  placeholderTextColor={C.textLight}
+                  value={lastName}
+                  onChangeText={(text) => {
+                    setLastName(text);
+                    if (errors.lastName) setErrors({ ...errors, lastName: undefined });
+                  }}
+                  autoCapitalize="words"
+                  autoCorrect={false}
+                />
+                {errors.lastName && <Text style={styles.errorText}>{errors.lastName}</Text>}
+              </View>
             </View>
 
             {/* Téléphone */}
@@ -342,7 +319,7 @@ export const CompleteProfileScreen = () => {
                       ageGroup === 'minor' && styles.ageButtonTextSelected,
                     ]}
                   >
-                    Moins de 18 ans
+                    - de 18 ans
                   </Text>
                 </TouchableOpacity>
 
@@ -360,7 +337,7 @@ export const CompleteProfileScreen = () => {
                       ageGroup === 'major' && styles.ageButtonTextSelected,
                     ]}
                   >
-                    18 ans et plus
+                    18 ans et +
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -400,10 +377,6 @@ export const CompleteProfileScreen = () => {
                 <Text style={styles.buttonText}>Rejoindre la bibliothèque</Text>
               )}
             </TouchableOpacity>
-
-            <Text style={styles.footerText}>
-              En continuant, vous acceptez nos conditions d'utilisation
-            </Text>
           </View>
         </Animated.View>
       </ScrollView>
@@ -415,223 +388,122 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: C.bgTop,
-    overflow: 'hidden',   // ⚠️ Bloque le scroll horizontal du body
+    overflow: 'hidden',
   },
   scroll: {
     flex: 1,
     width: '100%',
   },
 
-  // ═══ DÉCORS ISLAMIQUES ═══
-  ringTopRightOuter: {
-    position: 'absolute',
-    width: width * 1.4,
-    height: width * 1.4,
-    borderRadius: width * 0.7,
-    borderWidth: 1.5,
-    borderColor: 'rgba(201,169,97,0.18)',
-    top: -width * 0.85,
-    right: -width * 0.55,
-  },
-  ringTopRightInner: {
-    position: 'absolute',
-    width: width * 0.95,
-    height: width * 0.95,
-    borderRadius: width * 0.475,
-    borderWidth: 1,
-    borderColor: 'rgba(201,169,97,0.25)',
-    top: -width * 0.55,
-    right: -width * 0.35,
-  },
-  ringBottomLeft: {
+  // Décors
+  ringTopRight: {
     position: 'absolute',
     width: width * 1.3,
     height: width * 1.3,
     borderRadius: width * 0.65,
     borderWidth: 1.5,
-    borderColor: 'rgba(27,94,63,0.06)',
-    bottom: -width * 0.85,
-    left: -width * 0.55,
-  },
-  ringMidLeft: {
-    position: 'absolute',
-    width: width * 0.6,
-    height: width * 0.6,
-    borderRadius: width * 0.3,
-    borderWidth: 1,
-    borderColor: 'rgba(201,169,97,0.10)',
-    top: height * 0.4,
-    left: -width * 0.35,
-  },
-  archTopLeft: {
-    position: 'absolute',
-    width: width * 0.8,
-    height: width * 0.4,
-    borderTopLeftRadius: width * 0.4,
-    borderTopRightRadius: width * 0.4,
-    borderWidth: 1.5,
-    borderBottomWidth: 0,
-    borderColor: 'rgba(201,169,97,0.14)',
-    top: width * 0.55,
-    left: -width * 0.35,
-    transform: [{ rotate: '-20deg' }],
-  },
-  archBottomRight: {
-    position: 'absolute',
-    width: width * 0.9,
-    height: width * 0.45,
-    borderTopLeftRadius: width * 0.45,
-    borderTopRightRadius: width * 0.45,
-    borderWidth: 1,
-    borderBottomWidth: 0,
-    borderColor: 'rgba(201,169,97,0.10)',
-    bottom: width * 0.3,
-    right: -width * 0.4,
-    transform: [{ rotate: '160deg' }],
-  },
-  starTopRight: {
-    position: 'absolute',
-    width: width * 0.32,
-    height: width * 0.32,
-    borderRadius: width * 0.16,
-    borderWidth: 1.5,
     borderColor: 'rgba(201,169,97,0.15)',
-    borderStyle: 'dashed',
-    top: height * 0.22,
-    right: width * 0.06,
-    transform: [{ rotate: '45deg' }],
+    top: -width * 0.8,
+    right: -width * 0.5,
+  },
+  ringBottomLeft: {
+    position: 'absolute',
+    width: width * 1.1,
+    height: width * 1.1,
+    borderRadius: width * 0.55,
+    borderWidth: 1.5,
+    borderColor: 'rgba(27,94,63,0.06)',
+    bottom: -width * 0.75,
+    left: -width * 0.45,
   },
 
-  // ═══ CONTENU ═══
+  // Contenu
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
     maxWidth: 500,
     alignSelf: 'center',
     width: '100%',
   },
 
-  // ═══ HEADER ═══
+  // Mini header
   header: {
     alignItems: 'center',
-    marginBottom: 26,
+    marginBottom: 14,
   },
-  basmala: {
-    fontSize: 48,
-    color: C.gold,
-    textShadowColor: 'rgba(201,169,97,0.4)',
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 14,
-    marginBottom: 12,
-  },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 20,
-  },
-  dividerLine: {
-    width: 32,
-    height: 1,
-    backgroundColor: 'rgba(201,169,97,0.5)',
-  },
-  dividerDiamond: {
-    width: 6,
-    height: 6,
-    backgroundColor: C.gold,
-    transform: [{ rotate: '45deg' }],
-    shadowColor: C.gold,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: C.textDark,
-    marginBottom: 8,
-    letterSpacing: 0.3,
-    textAlign: 'center',
+  emailText: {
+    fontSize: 12,
+    color: C.textMid,
+    fontWeight: '600',
+    marginBottom: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: 'rgba(255,255,255,0.85)',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(201,169,97,0.25)',
   },
   subtitle: {
-    fontSize: 14,
-    color: C.textMid,
-    textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: 16,
-    paddingHorizontal: 16,
-  },
-  emailBadge: {
-    backgroundColor: 'rgba(255,255,255,0.95)',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(201,169,97,0.35)',
-    shadowColor: 'rgba(15,61,40,0.08)',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  emailBadgeText: {
-    fontSize: 13,
-    color: C.textDark,
-    fontWeight: '600',
-  },
-
-  // ═══ FORMULAIRE ═══
-  form: { flex: 1 },
-  inputGroup: { marginBottom: 14 },
-  label: {
-    fontSize: 13,
+    fontSize: 18,
     fontWeight: '700',
     color: C.textDark,
-    marginBottom: 6,
+    letterSpacing: 0.3,
+  },
+
+  // Form
+  form: { flex: 1 },
+
+  row: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 10,
+  },
+  col: { flex: 1 },
+
+  inputGroup: { marginBottom: 10 },
+  label: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: C.textDark,
+    marginBottom: 4,
     letterSpacing: 0.2,
   },
-  required: { color: C.gold, fontSize: 14 },
+  required: { color: C.gold, fontSize: 13 },
   input: {
     backgroundColor: 'rgba(255,255,255,0.98)',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 13,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
     fontSize: 15,
     color: C.textDark,
     borderWidth: 1,
     borderColor: 'rgba(201,169,97,0.25)',
-    shadowColor: 'rgba(15,61,40,0.06)',
-    shadowOffset: { width: 0, height: 2 },
+    shadowColor: 'rgba(15,61,40,0.05)',
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 1,
-    shadowRadius: 6,
+    shadowRadius: 4,
     elevation: 1,
   },
   inputError: { borderColor: C.danger, borderWidth: 1.5 },
   errorText: {
-    fontSize: 12,
+    fontSize: 11,
     color: C.danger,
-    marginTop: 5,
-    marginLeft: 4,
+    marginTop: 3,
+    marginLeft: 2,
     fontWeight: '500',
   },
 
-  // Tranche d'âge
-  ageContainer: { flexDirection: 'row', gap: 10 },
+  // Âge
+  ageContainer: { flexDirection: 'row', gap: 8 },
   ageButton: {
     flex: 1,
     backgroundColor: 'rgba(255,255,255,0.98)',
-    borderRadius: 12,
-    paddingVertical: 15,
+    borderRadius: 10,
+    paddingVertical: 12,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: 'rgba(201,169,97,0.25)',
-    shadowColor: 'rgba(15,61,40,0.06)',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 6,
-    elevation: 1,
   },
   ageButtonSelected: {
     borderColor: C.gold,
@@ -642,21 +514,20 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: C.textMid,
     fontWeight: '600',
-    textAlign: 'center',
   },
   ageButtonTextSelected: { color: C.textDark, fontWeight: '800' },
 
   // Bouton
   button: {
     backgroundColor: C.primary,
-    borderRadius: 50,
-    paddingVertical: 16,
+    borderRadius: 40,
+    paddingVertical: 14,
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: 10,
     shadowColor: C.primary,
-    shadowOffset: { width: 0, height: 8 },
+    shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.28,
-    shadowRadius: 16,
+    shadowRadius: 12,
     elevation: 6,
   },
   buttonDisabled: { opacity: 0.6 },
@@ -665,13 +536,5 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     letterSpacing: 0.4,
-  },
-  footerText: {
-    fontSize: 11,
-    color: C.textLight,
-    textAlign: 'center',
-    marginTop: 14,
-    marginBottom: 8,
-    letterSpacing: 0.3,
   },
 });
