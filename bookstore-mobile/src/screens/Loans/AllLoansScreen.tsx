@@ -14,6 +14,8 @@ import {
 import api from '../../services/api';
 import { colors } from '../../theme/colors';
 
+import { RefreshButton } from '../../components/RefreshButton';
+
 const STATUS_LABELS: Record<string, string> = {
   REQUESTED: 'En attente',
   APPROVED: 'Approuvé',
@@ -367,38 +369,49 @@ export const AllLoansScreen = () => {
 
   return (
     <View style={styles.container}>
-      {/* Filtres */}
+      {/* Filtres + Refresh */}
       <View style={styles.filtersWrapper}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filtersContent}
-        >
-          {FILTERS.map((f) => {
-            const count =
-              f.key === 'ALL' ? loans.length : loans.filter((l) => l.status === f.key).length;
-            return (
-              <TouchableOpacity
-                key={f.key}
-                style={[
-                  styles.filterChip,
-                  activeFilter === f.key && styles.filterChipActive,
-                ]}
-                onPress={() => handleFilterChange(f.key)}
-                activeOpacity={0.8}
-              >
-                <Text
+        <View style={styles.filtersRow}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.filtersContent}
+          >
+            {FILTERS.map((f) => {
+              const count =
+                f.key === 'ALL' ? loans.length : loans.filter((l) => l.status === f.key).length;
+              return (
+                <TouchableOpacity
+                  key={f.key}
                   style={[
-                    styles.filterChipText,
-                    activeFilter === f.key && styles.filterChipTextActive,
+                    styles.filterChip,
+                    activeFilter === f.key && styles.filterChipActive,
                   ]}
+                  onPress={() => handleFilterChange(f.key)}
+                  activeOpacity={0.8}
                 >
-                  {f.icon} {f.label} ({count})
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
+                  <Text
+                    style={[
+                      styles.filterChipText,
+                      activeFilter === f.key && styles.filterChipTextActive,
+                    ]}
+                  >
+                    {f.icon} {f.label} ({count})
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+          <View style={styles.refreshBtnWrapper}>
+            <RefreshButton
+              onRefresh={() => {
+                setRefreshing(true);
+                fetchLoans();
+              }}
+              refreshing={refreshing}
+            />
+          </View>
+        </View>
       </View>
 
       <FlatList
@@ -451,11 +464,25 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
+  filtersRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   filtersContent: {
     paddingHorizontal: 12,
     paddingVertical: 12,
     gap: 8,
+    paddingRight: 60,
   },
+  refreshBtnWrapper: {
+    position: 'absolute',
+    right: 8,
+    top: '50%',
+    transform: [{ translateY: -18 }],
+    backgroundColor: colors.background.secondary,
+    paddingLeft: 6,
+  },
+  
   filterChip: {
     paddingHorizontal: 14,
     paddingVertical: 8,

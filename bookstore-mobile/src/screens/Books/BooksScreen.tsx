@@ -21,6 +21,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../store/auth.store';
 import { colors } from '../../theme/colors';
 
+import { RefreshButton } from '../../components/RefreshButton';
+
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 32) / 2;
 
@@ -304,6 +306,13 @@ export const BooksScreen = () => {
               onChangeText={handleSearch}
             />
           </View>
+          <RefreshButton
+            onRefresh={() => {
+              setRefreshing(true);
+              fetchBooks();
+            }}
+            refreshing={refreshing}
+          />
           <TouchableOpacity
             style={styles.filterButton}
             onPress={() => setFilterModalVisible(true)}

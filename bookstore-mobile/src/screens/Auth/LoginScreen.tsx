@@ -31,16 +31,20 @@ const BACKEND_URL =
     ? (typeof window !== 'undefined' ? window.location.origin : 'https://51-77-244-126.sslip.io')
     : (process.env.EXPO_PUBLIC_API_URL || 'https://51-77-244-126.sslip.io');
 
-// 🕌 Palette islamique ÉCLAIRCIE
+// 🕌 Palette islamique LUMINEUSE
 const C = {
-  bgDark: '#1B5E3F',
-  bgMid: '#2D7A55',
-  bgLight: '#3A8E63',
-  gold: '#E5C989',
-  goldBright: '#F5E4B8',
+  // Vert émeraude plus vif et clair
+  bgTop: '#3FA476',
+  bgMid: '#2D8F5F',
+  bgBottom: '#1B6E45',
+  // Or lumineux
+  gold: '#F0D98A',
+  goldBright: '#FAEDC4',
+  goldDeep: '#C9A961',
+  // Blancs
   white: '#FFFFFF',
-  whiteSoft: 'rgba(255,255,255,0.85)',
-  whiteFaint: 'rgba(255,255,255,0.65)',
+  whiteSoft: 'rgba(255,255,255,0.92)',
+  whiteFaint: 'rgba(255,255,255,0.7)',
 };
 
 export const LoginScreen = () => {
@@ -210,36 +214,66 @@ export const LoginScreen = () => {
     <View style={styles.root}>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
-      {/* Fond dégradé éclairci */}
+      {/* Dégradé vert clair et lumineux */}
       <LinearGradient
-        colors={['#2D7A55', '#1B5E3F', '#14532D']}
+        colors={[C.bgTop, C.bgMid, C.bgBottom]}
         style={styles.gradient}
-        start={{ x: 0.15, y: 0 }}
-        end={{ x: 0.85, y: 1 }}
+        start={{ x: 0.1, y: 0 }}
+        end={{ x: 0.9, y: 1 }}
       >
-        {/* Cercles dorés */}
-        <View style={styles.haloTop} />
-        <View style={styles.haloBottom} />
-        <View style={styles.haloCenter} />
+        {/* ═══ MOTIFS DÉCORATIFS ISLAMIQUES ═══ */}
 
+        {/* Grand cercle concentrique haut droite */}
+        <View style={styles.ringTopOuter} />
+        <View style={styles.ringTopInner} />
+
+        {/* Cercle moyen bas gauche */}
+        <View style={styles.ringBottomOuter} />
+
+        {/* Petit cercle milieu */}
+        <View style={styles.ringCenter} />
+
+        {/* Arc islamique (mihrab) en haut gauche */}
+        <View style={styles.archTopLeft} />
+
+        {/* Arc islamique bas droite */}
+        <View style={styles.archBottomRight} />
+
+        {/* Étoile à 8 branches (motif islamique) en filigrane */}
+        <View style={styles.starTopRight} />
+        <View style={styles.starBottomLeft} />
+
+        {/* CONTENU */}
         <View style={styles.content}>
-          {/* Logo */}
+          {/* ═══ LOGO ═══ */}
           <View style={styles.logoSection}>
-            <View style={styles.logoRing}>
-              <LinearGradient
-                colors={[C.goldBright, C.gold]}
-                style={styles.logoInner}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-              >
-                <Text style={styles.logoEmoji}>🕌</Text>
-              </LinearGradient>
+            {/* Anneau doré extérieur */}
+            <View style={styles.logoRingOuter}>
+              {/* Anneau doré intérieur */}
+              <View style={styles.logoRingInner}>
+                <LinearGradient
+                  colors={[C.goldBright, C.gold, C.goldDeep]}
+                  style={styles.logoInner}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                >
+                  <Text style={styles.logoEmoji}>🕌</Text>
+                </LinearGradient>
+              </View>
             </View>
+
             <Text style={styles.brand}>RMP Maktaba</Text>
             <Text style={styles.brandSub}>Bibliothèque de la mosquée</Text>
+
+            {/* Ligne dorée décorative */}
+            <View style={styles.divider}>
+              <View style={styles.dividerLine} />
+              <View style={styles.dividerDiamond} />
+              <View style={styles.dividerLine} />
+            </View>
           </View>
 
-          {/* Actions */}
+          {/* ═══ ACTIONS ═══ */}
           <View style={styles.actions}>
             <TouchableOpacity
               style={styles.googleBtn}
@@ -281,7 +315,7 @@ export const LoginScreen = () => {
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    style={[styles.devBtn, { backgroundColor: C.bgLight }]}
+                    style={[styles.devBtn, { backgroundColor: '#4A8F6E' }]}
                     onPress={() => handleDevLogin('STAFF')}
                     disabled={devLoading}
                   >
@@ -289,7 +323,7 @@ export const LoginScreen = () => {
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    style={[styles.devBtn, { backgroundColor: C.bgDark }]}
+                    style={[styles.devBtn, { backgroundColor: C.bgBottom }]}
                     onPress={() => handleDevLogin('USER')}
                     disabled={devLoading}
                   >
@@ -300,12 +334,9 @@ export const LoginScreen = () => {
             )}
           </View>
 
-          {/* Footer */}
+          {/* ═══ FOOTER épuré ═══ */}
           <View style={styles.footer}>
-            <View style={styles.footerLine} />
-            <Text style={styles.footerText}>
-              En continuant, vous acceptez nos conditions
-            </Text>
+            <Text style={styles.footerText}>﷽</Text>
           </View>
         </View>
       </LinearGradient>
@@ -317,37 +348,111 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.bgMid },
   gradient: { flex: 1 },
 
-  haloTop: {
+  // ═══ DÉCORS ISLAMIQUES ═══
+
+  // Anneaux concentriques en haut droite
+  ringTopOuter: {
     position: 'absolute',
-    width: width * 1.1,
-    height: width * 1.1,
-    borderRadius: width * 0.55,
+    width: width * 1.4,
+    height: width * 1.4,
+    borderRadius: width * 0.7,
     borderWidth: 1.5,
-    borderColor: 'rgba(229,201,137,0.18)',
-    top: -width * 0.6,
+    borderColor: 'rgba(250,237,196,0.20)',
+    top: -width * 0.8,
+    right: -width * 0.55,
+  },
+  ringTopInner: {
+    position: 'absolute',
+    width: width * 0.95,
+    height: width * 0.95,
+    borderRadius: width * 0.475,
+    borderWidth: 1,
+    borderColor: 'rgba(250,237,196,0.28)',
+    top: -width * 0.5,
     right: -width * 0.3,
   },
-  haloBottom: {
+
+  // Anneau bas gauche
+  ringBottomOuter: {
     position: 'absolute',
     width: width * 1.3,
     height: width * 1.3,
     borderRadius: width * 0.65,
-    borderWidth: 1,
-    borderColor: 'rgba(229,201,137,0.10)',
-    bottom: -width * 0.7,
-    left: -width * 0.4,
-  },
-  haloCenter: {
-    position: 'absolute',
-    width: width * 0.7,
-    height: width * 0.7,
-    borderRadius: width * 0.35,
-    borderWidth: 1,
-    borderColor: 'rgba(229,201,137,0.08)',
-    top: height * 0.35,
-    left: -width * 0.25,
+    borderWidth: 1.5,
+    borderColor: 'rgba(250,237,196,0.12)',
+    bottom: -width * 0.75,
+    left: -width * 0.5,
   },
 
+  // Anneau milieu gauche (plus discret)
+  ringCenter: {
+    position: 'absolute',
+    width: width * 0.6,
+    height: width * 0.6,
+    borderRadius: width * 0.3,
+    borderWidth: 1,
+    borderColor: 'rgba(250,237,196,0.10)',
+    top: height * 0.35,
+    left: -width * 0.3,
+  },
+
+  // Arc islamique haut gauche (mihrab)
+  archTopLeft: {
+    position: 'absolute',
+    width: width * 0.9,
+    height: width * 0.45,
+    borderTopLeftRadius: width * 0.45,
+    borderTopRightRadius: width * 0.45,
+    borderWidth: 1.5,
+    borderBottomWidth: 0,
+    borderColor: 'rgba(250,237,196,0.18)',
+    top: -width * 0.15,
+    left: -width * 0.35,
+    transform: [{ rotate: '-15deg' }],
+  },
+
+  // Arc islamique bas droite
+  archBottomRight: {
+    position: 'absolute',
+    width: width * 1.1,
+    height: width * 0.55,
+    borderTopLeftRadius: width * 0.55,
+    borderTopRightRadius: width * 0.55,
+    borderWidth: 1,
+    borderBottomWidth: 0,
+    borderColor: 'rgba(250,237,196,0.10)',
+    bottom: -width * 0.1,
+    right: -width * 0.4,
+    transform: [{ rotate: '160deg' }],
+  },
+
+  // Étoile à 8 branches (motif islamique) - simplifiée en cercle pointillé
+  starTopRight: {
+    position: 'absolute',
+    width: width * 0.35,
+    height: width * 0.35,
+    borderRadius: width * 0.175,
+    borderWidth: 1.5,
+    borderColor: 'rgba(250,237,196,0.20)',
+    borderStyle: 'dashed',
+    top: height * 0.18,
+    right: width * 0.08,
+    transform: [{ rotate: '45deg' }],
+  },
+  starBottomLeft: {
+    position: 'absolute',
+    width: width * 0.25,
+    height: width * 0.25,
+    borderRadius: width * 0.125,
+    borderWidth: 1,
+    borderColor: 'rgba(250,237,196,0.15)',
+    borderStyle: 'dashed',
+    bottom: height * 0.25,
+    left: width * 0.05,
+    transform: [{ rotate: '22deg' }],
+  },
+
+  // ═══ CONTENU ═══
   content: {
     flex: 1,
     paddingHorizontal: 28,
@@ -356,20 +461,35 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
 
+  // ═══ LOGO ═══
   logoSection: {
     alignItems: 'center',
-    marginTop: height * 0.06,
+    marginTop: height * 0.05,
   },
-  logoRing: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+  logoRingOuter: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
     borderWidth: 2,
-    borderColor: 'rgba(229,201,137,0.4)',
+    borderColor: 'rgba(250,237,196,0.35)',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 24,
-    backgroundColor: 'rgba(229,201,137,0.06)',
+    backgroundColor: 'rgba(250,237,196,0.06)',
+    shadowColor: C.goldBright,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.35,
+    shadowRadius: 24,
+    elevation: 8,
+  },
+  logoRingInner: {
+    width: 116,
+    height: 116,
+    borderRadius: 58,
+    borderWidth: 1.5,
+    borderColor: 'rgba(250,237,196,0.5)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   logoInner: {
     width: 96,
@@ -378,29 +498,56 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: C.gold,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.5,
-    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.6,
+    shadowRadius: 16,
     elevation: 10,
   },
-  logoEmoji: { fontSize: 48 },
+  logoEmoji: { fontSize: 52 },
+
   brand: {
-    fontSize: 34,
+    fontSize: 36,
     fontWeight: '800',
     color: C.white,
-    letterSpacing: 1,
-    marginBottom: 8,
-    textShadowColor: 'rgba(0,0,0,0.15)',
+    letterSpacing: 1.2,
+    marginBottom: 10,
+    textShadowColor: 'rgba(0,0,0,0.20)',
     textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 6,
+    textShadowRadius: 8,
   },
   brandSub: {
     fontSize: 13,
-    color: C.whiteFaint,
-    letterSpacing: 1.4,
+    color: 'rgba(255,255,255,0.85)',
+    letterSpacing: 1.5,
     fontWeight: '500',
+    marginBottom: 18,
   },
 
+  // Séparateur doré avec losange
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 4,
+  },
+  dividerLine: {
+    width: 30,
+    height: 1,
+    backgroundColor: 'rgba(250,237,196,0.5)',
+  },
+  dividerDiamond: {
+    width: 6,
+    height: 6,
+    backgroundColor: C.goldBright,
+    transform: [{ rotate: '45deg' }],
+    shadowColor: C.goldBright,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+
+  // ═══ ACTIONS ═══
   actions: {
     width: '100%',
     alignItems: 'center',
@@ -416,10 +563,10 @@ const styles = StyleSheet.create({
     paddingVertical: 17,
     paddingHorizontal: 24,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.2,
-    shadowRadius: 24,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.22,
+    shadowRadius: 28,
+    elevation: 10,
   },
   gIconWrap: {
     width: 30,
@@ -438,7 +585,7 @@ const styles = StyleSheet.create({
   gText: {
     fontSize: 16,
     fontWeight: '700',
-    color: C.bgDark,
+    color: C.bgBottom,
     letterSpacing: 0.2,
   },
 
@@ -449,7 +596,7 @@ const styles = StyleSheet.create({
   },
   devToggleText: {
     fontSize: 12,
-    color: 'rgba(255,255,255,0.45)',
+    color: 'rgba(255,255,255,0.55)',
     letterSpacing: 0.5,
     textDecorationLine: 'underline',
   },
@@ -469,7 +616,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
+    borderColor: 'rgba(255,255,255,0.25)',
   },
   devBtnText: {
     color: C.white,
@@ -478,27 +625,21 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   devBtnTextDark: {
-    color: C.bgDark,
+    color: C.bgBottom,
     fontSize: 12,
     fontWeight: '700',
     letterSpacing: 0.3,
   },
 
+  // ═══ FOOTER (﷽ - Basmala stylisée) ═══
   footer: {
     alignItems: 'center',
-  },
-  footerLine: {
-    width: 40,
-    height: 2,
-    backgroundColor: C.gold,
-    borderRadius: 1,
-    marginBottom: 14,
-    opacity: 0.6,
+    marginBottom: 8,
   },
   footerText: {
-    fontSize: 11,
-    color: 'rgba(255,255,255,0.45)',
-    letterSpacing: 0.4,
-    textAlign: 'center',
+    fontSize: 22,
+    color: 'rgba(250,237,196,0.55)',
+    letterSpacing: 2,
+    fontWeight: '500',
   },
 });

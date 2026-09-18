@@ -15,6 +15,8 @@ import {
 import { loanService, Loan, PrayerSlot } from '../../services/loan.service';
 import { colors } from '../../theme/colors';
 
+import { RefreshButton } from '../../components/RefreshButton';
+
 const STATUS_LABELS: Record<string, string> = {
   REQUESTED: '🔔 En attente',
   APPROVED: '✅ Approuvé',
@@ -369,6 +371,18 @@ export const MyLoansScreen = () => {
             }}
           />
         }
+        ListHeaderComponent={
+          <View style={styles.listHeader}>
+            <Text style={styles.listHeaderTitle}>Mes emprunts</Text>
+            <RefreshButton
+              onRefresh={() => {
+                setRefreshing(true);
+                fetchLoans();
+              }}
+              refreshing={refreshing}
+            />
+          </View>
+        }
         ListEmptyComponent={<Text style={styles.empty}>Aucun emprunt</Text>}
       />
 
@@ -584,6 +598,18 @@ export const MyLoansScreen = () => {
 const styles = StyleSheet.create({
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   list: { padding: 16 },
+  listHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+    paddingHorizontal: 4,
+  },
+  listHeaderTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.text.primary,
+  },
   empty: { textAlign: 'center', color: '#999', marginTop: 40, fontSize: 16 },
   card: {
     backgroundColor: '#fff',
