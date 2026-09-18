@@ -95,7 +95,7 @@ model Book {
   isForRent         Boolean   @default(true)
   imageUrl          String?
   totalCopies       Int       @default(1)
-  genre             BookGenre @default(AUTRE)
+  genre             BookGenre @default(DIVERS)
   language          BookLanguage @default(FRANCAIS)
   
   createdAt         DateTime  @default(now())
