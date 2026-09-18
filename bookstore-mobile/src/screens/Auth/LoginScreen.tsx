@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   Alert,
   Platform,
   Dimensions,
+  Animated,
 } from 'react-native';
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -33,15 +34,12 @@ const BACKEND_URL =
 
 // 🕌 Palette islamique LUMINEUSE
 const C = {
-  // Vert émeraude plus vif et clair
   bgTop: '#3FA476',
   bgMid: '#2D8F5F',
   bgBottom: '#1B6E45',
-  // Or lumineux
   gold: '#F0D98A',
   goldBright: '#FAEDC4',
   goldDeep: '#C9A961',
-  // Blancs
   white: '#FFFFFF',
   whiteSoft: 'rgba(255,255,255,0.92)',
   whiteFaint: 'rgba(255,255,255,0.7)',
@@ -54,6 +52,31 @@ export const LoginScreen = () => {
   const navigation = useNavigation<LoginScreenNavigationProp>();
   const setUser = useAuthStore((s) => s.setUser);
   const setToken = useAuthStore((s) => s.setToken);
+
+  // 🎬 Animations fade-in
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
+  const scaleAnim = useRef(new Animated.Value(0.95)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 900,
+        useNativeDriver: Platform.OS !== 'web',
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 900,
+        useNativeDriver: Platform.OS !== 'web',
+      }),
+      Animated.timing(scaleAnim, {
+        toValue: 1,
+        duration: 900,
+        useNativeDriver: Platform.OS !== 'web',
+      }),
+    ]).start();
+  }, []);
 
   // Retour OAuth sur WEB
   useEffect(() => {
@@ -82,14 +105,12 @@ export const LoginScreen = () => {
         console.log('📱 Résultat check:', checkResult);
 
         if (!checkResult.exists || checkResult.needsProfile) {
-          console.log('🚀 Store: needsProfile = true');
           useAuthStore.getState().setNeedsProfile(true, googleToken, {
             email: checkResult.email || '',
             name: checkResult.name || '',
             avatar: checkResult.avatar || '',
           });
         } else {
-          console.log('🎯 Connexion directe');
           const result = await authService.loginWithGoogle(googleToken);
 
           const user = {
@@ -214,63 +235,52 @@ export const LoginScreen = () => {
     <View style={styles.root}>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
-      {/* Dégradé vert clair et lumineux */}
       <LinearGradient
         colors={[C.bgTop, C.bgMid, C.bgBottom]}
         style={styles.gradient}
         start={{ x: 0.1, y: 0 }}
         end={{ x: 0.9, y: 1 }}
       >
-        {/* ═══ MOTIFS DÉCORATIFS ISLAMIQUES ═══ */}
-
-        {/* Grand cercle concentrique haut droite */}
+        {/* ═══ MOTIFS DÉCORATIFS ═══ */}
         <View style={styles.ringTopOuter} />
         <View style={styles.ringTopInner} />
-
-        {/* Cercle moyen bas gauche */}
         <View style={styles.ringBottomOuter} />
-
-        {/* Petit cercle milieu */}
         <View style={styles.ringCenter} />
-
-        {/* Arc islamique (mihrab) en haut gauche */}
         <View style={styles.archTopLeft} />
-
-        {/* Arc islamique bas droite */}
         <View style={styles.archBottomRight} />
-
-        {/* Étoile à 8 branches (motif islamique) en filigrane */}
         <View style={styles.starTopRight} />
         <View style={styles.starBottomLeft} />
 
-        {/* CONTENU */}
-        <View style={styles.content}>
-          {/* ═══ LOGO ═══ */}
-          <View style={styles.logoSection}>
-            {/* Anneau doré extérieur */}
-            <View style={styles.logoRingOuter}>
-              {/* Anneau doré intérieur */}
-              <View style={styles.logoRingInner}>
-                <LinearGradient
-                  colors={[C.goldBright, C.gold, C.goldDeep]}
-                  style={styles.logoInner}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                >
-                  <Text style={styles.logoEmoji}>🕌</Text>
-                </LinearGradient>
-              </View>
-            </View>
+        {/* ═══ CONTENU AVEC FADE-IN ═══ */}
+        <Animated.View
+          style={[
+            styles.content,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }],
+            },
+          ]}
+        >
+          {/* ═══ HEADER avec Basmala en haut ═══ */}
+          <View style={styles.header}>
+            {/* ﷽ Basmala dorée en haut */}
+            <Animated.View
+              style={[
+                styles.basmala,
+                { transform: [{ scale: scaleAnim }] },
+              ]}
+            >
+              <Text style={styles.basmalaText}>﷽</Text>
+            </Animated.View>
 
-            <Text style={styles.brand}>RMP Maktaba</Text>
-            <Text style={styles.brandSub}>Bibliothèque de la mosquée</Text>
-
-            {/* Ligne dorée décorative */}
-            <View style={styles.divider}>
+            <View style={styles.dividerTop}>
               <View style={styles.dividerLine} />
               <View style={styles.dividerDiamond} />
               <View style={styles.dividerLine} />
             </View>
+
+            <Text style={styles.brand}>RMP Maktaba</Text>
+            <Text style={styles.brandSub}>Bibliothèque de la mosquée</Text>
           </View>
 
           {/* ═══ ACTIONS ═══ */}
@@ -334,11 +344,11 @@ export const LoginScreen = () => {
             )}
           </View>
 
-          {/* ═══ FOOTER épuré ═══ */}
+          {/* ═══ FOOTER ═══ */}
           <View style={styles.footer}>
-            <Text style={styles.footerText}>﷽</Text>
+            <Text style={styles.footerText}>بسم الله الرحمن الرحيم</Text>
           </View>
-        </View>
+        </Animated.View>
       </LinearGradient>
     </View>
   );
@@ -349,8 +359,6 @@ const styles = StyleSheet.create({
   gradient: { flex: 1 },
 
   // ═══ DÉCORS ISLAMIQUES ═══
-
-  // Anneaux concentriques en haut droite
   ringTopOuter: {
     position: 'absolute',
     width: width * 1.4,
@@ -371,8 +379,6 @@ const styles = StyleSheet.create({
     top: -width * 0.5,
     right: -width * 0.3,
   },
-
-  // Anneau bas gauche
   ringBottomOuter: {
     position: 'absolute',
     width: width * 1.3,
@@ -383,8 +389,6 @@ const styles = StyleSheet.create({
     bottom: -width * 0.75,
     left: -width * 0.5,
   },
-
-  // Anneau milieu gauche (plus discret)
   ringCenter: {
     position: 'absolute',
     width: width * 0.6,
@@ -395,8 +399,6 @@ const styles = StyleSheet.create({
     top: height * 0.35,
     left: -width * 0.3,
   },
-
-  // Arc islamique haut gauche (mihrab)
   archTopLeft: {
     position: 'absolute',
     width: width * 0.9,
@@ -410,8 +412,6 @@ const styles = StyleSheet.create({
     left: -width * 0.35,
     transform: [{ rotate: '-15deg' }],
   },
-
-  // Arc islamique bas droite
   archBottomRight: {
     position: 'absolute',
     width: width * 1.1,
@@ -425,8 +425,6 @@ const styles = StyleSheet.create({
     right: -width * 0.4,
     transform: [{ rotate: '160deg' }],
   },
-
-  // Étoile à 8 branches (motif islamique) - simplifiée en cercle pointillé
   starTopRight: {
     position: 'absolute',
     width: width * 0.35,
@@ -461,77 +459,33 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
 
-  // ═══ LOGO ═══
-  logoSection: {
+  // ═══ HEADER ═══
+  header: {
     alignItems: 'center',
-    marginTop: height * 0.05,
-  },
-  logoRingOuter: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    borderWidth: 2,
-    borderColor: 'rgba(250,237,196,0.35)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 24,
-    backgroundColor: 'rgba(250,237,196,0.06)',
-    shadowColor: C.goldBright,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.35,
-    shadowRadius: 24,
-    elevation: 8,
-  },
-  logoRingInner: {
-    width: 116,
-    height: 116,
-    borderRadius: 58,
-    borderWidth: 1.5,
-    borderColor: 'rgba(250,237,196,0.5)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  logoInner: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: C.gold,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.6,
-    shadowRadius: 16,
-    elevation: 10,
-  },
-  logoEmoji: { fontSize: 52 },
-
-  brand: {
-    fontSize: 36,
-    fontWeight: '800',
-    color: C.white,
-    letterSpacing: 1.2,
-    marginBottom: 10,
-    textShadowColor: 'rgba(0,0,0,0.20)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 8,
-  },
-  brandSub: {
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.85)',
-    letterSpacing: 1.5,
-    fontWeight: '500',
-    marginBottom: 18,
+    marginTop: height * 0.06,
   },
 
-  // Séparateur doré avec losange
-  divider: {
+  // ﷽ Basmala en haut
+  basmala: {
+    marginBottom: 20,
+  },
+  basmalaText: {
+    fontSize: 64,
+    color: C.goldBright,
+    textShadowColor: 'rgba(250,237,196,0.6)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 20,
+    fontWeight: '400',
+  },
+
+  dividerTop: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginTop: 4,
+    marginBottom: 24,
   },
   dividerLine: {
-    width: 30,
+    width: 40,
     height: 1,
     backgroundColor: 'rgba(250,237,196,0.5)',
   },
@@ -545,6 +499,23 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.8,
     shadowRadius: 6,
     elevation: 3,
+  },
+
+  brand: {
+    fontSize: 38,
+    fontWeight: '800',
+    color: C.white,
+    letterSpacing: 1.2,
+    marginBottom: 10,
+    textShadowColor: 'rgba(0,0,0,0.20)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 8,
+  },
+  brandSub: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.85)',
+    letterSpacing: 1.5,
+    fontWeight: '500',
   },
 
   // ═══ ACTIONS ═══
@@ -631,15 +602,15 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
 
-  // ═══ FOOTER (﷽ - Basmala stylisée) ═══
+  // ═══ FOOTER ═══
   footer: {
     alignItems: 'center',
     marginBottom: 8,
   },
   footerText: {
-    fontSize: 22,
+    fontSize: 14,
     color: 'rgba(250,237,196,0.55)',
-    letterSpacing: 2,
+    letterSpacing: 1.5,
     fontWeight: '500',
   },
 });

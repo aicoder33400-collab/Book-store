@@ -21,41 +21,27 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { colors } from '../../theme/colors';
 
-// 🔥 Mapping des genres
 const GENRE_LABELS: Record<string, string> = {
-  ROMAN: '📖 Roman',
-  POESIE: '📝 Poésie',
-  THEATRE: '🎭 Théâtre',
-  HISTOIRE: '📜 Histoire',
-  SCIENCE_FICTION: '🚀 Science-Fiction',
-  FANTASTIQUE: '🧙 Fantastique',
-  POLAR: '🔍 Polar',
-  AVENTURE: '🗺️ Aventure',
-  BIOGRAPHIE: '👤 Biographie',
-  ESSAI: '📚 Essai',
-  PHILOSOPHIE: '🧠 Philosophie',
-  JEUNESSE: '🧒 Jeunesse',
-  BANDE_DESSINEE: '🖼️ Bande dessinée',
-  ART: '🎨 Art',
-  CUISINE: '🍳 Cuisine',
-  VOYAGE: '✈️ Voyage',
-  SPORT: '⚽ Sport',
-  SANTE: '💪 Santé',
-  RELIGION: '🕌 Religion',
-  AUTRE: '📦 Autre',
+  CORAN: '📖 Coran',
+  TAFSIR: '📚 Tafsir',
+  HADITH: '🕌 Hadith',
+  FIQH: '⚖️ Fiqh',
+  AQIDA: '🤲 Aqida',
+  SIRA: '🌟 Sira',
+  SUNNA: '📜 Sunna',
+  SPIRITUALITE: '💫 Spiritualité',
+  HISTOIRE_ISLAMIQUE: '🏛️ Histoire islamique',
+  LANGUE_ARABE: '🔤 Langue arabe',
+  EDUCATION_ENFANTS: '🧒 Éducation enfants',
+  BIOGRAPHIE_SAVANTS: '👤 Biographie savants',
+  DIVERS: '📦 Divers',
 };
 
 const LANGUAGE_LABELS: Record<string, string> = {
-  FRANCAIS: '🇫🇷 Français',
-  ANGLAIS: '🇬🇧 Anglais',
   ARABE: '🇸🇦 Arabe',
-  ESPAGNOL: '🇪🇸 Espagnol',
-  ALLEMAND: '🇩🇪 Allemand',
-  ITALIEN: '🇮🇹 Italien',
-  PORTUGAIS: '🇵🇹 Portugais',
-  RUSSE: '🇷🇺 Russe',
-  CHINOIS: '🇨🇳 Chinois',
-  JAPONAIS: '🇯🇵 Japonais',
+  FRANCAIS: '🇫🇷 Français',
+  ARABE_FRANCAIS: '🇸🇦🇫🇷 Bilingue',
+  ANGLAIS: '🇬🇧 Anglais',
   AUTRE: '📦 Autre',
 };
 
