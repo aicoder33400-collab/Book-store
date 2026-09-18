@@ -50,6 +50,13 @@ const C = {
   white: '#FFFFFF',
 };
 
+// 🔥 Détection retour OAuth AVANT le render (évite le flash)
+const isOAuthReturn =
+  Platform.OS === 'web' &&
+  typeof window !== 'undefined' &&
+  !!window.location.hash &&
+  window.location.hash.includes('id_token');
+
 export const LoginScreen = () => {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [devLoading, setDevLoading] = useState(false);
@@ -58,10 +65,10 @@ export const LoginScreen = () => {
   const setUser = useAuthStore((s) => s.setUser);
   const setToken = useAuthStore((s) => s.setToken);
 
-  // 🎬 Animations fade-in
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(30)).current;
-  const scaleAnim = useRef(new Animated.Value(0.9)).current;
+  // 🎬 Animations (initialisées à 1 si retour OAuth → pas de fade visible)
+  const fadeAnim = useRef(new Animated.Value(isOAuthReturn ? 1 : 0)).current;
+  const slideAnim = useRef(new Animated.Value(isOAuthReturn ? 0 : 30)).current;
+  const scaleAnim = useRef(new Animated.Value(isOAuthReturn ? 1 : 0.9)).current;
 
   // 🎬 Animations continues (islamiques)
   const rotateAnim = useRef(new Animated.Value(0)).current;
@@ -69,25 +76,33 @@ export const LoginScreen = () => {
   const floatAnim1 = useRef(new Animated.Value(0)).current;
   const floatAnim2 = useRef(new Animated.Value(0)).current;
 
+  // 🔥 Flag pour ne jouer les animations qu'UNE SEULE FOIS
+  const hasAnimated = useRef(false);
+
   useEffect(() => {
-    // Animation d'entrée
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 900,
-        useNativeDriver: Platform.OS !== 'web',
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 900,
-        useNativeDriver: Platform.OS !== 'web',
-      }),
-      Animated.timing(scaleAnim, {
-        toValue: 1,
-        duration: 900,
-        useNativeDriver: Platform.OS !== 'web',
-      }),
-    ]).start();
+    if (hasAnimated.current) return;
+    hasAnimated.current = true;
+
+    // 🔥 Retour OAuth → pas d'animation d'entrée (transition directe)
+    if (!isOAuthReturn) {
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 400,
+          useNativeDriver: Platform.OS !== 'web',
+        }),
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 400,
+          useNativeDriver: Platform.OS !== 'web',
+        }),
+        Animated.timing(scaleAnim, {
+          toValue: 1,
+          duration: 400,
+          useNativeDriver: Platform.OS !== 'web',
+        }),
+      ]).start();
+    }
 
     // Rotation lente continue (anneau extérieur)
     Animated.loop(
@@ -223,6 +238,7 @@ export const LoginScreen = () => {
             isProfileComplete: result.user.isProfileComplete ?? true,
           };
 
+          setGoogleLoading(false);
           setUser(user as any);
           setToken(result.token);
         }
@@ -367,11 +383,6 @@ export const LoginScreen = () => {
         <Text style={styles.starText}>✦</Text>
       </Animated.View>
 
-      {/* ═══ LIVRE EN FILIGRANE (bas) ═══ */}
-      <View style={styles.bookBg}>
-        <Text style={styles.bookBgText}>📖</Text>
-      </View>
-
       {/* ═══ CONTENU ═══ */}
       <Animated.View
         style={[
@@ -463,11 +474,6 @@ export const LoginScreen = () => {
             </View>
           )}
         </View>
-
-        {/* FOOTER */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>بسم الله الرحمن الرحيم</Text>
-        </View>
       </Animated.View>
     </View>
   );
@@ -491,8 +497,6 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     opacity: 0.4,
-    // Points simulés par des cercles discrets en grid
-    // (React Native ne supporte pas background-image)
   },
 
   // ═══ ARC ISLAMIQUE (mihrab) ═══
@@ -575,20 +579,6 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(201,169,97,0.5)',
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 12,
-  },
-
-  // ═══ LIVRE EN FILIGRANE ═══
-  bookBg: {
-    position: 'absolute',
-    bottom: -20,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-    opacity: 0.05,
-  },
-  bookBgText: {
-    fontSize: 180,
-    color: C.primary,
   },
 
   // ═══ CONTENU ═══
@@ -737,17 +727,5 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     letterSpacing: 0.3,
-  },
-
-  // ═══ FOOTER ═══
-  footer: {
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  footerText: {
-    fontSize: 14,
-    color: 'rgba(201,169,97,0.65)',
-    letterSpacing: 1.5,
-    fontWeight: '500',
   },
 });
