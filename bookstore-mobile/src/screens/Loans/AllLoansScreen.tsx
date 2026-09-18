@@ -234,12 +234,15 @@ export const AllLoansScreen = () => {
           <Text style={styles.dateValue}>{formatDate(item.createdAt)}</Text>
         </View>
 
-        {item.borrowedAt && (
-          <View style={styles.dateRow}>
-            <Text style={styles.dateLabel}>📆 Emprunté le</Text>
-            <Text style={styles.dateValue}>{formatDate(item.borrowedAt)}</Text>
-          </View>
-        )}
+        {item.borrowedAt &&
+          (item.status === 'BORROWED' ||
+            item.status === 'LATE' ||
+            item.status === 'RETURNED') && (
+            <View style={styles.dateRow}>
+              <Text style={styles.dateLabel}>📆 Emprunté le</Text>
+              <Text style={styles.dateValue}>{formatDate(item.borrowedAt)}</Text>
+            </View>
+          )}
 
         <View style={styles.dateRow}>
           <Text style={styles.dateLabel}>⏳ À rendre avant</Text>
@@ -267,6 +270,7 @@ export const AllLoansScreen = () => {
               weekday: 'long',
               day: '2-digit',
               month: 'long',
+              timeZone: 'UTC',  // 🔥 Fix timezone
             })}{' '}
             — {PRAYER_LABELS[item.pickupPrayer] || item.pickupPrayer}
           </Text>

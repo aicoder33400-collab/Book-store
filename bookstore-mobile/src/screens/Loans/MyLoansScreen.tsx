@@ -137,7 +137,11 @@ export const MyLoansScreen = () => {
 
     setSaving(true);
     try {
-      await loanService.setPickupSlot(selectedLoan.id, selectedDay, selectedPrayer);
+      // 🔥 Fix timezone : forcer la date à midi UTC
+      // Sinon `new Date('2026-09-21')` = minuit UTC = veille en France
+      const dateWithNoon = `${selectedDay}T12:00:00.000Z`;
+      await loanService.setPickupSlot(selectedLoan.id, dateWithNoon, selectedPrayer);
+
       setModalVisible(false);
       setSaving(false);
       showAlert('✅ Succès', 'Votre créneau est enregistré !');
@@ -185,10 +189,13 @@ export const MyLoansScreen = () => {
 
   const formatPickupDate = (dateString?: string | null) => {
     if (!dateString) return '—';
-    return new Date(dateString).toLocaleDateString('fr-FR', {
+    // 🔥 Fix timezone : forcer le fuseau UTC pour éviter le décalage
+    const date = new Date(dateString);
+    return date.toLocaleDateString('fr-FR', {
       weekday: 'long',
       day: '2-digit',
       month: 'long',
+      timeZone: 'UTC',  // ← force UTC pour éviter le décalage
     });
   };
 
